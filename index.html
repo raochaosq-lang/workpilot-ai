@@ -103,6 +103,11 @@
       text-overflow: ellipsis;
     }
 
+    .brand-title-extra,
+    .brand-title-divider {
+      display: inline;
+    }
+
     .brand-subtitle {
       margin-top: 4px;
       max-width: 760px;
@@ -323,6 +328,10 @@
       background: #fff;
       color: var(--primary);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    .tab-short {
+      display: none;
     }
 
     .capture-card {
@@ -811,6 +820,21 @@
       color: var(--text-secondary);
       font-size: 12px;
       line-height: 1.45;
+    }
+
+    .example-tag {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      margin-top: 8px;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 11px;
+      font-style: normal;
+      font-weight: 900;
     }
 
     .example-card:hover {
@@ -1775,56 +1799,651 @@
       }
     }
 
-    @media (max-width: 760px) {
+    @media (max-width: 768px) {
+      html,
+      body {
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      body {
+        background: #f5f7fb;
+      }
+
+      .app {
+        width: 100%;
+        min-width: 0;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+      }
+
       .app-header {
+        position: sticky;
         align-items: flex-start;
         flex-direction: column;
-        padding: 14px 16px;
+        gap: 10px;
+        min-height: 0;
+        padding: 12px 14px;
+      }
+
+      .brand {
+        width: 100%;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .brand-mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+      }
+
+      .brand-title {
+        display: block;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        font-size: 17px;
+      }
+
+      .brand-title-divider {
+        display: none;
+      }
+
+      .brand-title-extra {
+        display: block;
+        margin-top: 2px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .brand-subtitle {
+        max-width: none;
+        margin-top: 4px;
+        white-space: normal;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .header-actions {
         width: 100%;
         justify-content: flex-start;
+        gap: 8px;
         flex-wrap: wrap;
       }
 
-      .brand-title,
-      .brand-subtitle {
+      .header-actions .btn,
+      .status-pill,
+      .save-pill {
+        min-height: 28px;
+        padding: 0 9px;
+        font-size: 11px;
+      }
+
+      .status-pill,
+      .save-pill {
+        max-width: 100%;
         white-space: normal;
       }
 
+      .status-pill::after {
+        left: 0;
+        right: auto;
+        max-width: min(320px, calc(100vw - 28px));
+      }
+
       .app-main {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+        padding: 12px;
+      }
+
+      .panel {
+        width: 100%;
+        min-width: 0;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      }
+
+      .input-panel {
+        position: static;
+      }
+
+      .panel-head {
+        flex-direction: column;
+        gap: 10px;
         padding: 14px;
       }
 
-      .panel-head,
-      .risk-head,
-      .question-head {
-        flex-direction: column;
+      .panel-title {
+        font-size: 15px;
       }
 
-      .stats-grid,
-      .examples,
-      .empty-preview,
-      .advanced-grid {
+      .panel-note {
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .panel-body {
+        padding: 14px;
+      }
+
+      .capture-panel {
+        width: 100%;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 10px;
+        border-radius: 14px;
+      }
+
+      .capture-tabs {
+        width: 100%;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        overflow: hidden;
+      }
+
+      .capture-tab {
+        min-width: 0;
+        min-height: 36px;
+        padding: 0 4px;
+        text-align: center;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .tab-full {
+        display: none;
+      }
+
+      .tab-short {
+        display: inline;
+      }
+
+      .capture-card,
+      .capture-card.active {
+        width: 100%;
+        min-width: 0;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .capture-card.active {
+        display: flex;
+      }
+
+      .capture-copy {
+        width: 100%;
+      }
+
+      .capture-copy strong,
+      .capture-copy span {
+        overflow-wrap: anywhere;
+      }
+
+      .capture-card .actions {
+        width: 100%;
+      }
+
+      .record-indicator,
+      .record-duration {
+        flex: 0 0 auto;
+      }
+
+      #recordBtn,
+      #transcribeAudioBtn,
+      #focusTextBtn {
+        width: 100%;
+      }
+
+      #recordCard .actions #recordBtn {
+        grid-column: 1 / -1;
+      }
+
+      .upload-tools {
+        width: 100%;
+        min-width: 0;
+        justify-items: stretch;
+      }
+
+      .file-input {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+      }
+
+      .audio-preview {
+        max-width: none;
+        height: 40px;
+      }
+
+      .upload-meta {
+        width: 100%;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      .upload-notice {
+        grid-column: auto;
+        padding: 8px 10px;
+      }
+
+      .text-empty-hint {
+        padding: 10px;
+        border-radius: 12px;
+      }
+
+      .meeting-input {
+        min-height: 240px;
+        max-height: 46vh;
+        padding: 13px;
+        border-radius: 12px;
+        line-height: 1.65;
+      }
+
+      .input-meta {
+        align-items: center;
+        gap: 8px;
+      }
+
+      #clearSourceBtn {
+        min-height: 32px;
+        padding: 0 8px;
+        background: transparent;
+        border-color: transparent;
+        color: #b91c1c;
+      }
+
+      .transcript-segment {
         grid-template-columns: 1fr;
+      }
+
+      .segment-time {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .input-controls {
+        gap: 12px;
+        margin: 14px -14px -14px;
+        padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+        border-radius: 0 0 12px 12px;
       }
 
       .control-row,
       .mode-row {
         grid-template-columns: 1fr;
+        gap: 7px;
+      }
+
+      .control-label {
+        white-space: normal;
+      }
+
+      .select,
+      .input {
+        height: 42px;
+      }
+
+      .actions,
+      .actions.primary-actions,
+      .error-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
       }
 
       .actions .btn,
-      .output-toolbar .btn {
-        flex: 1 1 auto;
+      .actions.primary-actions .btn,
+      .error-actions .btn {
+        width: 100%;
+        min-width: 0;
+        white-space: normal;
+      }
+
+      .actions.primary-actions .btn.primary,
+      #generateBtn {
+        grid-column: 1 / -1;
+        min-width: 0;
+        min-height: 44px;
+      }
+
+      #clearAllBtn {
+        color: #b91c1c;
+        background: #fff7f7;
+        border-color: #fee2e2;
+      }
+
+      .example-head {
+        gap: 8px;
+        align-items: flex-start;
+      }
+
+      .example-head span {
+        text-align: right;
+      }
+
+      .examples {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .example-card {
+        min-height: 0;
+        padding: 10px 11px;
+        border-radius: 12px;
+      }
+
+      .example-card span {
+        margin-top: 5px;
+      }
+
+      .output-toolbar {
+        width: 100%;
+        max-width: none;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .output-toolbar .btn,
+      .output-toolbar summary.btn {
+        width: 100%;
+        min-height: 36px;
+        white-space: normal;
+      }
+
+      #regenerateBtn {
+        grid-column: 1 / -1;
+      }
+
+      .more-actions {
+        min-width: 0;
+      }
+
+      .more-panel {
+        left: auto;
+        right: 0;
+        min-width: min(220px, calc(100vw - 28px));
+      }
+
+      .trust-note {
+        margin-top: 8px;
+        padding: 8px 10px;
+      }
+
+      .empty-hero {
+        padding: 16px 14px;
+        border-radius: 14px;
+        text-align: left;
+        box-shadow: none;
+      }
+
+      .empty-hero h3 {
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      .empty-hero p {
+        margin: 8px 0 12px;
+        max-width: none;
+      }
+
+      .empty-preview {
+        display: none;
+      }
+
+      .empty-hero .btn {
+        width: 100%;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .stat-card {
+        min-height: 72px;
+        padding: 11px;
+        border-radius: 12px;
+      }
+
+      .stat-card strong {
+        margin-top: 6px;
+        font-size: 21px;
+      }
+
+      .section {
+        border-radius: 12px;
+      }
+
+      .section-head,
+      .risk-head,
+      .question-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 9px;
+        padding: 12px;
+      }
+
+      .section-actions {
+        justify-content: flex-start;
+      }
+
+      .section-body {
+        padding: 12px;
+      }
+
+      .editable-block {
+        padding: 8px;
+        line-height: 1.72;
+      }
+
+      .conclusion-item {
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 9px;
+      }
+
+      .conclusion-actions {
+        grid-column: 2;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .risk-card,
+      .question-card {
+        padding: 12px;
+        border-radius: 12px;
+      }
+
+      .question-card .actions {
+        margin-top: 10px !important;
+      }
+
+      .task-table-wrap {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+      }
+
+      table,
+      thead,
+      tbody,
+      tr,
+      th,
+      td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+      }
+
+      thead {
+        display: none;
+      }
+
+      table {
+        border-collapse: separate;
+        table-layout: auto;
+      }
+
+      tbody {
+        display: grid;
+        gap: 10px;
+      }
+
+      td {
+        padding: 7px 0;
+        border-bottom: 0;
+      }
+
+      tr {
+        padding: 11px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      tr.empty-row {
+        padding: 0;
+        border: 0;
+        background: transparent;
+      }
+
+      tr.empty-row td::before {
+        display: none;
+      }
+
+      tr.done-row {
+        background: #fbfbfb;
+      }
+
+      td::before {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      td:nth-child(1)::before { content: "状态"; }
+      td:nth-child(2)::before { content: "待办事项"; }
+      td:nth-child(3)::before { content: "负责人"; }
+      td:nth-child(4)::before { content: "截止时间"; }
+      td:nth-child(5)::before { content: "优先级"; }
+      td:nth-child(6)::before { content: "来源/备注"; }
+      td:nth-child(7)::before { content: "来源时间戳"; }
+      td:nth-child(8)::before { content: "操作"; }
+
+      .cell-input,
+      .cell-select,
+      .cell-textarea {
+        border-color: var(--border);
+        background: #fff;
+      }
+
+      .row-actions {
+        flex-wrap: wrap;
+      }
+
+      .row-actions .mini-btn {
+        flex: 1 1 calc(50% - 4px);
+      }
+
+      .more-menu {
+        right: 0;
+      }
+
+      .participant-list {
+        align-items: stretch;
+      }
+
+      .participant-tag {
+        width: 100%;
+        justify-content: space-between;
+        border-radius: 12px;
+      }
+
+      .modal-mask {
+        align-items: stretch;
+        justify-content: stretch;
       }
 
       .drawer {
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
         margin: 0;
         border-radius: 0;
+      }
+
+      .drawer-head {
+        padding: 14px;
+        align-items: flex-start;
+      }
+
+      .drawer-title {
+        font-size: 17px;
+      }
+
+      .drawer-body {
+        padding: 14px 14px 0;
+        gap: 12px;
+      }
+
+      .form-grid,
+      .advanced-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .password-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      #baseUrlInput + #restoreBaseUrlBtn {
+        width: 100%;
+      }
+
+      .field:has(#baseUrlInput) .password-row {
+        grid-template-columns: 1fr;
+      }
+
+      .safety-box {
+        line-height: 1.55;
+      }
+
+      .drawer-body .form-grid > .actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        margin: 0 -14px;
+        padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+      }
+
+      #testModelBtn,
+      #saveModelBtn {
+        min-height: 44px;
+      }
+
+      .toast {
+        right: 12px;
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        max-width: calc(100vw - 24px);
       }
     }
   </style>
@@ -1840,8 +2459,8 @@
           </svg>
         </div>
         <div>
-          <div class="brand-title">WorkPilot AI｜语音转文字与AI总结助手</div>
-          <div class="brand-subtitle">录音、上传音频或粘贴文字，AI自动整理转写稿、摘要、结论、待办、风险和待确认问题。</div>
+          <div class="brand-title"><span class="brand-name">WorkPilot AI</span><span class="brand-title-divider">｜</span><span class="brand-title-extra">语音转文字与AI总结助手</span></div>
+          <div class="brand-subtitle">录音、上传音频或粘贴文字，AI自动整理摘要、结论、待办和风险。</div>
         </div>
       </div>
       <div class="header-actions">
@@ -1862,9 +2481,9 @@
         <div class="panel-body">
           <div class="capture-panel">
             <div class="capture-tabs" aria-label="输入方式">
-              <button id="recordTab" class="capture-tab active" type="button">录音转写</button>
-              <button id="uploadTab" class="capture-tab" type="button">上传音频</button>
-              <button id="textTab" class="capture-tab" type="button">粘贴文字</button>
+              <button id="recordTab" class="capture-tab active" type="button"><span class="tab-full">录音转写</span><span class="tab-short">录音</span></button>
+              <button id="uploadTab" class="capture-tab" type="button"><span class="tab-full">上传音频</span><span class="tab-short">上传</span></button>
+              <button id="textTab" class="capture-tab" type="button"><span class="tab-full">粘贴文字</span><span class="tab-short">粘贴</span></button>
             </div>
             <div id="recordCard" class="capture-card active">
               <div class="capture-copy">
@@ -1879,7 +2498,7 @@
             </div>
             <div id="uploadCard" class="capture-card upload-flow">
               <div class="capture-copy">
-                <strong>上传音频文件，整理成可编辑转写稿</strong>
+                <strong>上传音频文件</strong>
                 <span>选择音频后可直接调用已配置模型的音频转写接口，转写结果会写入下方文本框。</span>
               </div>
               <div class="upload-tools">
@@ -1920,7 +2539,7 @@
             <span>请勿粘贴未经授权的敏感信息。当前为本地模拟模式，不会调用外部模型。</span>
           </div>
 
-          <div class="input-controls">
+          <div id="inputControls" class="input-controls">
             <div class="control-row">
               <label class="control-label" for="outputType">输出类型</label>
               <div>
@@ -1952,7 +2571,7 @@
               <button id="fillExampleBtn" class="btn" type="button">填入示例</button>
               <button id="clearAllBtn" class="btn danger" type="button">清空</button>
             </div>
-            <div class="example-head">语音总结演示案例 <span>点击卡片自动填入</span></div>
+            <div id="exampleHead" class="example-head">语音总结演示案例 <span>点击卡片自动填入</span></div>
             <div class="examples" id="exampleList"></div>
           </div>
         </div>
@@ -1962,7 +2581,7 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">AI总结工作台</h2>
-            <p class="panel-note">转写后的内容可继续总结、编辑、复制、导出和复用。</p>
+            <p class="panel-note">输入内容后，AI将整理摘要、结论、待办和风险；生成后可继续编辑、复制和保存。</p>
             <div id="trustNote" class="trust-note">当前为本地模拟结果，仅用于演示。配置真实大模型后可获得更准确结果。</div>
             <div id="resultMeta" class="result-meta">尚未生成结果</div>
           </div>
@@ -2004,8 +2623,8 @@
           </div>
 
           <div id="emptyHero" class="empty-hero">
-            <h3 id="emptyHeroTitle">上传音频或粘贴内容后，AI会在这里生成结构化结果</h3>
-            <p id="emptyHeroDesc">你可以先使用示例内容快速体验：从录音转写稿、访谈或聊天记录中提取摘要、关键结论、待办、风险和待确认问题。</p>
+            <h3 id="emptyHeroTitle">请先输入内容</h3>
+            <p id="emptyHeroDesc">请先录音、上传音频或粘贴文字，AI将自动整理摘要、结论、待办、风险和待确认问题。</p>
             <div class="empty-preview">
               <div class="empty-preview-card"><strong>内容摘要</strong><span>快速压缩背景、讨论重点和主要判断。</span></div>
               <div class="empty-preview-card"><strong>关键结论</strong><span>提炼已经形成共识的决策和方向。</span></div>
@@ -2111,6 +2730,10 @@
           </div>
         </div>
       </section>
+
+      <section id="mobileExamplesPanel" class="panel mobile-examples-panel" hidden>
+        <div id="mobileExamplesBody" class="panel-body"></div>
+      </section>
     </main>
   </div>
 
@@ -2184,7 +2807,7 @@
             </div>
           </details>
           <div class="safety-box">
-            安全提示：API Key仅保存在当前浏览器localStorage中；请勿在公共电脑或不可信设备上保存；会议内容会发送给你配置的大模型服务商处理；涉及公司敏感信息时，请使用内部合规模型或脱敏后再处理。
+            安全提示：API Key仅保存在当前浏览器localStorage中，请勿在公共设备保存。会议内容会发送给你配置的大模型服务商处理。
           </div>
           <div id="testMessage" class="test-message"></div>
           <div class="actions">
@@ -2329,16 +2952,19 @@
       {
         title: "产品评审录音转写",
         desc: "适合展示会议录音总结",
+        tag: "会议",
         text: "主持人：今天评审AI录音总结助手首页。林超超认为首页应该突出录音转写、上传音频和粘贴文本三个入口，避免新用户不知道从哪里开始。林浩负责周三前补充Plaud、钉钉A1和飞书妙记的竞品分析，重点看转写后总结和待办提取体验。周雨晴负责本周五前输出新版首页原型，包含录音状态、转写稿编辑、摘要卡片和导出入口。王凯提醒真实模型模式下需要加强安全提示和额度提示。下次评审前需要确认首期是否支持说话人区分。风险是音频上传在纯前端Demo里无法真正转写，需要明确本地录音和文本粘贴的边界。"
       },
       {
         title: "客户访谈转写",
         desc: "适合展示访谈洞察整理",
+        tag: "访谈",
         text: "访谈对象：我们现在开会会用录音笔，但转写完还要自己整理重点，比较浪费时间。产品经理：你最希望AI帮你处理哪一步？访谈对象：第一是把口语化内容整理成清楚的摘要，第二是把承诺事项列出来，第三是能导出给团队。访谈对象补充说，如果能自动识别风险和待确认问题，会比普通转写工具更有价值。张伟负责下周一前整理访谈样本，李娜负责补充高频导出格式。待确认问题包括是否要支持行业模板、是否要保留原始时间戳。"
       },
       {
         title: "行政会议转写",
         desc: "适合展示日常办公总结",
+        tag: "行政",
         text: "端午节团建会议讨论了活动方向、预算和执行安排。大家倾向于轻量、松弛、参与门槛低的方案，优先考虑包粽子、桌游和下午茶交流组合。陈思源负责本周三前整理候选方案，备注里需要覆盖包粽子体验、桌游、户外轻徒步、聚餐、下午茶交流几类。周雨晴负责确认包粽子材料、茶歇、基础布置和互动道具。林浩下周一前评估户外轻徒步的天气、安全和交通风险。待确认问题包括是否允许带家属、人均预算上限是多少、是否需要预留线上参与方式。风险是活动流程过重会降低参与意愿，建议保留自由参与和备选方案。"
       }
     ];
@@ -2407,7 +3033,7 @@
         "sourceWrap", "textEmptyHint", "sourceText", "inputMeta", "charCount", "inputQuality", "securityNote",
         "transcriptPanel", "transcriptSummary", "transcriptList",
         "clearSourceBtn", "outputType", "modeHint", "localModeBtn", "apiModeBtn", "generateBtn",
-        "copyWeeklyBtn", "fillExampleBtn", "clearAllBtn", "exampleList", "emptyExampleBtn", "emptyHeroTitle", "emptyHeroDesc",
+        "copyWeeklyBtn", "fillExampleBtn", "clearAllBtn", "inputControls", "exampleHead", "exampleList", "mobileExamplesPanel", "mobileExamplesBody", "emptyExampleBtn", "emptyHeroTitle", "emptyHeroDesc",
         "trustNote", "resultMeta", "loadingPanel", "loadingText", "errorPanel", "errorText", "retryBtn", "fallbackBtn",
         "openModelFromErrorBtn", "emptyHero", "resultContent", "taskCount", "riskCount", "questionCount", "peopleCount",
         "conclusionCount", "taskModuleCount", "riskModuleCount", "questionModuleCount", "peopleModuleCount", "summaryBlock",
@@ -2423,6 +3049,7 @@
       loadAll();
       bindEvents();
       renderExamples();
+      placeExamplesForViewport();
       renderProviderOptions();
       render();
     });
@@ -2486,6 +3113,7 @@
       document.addEventListener("click", event => {
         if (els.moreActions && !els.moreActions.contains(event.target)) closeMoreMenu();
       });
+      window.addEventListener("resize", placeExamplesForViewport);
       els.clearAllBtn.addEventListener("click", clearAll);
       els.fillExampleBtn.addEventListener("click", () => fillExample(0));
       els.emptyExampleBtn.addEventListener("click", async () => {
@@ -2544,6 +3172,22 @@
       els.historyModal.addEventListener("click", event => {
         if (event.target === els.historyModal) closeHistoryModal();
       });
+    }
+
+    function placeExamplesForViewport() {
+      if (!els.exampleHead || !els.exampleList || !els.inputControls || !els.mobileExamplesPanel || !els.mobileExamplesBody) return;
+      const mobile = window.innerWidth <= 768;
+      if (mobile) {
+        els.mobileExamplesPanel.hidden = false;
+        if (els.exampleHead.parentElement !== els.mobileExamplesBody) {
+          els.mobileExamplesBody.append(els.exampleHead, els.exampleList);
+        }
+        return;
+      }
+      els.mobileExamplesPanel.hidden = true;
+      if (els.exampleHead.parentElement !== els.inputControls) {
+        els.inputControls.append(els.exampleHead, els.exampleList);
+      }
     }
 
     function loadAll() {
@@ -2912,7 +3556,7 @@
     function sourceButtonHtml(sourceTime) {
       const missing = !getTranscriptSegments().length;
       const label = sourceTime || "未定位";
-      return `<button class="source-link ${missing ? "missing" : ""}" data-source-time="${escapeAttr(label)}" data-source-missing="${missing ? "true" : "false"}" type="button" aria-disabled="${missing ? "true" : "false"}" title="${missing ? "原文段落未加载" : "定位到左侧原文段落"}">来源 ${escapeHtml(label)}</button>`;
+      return `<button class="source-link ${missing ? "missing" : ""}" data-source-time="${escapeAttr(label)}" data-source-missing="${missing ? "true" : "false"}" type="button" aria-disabled="${missing ? "true" : "false"}" title="${missing ? "原文段落未加载" : "定位到原文段落"}">来源 ${escapeHtml(label)}</button>`;
     }
 
     function bindSourceButton(root, sourceTime) {
@@ -3023,7 +3667,7 @@
 
     function renderTrustNote() {
       if (state.error) {
-        els.trustNote.textContent = "生成失败，左侧原文已保留。请查看失败原因后重试。";
+        els.trustNote.textContent = "生成失败，输入原文已保留。请查看失败原因后重试。";
         els.trustNote.className = "trust-note error";
         return;
       }
@@ -3033,12 +3677,12 @@
         return;
       }
       if (!hasRealInput() && !hasResult()) {
-        els.trustNote.textContent = "请先在左侧录音、上传音频或粘贴文字，右侧会展示基于当前输入生成的结果。";
+        els.trustNote.textContent = "请先录音、上传音频或粘贴文字，AI将基于当前输入生成整理结果。";
         els.trustNote.className = "trust-note local";
         return;
       }
       if (isResultStale()) {
-        els.trustNote.textContent = "左侧内容已更新，当前AI结果可能不是最新。建议点击“重新生成”。";
+        els.trustNote.textContent = "输入内容已更新，当前AI结果可能不是最新。建议点击“重新生成”。";
         els.trustNote.className = "trust-note";
         return;
       }
@@ -3107,12 +3751,12 @@
       const shouldShowEmpty = !state.isLoading && !shouldShowFormalResult();
       if (noInput && hasResult()) {
         els.emptyHeroTitle.textContent = "原文已清空，当前结果可能不是基于最新内容";
-        els.emptyHeroDesc.textContent = "请先在左侧录音、上传音频或粘贴文字，再重新生成AI纪要。为了避免误判，当前不展示正式AI结果。";
+        els.emptyHeroDesc.textContent = "请先录音、上传音频或粘贴文字，再重新生成AI纪要。为了避免误判，当前不展示正式AI结果。";
         els.emptyExampleBtn.textContent = "填入示例并生成";
         els.emptyExampleBtn.dataset.action = "example";
       } else if (noInput) {
-        els.emptyHeroTitle.textContent = "请先在左侧输入内容";
-        els.emptyHeroDesc.textContent = "请先在左侧录音、上传音频或粘贴文字，AI将自动整理摘要、结论、待办、风险和待确认问题。";
+        els.emptyHeroTitle.textContent = "请先输入内容";
+        els.emptyHeroDesc.textContent = "请先录音、上传音频或粘贴文字，AI将自动整理摘要、结论、待办、风险和待确认问题。";
         els.emptyExampleBtn.textContent = "填入示例并生成";
         els.emptyExampleBtn.dataset.action = "example";
       } else if (state.error && noResult) {
@@ -3229,6 +3873,7 @@
       const tasks = getFilteredTasks();
       if (!tasks.length) {
         const tr = document.createElement("tr");
+        tr.className = "empty-row";
         tr.innerHTML = `<td colspan="8"><div class="empty">本次内容未识别到明确可执行待办，可手动新增。</div></td>`;
         els.taskBody.appendChild(tr);
         return;
@@ -3405,7 +4050,7 @@
         const btn = document.createElement("button");
         btn.className = "example-card";
         btn.type = "button";
-        btn.innerHTML = `<strong>${escapeHtml(example.title)}</strong><span>${escapeHtml(example.desc)}</span>`;
+        btn.innerHTML = `<strong>${escapeHtml(example.title)}</strong><span>${escapeHtml(example.desc)}</span><em class="example-tag">${escapeHtml(example.tag || "案例")}</em>`;
         btn.addEventListener("click", () => fillExample(index));
         els.exampleList.appendChild(btn);
       });
@@ -3417,7 +4062,10 @@
       state.inputMode = "text";
       els.sourceText.value = state.source;
       render();
-      showToast(`已填入示例：${example.title}`);
+      if (window.innerWidth <= 768) {
+        setTimeout(() => els.sourceWrap.scrollIntoView({ behavior: "smooth", block: "start" }), 40);
+      }
+      showToast("示例已填入，可点击生成总结");
     }
 
     function setInputMode(mode) {
@@ -3703,7 +4351,7 @@
         state.error = humanizeModelError(error);
         state.isLoading = false;
         state.loadingText = "";
-        showToast("生成失败，左侧原文已保留");
+        showToast("生成失败，输入原文已保留");
       } finally {
         clearInterval(timer);
         render();
@@ -4279,7 +4927,7 @@
         closeMoreMenu();
         return;
       }
-      if (!confirm("确定清空当前AI结果吗？左侧原文会保留。")) return;
+      if (!confirm("确定清空当前AI结果吗？原文会保留。")) return;
       state.result = cloneData(EMPTY_RESULT);
       state.error = "";
       state.generatedAt = "";
