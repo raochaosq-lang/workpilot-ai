@@ -1905,7 +1905,7 @@
         top: 0;
         z-index: 35;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 6px;
         padding: 8px 12px;
         background: rgba(245, 247, 251, 0.96);
@@ -1953,11 +1953,7 @@
       }
 
       body[data-mobile-page="input"] .output-panel,
-      body[data-mobile-page="input"] .mobile-examples-panel,
-      body[data-mobile-page="result"] .input-panel,
-      body[data-mobile-page="result"] .mobile-examples-panel,
-      body[data-mobile-page="examples"] .input-panel,
-      body[data-mobile-page="examples"] .output-panel {
+      body[data-mobile-page="result"] .input-panel {
         display: none;
       }
 
@@ -2141,6 +2137,8 @@
       }
 
       .input-controls {
+        position: static;
+        z-index: auto;
         gap: 12px;
         margin: 14px -14px -14px;
         padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
@@ -2186,6 +2184,16 @@
         min-height: 44px;
       }
 
+      .actions.primary-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .actions.primary-actions .btn {
+        min-height: 38px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+
       #clearAllBtn {
         color: #b91c1c;
         background: #fff7f7;
@@ -2194,7 +2202,8 @@
 
       .example-head {
         gap: 8px;
-        align-items: flex-start;
+        align-items: center;
+        padding-top: 2px;
       }
 
       .example-head span {
@@ -2202,14 +2211,25 @@
       }
 
       .examples {
-        grid-template-columns: 1fr;
+        display: flex;
         gap: 8px;
+        margin-right: -14px;
+        padding-right: 14px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+      }
+
+      .examples::-webkit-scrollbar {
+        display: none;
       }
 
       .example-card {
+        flex: 0 0 min(76%, 280px);
         min-height: 0;
         padding: 10px 11px;
         border-radius: 12px;
+        scroll-snap-align: start;
       }
 
       .example-card span {
@@ -2544,10 +2564,6 @@
         <span>结果</span>
         <small id="mobileResultBadge">未生成</small>
       </button>
-      <button class="mobile-page-tab" type="button" data-mobile-page="examples">
-        <span>案例</span>
-        <small id="mobileExampleBadge">可填入</small>
-      </button>
     </nav>
 
     <main class="app-main">
@@ -2809,10 +2825,6 @@
           <div class="review-note">发送给同事或同步到周报前，建议结合原文复核负责人、截止时间和风险判断。</div>
           </div>
         </div>
-      </section>
-
-      <section id="mobileExamplesPanel" class="panel mobile-examples-panel" hidden>
-        <div id="mobileExamplesBody" class="panel-body"></div>
       </section>
     </main>
   </div>
@@ -3110,12 +3122,12 @@
     document.addEventListener("DOMContentLoaded", () => {
       [
         "modelStatus", "openModelBtn", "saveStatus", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard",
-        "mobilePageTabs", "mobileInputBadge", "mobileResultBadge", "mobileExampleBadge",
+        "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
         "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioPreview", "audioMeta", "uploadNotice", "transcribeAudioBtn", "focusTextBtn",
         "sourceWrap", "textEmptyHint", "sourceText", "inputMeta", "charCount", "inputQuality", "securityNote",
         "transcriptPanel", "transcriptSummary", "transcriptList",
         "clearSourceBtn", "outputType", "modeHint", "localModeBtn", "apiModeBtn", "generateBtn",
-        "copyWeeklyBtn", "fillExampleBtn", "clearAllBtn", "inputControls", "exampleHead", "exampleList", "mobileExamplesPanel", "mobileExamplesBody", "emptyExampleBtn", "emptyHeroTitle", "emptyHeroDesc",
+        "copyWeeklyBtn", "fillExampleBtn", "clearAllBtn", "inputControls", "exampleHead", "exampleList", "emptyExampleBtn", "emptyHeroTitle", "emptyHeroDesc",
         "trustNote", "resultMeta", "loadingPanel", "loadingText", "errorPanel", "errorText", "retryBtn", "fallbackBtn",
         "openModelFromErrorBtn", "emptyHero", "resultContent", "taskCount", "riskCount", "questionCount", "peopleCount",
         "conclusionCount", "taskModuleCount", "riskModuleCount", "questionModuleCount", "peopleModuleCount", "summaryBlock",
@@ -3265,16 +3277,7 @@
     }
 
     function placeExamplesForViewport() {
-      if (!els.exampleHead || !els.exampleList || !els.inputControls || !els.mobileExamplesPanel || !els.mobileExamplesBody) return;
-      const mobile = window.innerWidth <= 768;
-      if (mobile) {
-        els.mobileExamplesPanel.hidden = false;
-        if (els.exampleHead.parentElement !== els.mobileExamplesBody) {
-          els.mobileExamplesBody.append(els.exampleHead, els.exampleList);
-        }
-        return;
-      }
-      els.mobileExamplesPanel.hidden = true;
+      if (!els.exampleHead || !els.exampleList || !els.inputControls) return;
       if (els.exampleHead.parentElement !== els.inputControls) {
         els.inputControls.append(els.exampleHead, els.exampleList);
       }
@@ -3285,7 +3288,7 @@
     }
 
     function setMobilePage(page, { scroll = true } = {}) {
-      if (!["input", "result", "examples"].includes(page)) return;
+      if (!["input", "result"].includes(page)) return;
       activeMobilePage = page;
       renderMobilePageTabs();
       if (scroll && isMobileViewport()) {
@@ -3311,7 +3314,6 @@
             : "未生成";
       els.mobileInputBadge.textContent = inputBadge;
       els.mobileResultBadge.textContent = resultBadge;
-      els.mobileExampleBadge.textContent = "3个案例";
       const resultButton = els.mobilePageTabs.querySelector("[data-mobile-page='result']");
       if (resultButton) resultButton.classList.toggle("has-update", hasRealInput() && (!shouldShowFormalResult() || isResultStale()));
     }
