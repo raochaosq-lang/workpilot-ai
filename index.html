@@ -221,6 +221,10 @@
       align-items: start;
     }
 
+    .mobile-page-tabs {
+      display: none;
+    }
+
     .panel {
       background: rgba(255, 255, 255, 0.94);
       border: 1px solid rgba(226, 232, 240, 0.95);
@@ -1817,7 +1821,7 @@
       }
 
       .app-header {
-        position: sticky;
+        position: static;
         align-items: flex-start;
         flex-direction: column;
         gap: 10px;
@@ -1894,6 +1898,67 @@
         left: 0;
         right: auto;
         max-width: min(320px, calc(100vw - 28px));
+      }
+
+      .mobile-page-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 35;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding: 8px 12px;
+        background: rgba(245, 247, 251, 0.96);
+        border-top: 1px solid rgba(226, 232, 240, 0.88);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+        backdrop-filter: blur(14px);
+      }
+
+      .mobile-page-tab {
+        min-width: 0;
+        min-height: 44px;
+        padding: 6px 8px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #fff;
+        color: #475569;
+        display: grid;
+        gap: 1px;
+        justify-items: center;
+        align-content: center;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .mobile-page-tab small {
+        color: var(--text-secondary);
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+
+      .mobile-page-tab.active {
+        color: var(--primary);
+        border-color: #bfdbfe;
+        background: var(--primary-light);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.10);
+      }
+
+      .mobile-page-tab.active small {
+        color: #1d4ed8;
+      }
+
+      .mobile-page-tab.has-update small {
+        color: #b45309;
+      }
+
+      body[data-mobile-page="input"] .output-panel,
+      body[data-mobile-page="input"] .mobile-examples-panel,
+      body[data-mobile-page="result"] .input-panel,
+      body[data-mobile-page="result"] .mobile-examples-panel,
+      body[data-mobile-page="examples"] .input-panel,
+      body[data-mobile-page="examples"] .output-panel {
+        display: none;
       }
 
       .app-main {
@@ -2470,6 +2535,21 @@
       </div>
     </header>
 
+    <nav id="mobilePageTabs" class="mobile-page-tabs" aria-label="移动端页面切换">
+      <button class="mobile-page-tab active" type="button" data-mobile-page="input">
+        <span>输入</span>
+        <small id="mobileInputBadge">开始</small>
+      </button>
+      <button class="mobile-page-tab" type="button" data-mobile-page="result">
+        <span>结果</span>
+        <small id="mobileResultBadge">未生成</small>
+      </button>
+      <button class="mobile-page-tab" type="button" data-mobile-page="examples">
+        <span>案例</span>
+        <small id="mobileExampleBadge">可填入</small>
+      </button>
+    </nav>
+
     <main class="app-main">
       <section class="panel input-panel">
         <div class="panel-head">
@@ -3023,12 +3103,14 @@
     let selectedAudioUrl = "";
     let recordStartedAt = 0;
     let recordTimer = null;
+    let activeMobilePage = "input";
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     const loadingStages = ["正在理解转写稿...", "正在提取摘要与结论...", "正在整理待办和风险...", "正在生成结构化结果..."];
 
     document.addEventListener("DOMContentLoaded", () => {
       [
         "modelStatus", "openModelBtn", "saveStatus", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard",
+        "mobilePageTabs", "mobileInputBadge", "mobileResultBadge", "mobileExampleBadge",
         "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioPreview", "audioMeta", "uploadNotice", "transcribeAudioBtn", "focusTextBtn",
         "sourceWrap", "textEmptyHint", "sourceText", "inputMeta", "charCount", "inputQuality", "securityNote",
         "transcriptPanel", "transcriptSummary", "transcriptList",
@@ -3058,6 +3140,11 @@
       els.recordTab.addEventListener("click", () => setInputMode("record"));
       els.uploadTab.addEventListener("click", () => setInputMode("upload"));
       els.textTab.addEventListener("click", () => setInputMode("text"));
+      els.mobilePageTabs.addEventListener("click", event => {
+        const button = event.target.closest("[data-mobile-page]");
+        if (!button) return;
+        setMobilePage(button.dataset.mobilePage);
+      });
       els.recordBtn.addEventListener("click", toggleRecording);
       els.audioFileInput.addEventListener("change", handleAudioFile);
       els.audioPreview.addEventListener("loadedmetadata", renderAudioMeta);
@@ -3113,7 +3200,10 @@
       document.addEventListener("click", event => {
         if (els.moreActions && !els.moreActions.contains(event.target)) closeMoreMenu();
       });
-      window.addEventListener("resize", placeExamplesForViewport);
+      window.addEventListener("resize", () => {
+        placeExamplesForViewport();
+        renderMobilePageTabs();
+      });
       els.clearAllBtn.addEventListener("click", clearAll);
       els.fillExampleBtn.addEventListener("click", () => fillExample(0));
       els.emptyExampleBtn.addEventListener("click", async () => {
@@ -3188,6 +3278,42 @@
       if (els.exampleHead.parentElement !== els.inputControls) {
         els.inputControls.append(els.exampleHead, els.exampleList);
       }
+    }
+
+    function isMobileViewport() {
+      return window.innerWidth <= 768;
+    }
+
+    function setMobilePage(page, { scroll = true } = {}) {
+      if (!["input", "result", "examples"].includes(page)) return;
+      activeMobilePage = page;
+      renderMobilePageTabs();
+      if (scroll && isMobileViewport()) {
+        setTimeout(() => els.mobilePageTabs.scrollIntoView({ behavior: "smooth", block: "start" }), 20);
+      }
+    }
+
+    function renderMobilePageTabs() {
+      if (!els.mobilePageTabs) return;
+      document.body.dataset.mobilePage = activeMobilePage;
+      els.mobilePageTabs.querySelectorAll("[data-mobile-page]").forEach(button => {
+        const active = button.dataset.mobilePage === activeMobilePage;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-current", active ? "page" : "false");
+      });
+      const inputBadge = hasRealInput() ? `${getEffectiveInput().length}字` : "开始";
+      const resultBadge = state.isLoading
+        ? "生成中"
+        : shouldShowFormalResult()
+          ? (isResultStale() ? "需更新" : "已生成")
+          : hasRealInput()
+            ? "待生成"
+            : "未生成";
+      els.mobileInputBadge.textContent = inputBadge;
+      els.mobileResultBadge.textContent = resultBadge;
+      els.mobileExampleBadge.textContent = "3个案例";
+      const resultButton = els.mobilePageTabs.querySelector("[data-mobile-page='result']");
+      if (resultButton) resultButton.classList.toggle("has-update", hasRealInput() && (!shouldShowFormalResult() || isResultStale()));
     }
 
     function loadAll() {
@@ -3403,6 +3529,7 @@
       renderRisks();
       renderQuestions();
       renderPeople();
+      renderMobilePageTabs();
       saveState();
     }
 
@@ -3416,6 +3543,7 @@
       renderError();
       renderEmptyState();
       renderGenerateButton();
+      renderMobilePageTabs();
       saveState();
     }
 
@@ -4062,6 +4190,7 @@
       state.inputMode = "text";
       els.sourceText.value = state.source;
       render();
+      setMobilePage("input", { scroll: false });
       if (window.innerWidth <= 768) {
         setTimeout(() => els.sourceWrap.scrollIntoView({ behavior: "smooth", block: "start" }), 40);
       }
@@ -4314,6 +4443,7 @@
       if (!hasRealInput()) {
         showToast("请先录音转写、上传音频或粘贴需要处理的内容");
         renderInputDependentState();
+        setMobilePage("input");
         return;
       }
       if (state.mode === "api" && !modelConfig.apiKey) {
@@ -4326,6 +4456,7 @@
       state.error = "";
       state.lastApiFailed = false;
       render();
+      setMobilePage("result");
       const timer = startLoadingTicker();
       try {
         let result;
@@ -4362,6 +4493,7 @@
       if (!hasRealInput()) {
         showToast("请先录音转写、上传音频或粘贴需要处理的内容");
         renderInputDependentState();
+        setMobilePage("input");
         return;
       }
       if (hasResult() && state.editedAt) {
