@@ -1,0 +1,6 @@
+.env
+.env.local
+.env.*.local
+assets/env.js
+node_modules/
+dist/

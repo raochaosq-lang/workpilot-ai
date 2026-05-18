@@ -1,0 +1,31 @@
+{
+  "profiles": {
+    "requiredFields": ["id", "user_id", "email", "display_name", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "interviews": {
+    "requiredFields": ["id", "user_id", "company_name", "position_name", "rounds_json", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "history_records": {
+    "requiredFields": ["id", "user_id", "title", "report_json", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "transcripts": {
+    "requiredFields": ["id", "user_id", "source_type", "text", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "ai_summaries": {
+    "requiredFields": ["id", "user_id", "report_json", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "uploaded_files": {
+    "requiredFields": ["id", "user_id", "file_name", "file_type", "file_size", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id"
+  },
+  "user_settings": {
+    "requiredFields": ["id", "user_id", "text_model_provider", "text_model_id", "asr_provider", "asr_model_id", "created_at", "updated_at"],
+    "userIsolation": "user_id must equal current authenticated user id",
+    "note": "Do not store LLM or ASR API keys here."
+  }
+}
