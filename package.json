@@ -1,0 +1,12 @@
+{
+  "name": "senlo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Senlo static interview workspace demo.",
+  "scripts": {
+    "check": "node scripts/smoke-test.mjs",
+    "dev": "node scripts/serve.mjs",
+    "start": "npm run dev",
+    "preview": "npm run dev"
+  }
+}

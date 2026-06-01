@@ -65,9 +65,9 @@
       position: sticky;
       top: 0;
       z-index: 40;
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center;
-      justify-content: space-between;
       gap: 18px;
       min-height: 74px;
       padding: 14px 28px;
@@ -80,6 +80,11 @@
       display: flex;
       align-items: center;
       gap: 13px;
+      min-width: 0;
+      justify-self: start;
+    }
+
+    .brand > div {
       min-width: 0;
     }
 
@@ -148,20 +153,27 @@
       justify-content: flex-end;
       gap: 10px;
       flex: 0 0 auto;
+      min-width: 0;
+      flex-wrap: wrap;
+      justify-self: end;
     }
 
     .app-nav {
-      display: inline-flex;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: center;
       gap: 4px;
+      width: 164px;
       padding: 4px;
       border: 1px solid rgba(203, 213, 225, 0.9);
       border-radius: 12px;
       background: rgba(248, 250, 252, 0.86);
       flex: 0 0 auto;
+      justify-self: center;
     }
 
     .app-nav button {
+      width: 100%;
       min-height: 30px;
       padding: 0 12px;
       border-radius: 9px;
@@ -713,13 +725,106 @@
       gap: 10px;
     }
 
-    .manager-list-panel.is-empty .panel-head,
     .manager-list-panel.is-empty .manager-filter-grid {
       display: none;
     }
 
     .manager-list-panel.is-empty .panel-body {
-      padding: 0;
+      padding: 18px;
+    }
+
+    .queue-empty-state {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.34fr);
+      gap: 18px;
+      align-items: stretch;
+      padding: 18px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.96)),
+        linear-gradient(90deg, rgba(37, 99, 235, 0.05), rgba(20, 184, 166, 0.04));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+
+    .queue-empty-copy {
+      min-width: 0;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+    }
+
+    .queue-empty-kicker {
+      width: fit-content;
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .queue-empty-state h3 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 19px;
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .queue-empty-state p {
+      margin: 0;
+      max-width: 660px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .queue-empty-steps {
+      display: grid;
+      gap: 8px;
+      align-content: center;
+    }
+
+    .queue-empty-row {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .queue-empty-row > span {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .queue-empty-row strong {
+      display: block;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .queue-empty-row small {
+      display: block;
+      margin-top: 3px;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .interview-record-card {
@@ -956,6 +1061,17 @@
       line-height: 1.55;
     }
 
+    .manager-form-message {
+      margin: 0 0 12px;
+    }
+
+    .input[aria-invalid="true"],
+    .select[aria-invalid="true"],
+    .manager-textarea[aria-invalid="true"] {
+      border-color: #fca5a5;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+    }
+
     .round-fields {
       display: grid;
       gap: 12px;
@@ -1107,10 +1223,10 @@
     .source-wrap {
       position: relative;
       padding: 10px;
-      border: 1px solid #dbeafe;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
-      background: linear-gradient(180deg, #ffffff, #f8fbff);
-      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.08);
+      background: #fff;
+      box-shadow: none;
     }
 
     .source-wrap:not(.text-mode):not(.has-source) .text-empty-hint,
@@ -1294,10 +1410,10 @@
       gap: 10px;
       margin-bottom: 14px;
       padding: 12px;
-      border: 1px solid #dbeafe;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
-      background: linear-gradient(180deg, #ffffff, #f8fbff);
-      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.07);
+      background: #fff;
+      box-shadow: none;
     }
 
     .capture-tabs {
@@ -1352,9 +1468,9 @@
       display: none;
       gap: 12px;
       padding: 14px;
-      border: 1px solid #dbeafe;
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
-      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      background: #fff;
     }
 
     .capture-card.active,
@@ -1557,10 +1673,10 @@
       align-items: center;
       min-width: 0;
       padding: 9px;
-      border: 1px solid #dbeafe;
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
-      background: #fff;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+      background: #f8fafc;
+      box-shadow: none;
     }
 
     #transcribeAudioBtn {
@@ -1637,18 +1753,17 @@
     }
 
     .input-controls {
-      position: sticky;
-      bottom: 14px;
+      position: static;
       z-index: 34;
       display: grid;
-      gap: 14px;
-      margin: 16px 0 0;
-      padding: 8px;
-      border: 1px solid rgba(191, 219, 254, 0.92);
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.88);
-      box-shadow: 0 18px 42px rgba(37, 99, 235, 0.18);
-      backdrop-filter: blur(18px);
+      gap: 12px;
+      margin: 14px 0 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
     }
 
     .control-row,
@@ -1751,11 +1866,11 @@
       font-size: 15px;
       font-weight: 900;
       letter-spacing: 0;
-      box-shadow: 0 16px 30px rgba(37, 99, 235, 0.26);
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
     }
 
     #generateBtn:hover:not(:disabled) {
-      box-shadow: 0 18px 34px rgba(37, 99, 235, 0.30);
+      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
     }
 
     .actions.primary-actions .btn:not(#generateBtn) {
@@ -2934,6 +3049,13 @@
       color: #475569;
       font-size: 13px;
       line-height: 1.75;
+    }
+
+    .empty-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .compact-empty-state .empty-preview {
@@ -4550,12 +4672,35 @@
       .record-next,
       .record-meta-item,
       .spotlight-fact,
-      .speaker-turns {
-        background: #172033;
-      }
+	      .speaker-turns {
+	        background: #172033;
+	      }
 
-      .overview-desc,
-      .qa-answer p,
+	      .queue-empty-state {
+	        border-color: #334155;
+	        background:
+	          linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96)),
+	          linear-gradient(90deg, rgba(96, 165, 250, 0.10), rgba(20, 184, 166, 0.08));
+	        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+	      }
+
+	      .queue-empty-state h3,
+	      .queue-empty-row strong {
+	        color: var(--text);
+	      }
+
+	      .queue-empty-state p,
+	      .queue-empty-row small {
+	        color: var(--text-secondary);
+	      }
+
+	      .queue-empty-row {
+	        border-color: var(--border);
+	        background: rgba(15, 23, 42, 0.72);
+	      }
+
+	      .overview-desc,
+	      .qa-answer p,
       .qa-review p,
       .concern-card p,
       .next-step-card p,
@@ -4689,8 +4834,43 @@
     }
 
     @media (max-width: 1120px) {
+      .app-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "brand actions"
+          "nav nav";
+        row-gap: 10px;
+        min-height: 0;
+        padding: 12px 24px;
+      }
+
+      .brand {
+        grid-area: brand;
+        max-width: 100%;
+      }
+
+      .brand-title {
+        font-size: 17px;
+      }
+
+      .brand-subtitle {
+        max-width: min(620px, 58vw);
+      }
+
+      .app-nav {
+        grid-area: nav;
+        width: 220px;
+      }
+
+      .header-actions {
+        grid-area: actions;
+      }
+
       .app-main {
         grid-template-columns: 1fr;
+        max-width: 960px;
+        padding: 18px 22px 28px;
+        gap: 18px;
       }
 
       .input-panel {
@@ -4712,7 +4892,7 @@
       }
     }
 
-    @media (max-width: 768px) {
+	    @media (max-width: 768px) {
       html,
       body {
         width: 100%;
@@ -4731,6 +4911,7 @@
 
       .app-header {
         position: static;
+        display: flex;
         align-items: flex-start;
         flex-direction: column;
         gap: 10px;
@@ -4797,7 +4978,7 @@
         order: 3;
         width: 100%;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       .app-nav button {
@@ -4901,15 +5082,25 @@
         margin-bottom: 14px;
       }
 
-      .manager-header-actions {
-        justify-content: stretch;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+	      .manager-header-actions {
+	        justify-content: stretch;
+	        display: grid;
+	        grid-template-columns: repeat(2, minmax(0, 1fr));
+	      }
 
-      .manager-header-actions .btn {
-        width: 100%;
-      }
+	      .queue-empty-state {
+	        grid-template-columns: minmax(0, 1fr);
+	        gap: 12px;
+	        padding: 14px;
+	      }
+
+	      .queue-empty-state h3 {
+	        font-size: 17px;
+	      }
+
+	      .manager-header-actions .btn {
+	        width: 100%;
+	      }
 
       .manager-title {
         font-size: 22px;
@@ -5198,7 +5389,11 @@
         gap: 10px;
         margin: 14px 0 0;
         padding: 7px;
+        border: 1px solid rgba(191, 219, 254, 0.92);
         border-radius: 18px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.16);
+        backdrop-filter: blur(16px);
       }
 
       .control-row,
@@ -5765,14 +5960,67 @@
         min-height: 44px;
       }
 
-      .toast {
-        right: 12px;
-        bottom: calc(14px + env(safe-area-inset-bottom));
-        max-width: calc(100vw - 24px);
-      }
-    }
+	      .toast {
+	        right: 12px;
+	        bottom: calc(14px + env(safe-area-inset-bottom));
+	        max-width: calc(100vw - 24px);
+	      }
+	    }
 
-    @media (prefers-color-scheme: dark) and (max-width: 768px) {
+	    @media (max-width: 560px) {
+	      .account-area,
+	      .account-menu-wrap,
+	      .account-pill {
+	        width: 100%;
+	      }
+
+	      .account-area {
+	        align-items: stretch;
+	      }
+
+	      .account-mode-label {
+	        width: fit-content;
+	      }
+
+	      .header-actions {
+	        display: grid;
+	        grid-template-columns: minmax(0, 1fr);
+	      }
+
+	      .dev-cloud-entry.show {
+	        width: 100%;
+	      }
+
+	      .manager-header-actions,
+	      .manager-stats,
+	      .stats-grid,
+	      #modelModal .model-actions {
+	        grid-template-columns: minmax(0, 1fr);
+	      }
+
+	      .record-rounds {
+	        grid-template-columns: repeat(2, minmax(0, 1fr));
+	      }
+
+	      .section-actions,
+	      .account-menu-actions,
+	      .manager-form-actions,
+	      .auth-actions,
+	      .account-actions {
+	        display: grid;
+	        grid-template-columns: minmax(0, 1fr);
+	      }
+
+	      .section-actions .btn,
+	      .account-menu-actions .mini-btn,
+	      .manager-form-actions .btn,
+	      .auth-actions .btn,
+	      .account-actions .btn {
+	        width: 100%;
+	      }
+	    }
+
+	    @media (prefers-color-scheme: dark) and (max-width: 768px) {
       body,
       .mobile-page-tabs {
         background: #0b1020;
@@ -5848,7 +6096,7 @@
             </div>
           </div>
         </div>
-        <button id="openDevCloudBtn" class="btn ghost dev-cloud-entry" type="button">开发者配置</button>
+        <button id="openDevCloudBtn" class="btn ghost dev-cloud-entry" type="button">开发者模式</button>
       </div>
     </header>
 
@@ -5941,15 +6189,16 @@
             <button id="closeInterviewFormBtn" class="manager-form-close" type="button" aria-label="关闭面试记录弹窗">×</button>
           </div>
           <div class="panel-body">
+            <div id="interviewFormMessage" class="auth-message manager-form-message" role="status" aria-live="polite"></div>
             <form id="interviewForm" class="interview-form">
               <div class="manager-form-grid">
                 <div class="manager-field">
                   <label for="interviewCompanyInput">面试公司</label>
-                  <input id="interviewCompanyInput" class="input" autocomplete="organization" placeholder="例如：字节跳动">
+                  <input id="interviewCompanyInput" class="input" autocomplete="organization" aria-describedby="interviewFormMessage" placeholder="例如：字节跳动">
                 </div>
                 <div class="manager-field">
                   <label for="interviewRoleInput">面试岗位</label>
-                  <input id="interviewRoleInput" class="input" autocomplete="off" placeholder="例如：AI 产品经理">
+                  <input id="interviewRoleInput" class="input" autocomplete="off" aria-describedby="interviewFormMessage" placeholder="例如：AI 产品经理">
                 </div>
                 <div class="manager-field optional-on-create">
                   <label for="interviewBaseLocationInput">base地点</label>
@@ -6151,7 +6400,7 @@
             <div class="error-actions">
               <button id="retryBtn" class="btn" type="button">重试</button>
               <button id="fallbackBtn" class="btn" type="button">切换本地模式</button>
-              <button id="openModelFromErrorBtn" class="btn" type="button">打开模型设置</button>
+              <button id="openModelFromErrorBtn" class="btn" type="button">进入开发者模式</button>
             </div>
           </div>
 
@@ -6342,7 +6591,7 @@
               <p id="authFormDesc">使用邮箱和密码登录。登录后，面试记录、转写和 AI 复盘历史会自动同步。</p>
             </div>
             <div class="auth-grid">
-              <input id="accountEmailInput" class="input" type="email" autocomplete="email" placeholder="邮箱，例如 name@example.com">
+              <input id="accountEmailInput" class="input" type="text" autocomplete="username" placeholder="邮箱，或输入 admin">
               <input id="accountPasswordInput" class="input" type="password" autocomplete="current-password" placeholder="密码，8-32 位，包含字母和数字">
               <input id="accountConfirmPasswordInput" class="input hidden" type="password" autocomplete="new-password" placeholder="再次输入密码">
             </div>
@@ -6367,7 +6616,7 @@
       <div class="drawer-head">
         <div>
           <h3 id="devCloudTitle" class="drawer-title">开发者配置</h3>
-          <p class="panel-note">仅开发者和本地调试使用。普通用户不会看到云端、模型或密钥配置。</p>
+          <p class="panel-note">集中管理云端账号、模型与语音识别配置；普通用户不会看到密钥或调试项。</p>
         </div>
         <button id="closeDevCloudBtn" class="icon-btn" type="button" aria-label="关闭开发者配置" title="关闭">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -6400,9 +6649,9 @@
           </div>
           <div class="account-setup">
             <div class="diagnostic-head">
-              <strong>模型与识别服务</strong>
+              <strong>模型配置与语音识别</strong>
               <div class="account-setup-actions">
-                <button id="openModelBtn" class="mini-btn primary" type="button">模型设置</button>
+                <button id="openModelBtn" class="mini-btn primary" type="button">配置模型 / ASR</button>
               </div>
             </div>
             <span id="modelStatus" class="status-pill warn" tabindex="0" role="button" data-tooltip="文本模型未配置；转写模型未配置。点击进入开发者模型设置。"><span class="status-dot"></span>文本模型：未配置 · 转写模型：未配置</span>
@@ -6615,11 +6864,13 @@
   <script>
     const STATE_KEY = "senlo_state_v2";
     const MODEL_KEY = "senlo_model_config";
+    const SHARED_MODEL_KEY = "senlo_shared_model_config_v1";
     const HISTORY_KEY = "senlo_history_v1";
     const INTERVIEW_RECORDS_KEY = "senlo_interview_records_v1";
     const AUTO_SAVE_KEY = "senlo_auto_save";
     const USER_KEY = "senlo_current_user_v1";
     const AUTH_SESSION_KEY = "senlo_cloud_session_v2";
+    const DEMO_ADMIN_SESSION_KEY = "senlo_demo_admin_session_v1";
     const CLOUDBASE_CONFIG_KEY = "senlo_cloudbase_config_v1";
     const LOCAL_IMPORT_KEY = "senlo_local_import_decision_v1";
     const UPLOADED_FILES_KEY = "senlo_uploaded_files_v1";
@@ -6647,9 +6898,14 @@
       enabled: true,
       note: "登录后启用真实账号与云端同步；未登录时为本地模式。"
     };
+    const DEMO_ADMIN = {
+      username: "admin",
+      password: "datou123"
+    };
     const BUSINESS_STORAGE_KEYS = new Set([
       STATE_KEY,
       MODEL_KEY,
+      SHARED_MODEL_KEY,
       HISTORY_KEY,
       INTERVIEW_RECORDS_KEY,
       AUTO_SAVE_KEY,
@@ -6986,6 +7242,7 @@
       lastRawCloudUser: null,
       lastNormalizedCloudUser: null,
       lastAccountError: null,
+      adminSession: null,
       cloudbaseConfig: null
     };
     const authUiState = {
@@ -7099,11 +7356,13 @@
     function isDevCloudConfigAllowed() {
       const params = new URLSearchParams(window.location.search);
       const runtime = getRuntimeConfig();
-      return isLocalDebugOrigin() && (params.get("devCloud") === "1" || runtime.SHOW_DEV_CLOUD_CONFIG === true || runtime.VITE_SHOW_DEV_CLOUD_CONFIG === true);
+      if (!isLocalDebugOrigin()) return false;
+      if (params.get("devCloud") === "0" || runtime.HIDE_DEV_CLOUD_CONFIG === true) return false;
+      return true;
     }
 
     function isDeveloperMode() {
-      return isDevCloudConfigAllowed();
+      return isDevCloudConfigAllowed() && isAdminActive();
     }
 
     function renderDeveloperToolsVisibility() {
@@ -7150,6 +7409,25 @@
       return hasCloudBaseConfig();
     }
 
+    function isDemoAdminCredential(account = "", password = "") {
+      return normalizeEmailForAuth(account) === DEMO_ADMIN.username && String(password || "") === DEMO_ADMIN.password;
+    }
+
+    function createDemoAdminUser() {
+      return normalizeUser({
+        id: "admin_local",
+        displayName: "Admin",
+        email: DEMO_ADMIN.username,
+        authMode: "admin",
+        createdAt: nowIso(),
+        updatedAt: nowIso()
+      });
+    }
+
+    function isAdminActive() {
+      return Boolean(authState.adminSession?.active && authState.user?.authMode === "admin");
+    }
+
     function isAnonymousIdentifier(value = "") {
       const text = String(value || "").trim().toLowerCase();
       return !text || ["anon", "anonymous", "guest", "unknown", "null", "undefined"].includes(text)
@@ -7177,6 +7455,7 @@
 
     function isRealLoggedInUser(user, session = authState.session) {
       if (!user) return false;
+      if (user.authMode === "admin" || session?.provider === "senlo-demo-admin") return false;
       const identity = getAuthIdentityFields(user)[0] || "";
       const email = String(user.email || session?.user?.email || "").trim();
       const loginType = String(user.loginType || user.provider || session?.provider || "").toLowerCase();
@@ -7186,6 +7465,7 @@
     }
 
     function getAuthRuntimeStatus() {
+      if (isAdminActive()) return "admin";
       if (hasCloudConfig() && isRealLoggedInUser(authState.user, authState.session)) return "cloud";
       if (!hasCloudConfig()) return "cloud-unconfigured";
       return "local";
@@ -7539,6 +7819,7 @@
 
     const authService = {
       getCurrentUser() {
+        if (isAdminActive()) return normalizeUser({ ...authState.user, authMode: "admin" });
         if (isRealLoggedInUser(authState.user, authState.session)) return normalizeUser({ ...authState.user, authMode: "cloud" });
         return getLocalUser();
       },
@@ -7562,6 +7843,16 @@
       },
       async restoreSession() {
         migrateLegacyAuthStorage();
+        const adminSession = storageService.getJson(DEMO_ADMIN_SESSION_KEY, null);
+        if (adminSession?.active) {
+          authState.adminSession = adminSession;
+          authState.session = null;
+          authState.user = createDemoAdminUser();
+          authState.mode = "admin";
+          currentUser = authState.user;
+          setSyncStatus("local", "管理员模式，本机共享配置可用");
+          return currentUser;
+        }
         authState.cloudbaseConfig = getRuntimeCloudBaseConfig();
         if (!hasCloudConfig()) {
           this.clearSession();
@@ -7588,6 +7879,21 @@
           setSyncStatus("local", "当前为本地模式，登录后开启云端同步");
           return currentUser;
         }
+      },
+      signInDemoAdmin() {
+        const adminSession = {
+          active: true,
+          provider: "senlo-demo-admin",
+          signedInAt: nowIso()
+        };
+        storageService.setJson(DEMO_ADMIN_SESSION_KEY, adminSession);
+        authState.adminSession = adminSession;
+        authState.session = null;
+        authState.user = createDemoAdminUser();
+        authState.mode = "admin";
+        currentUser = authState.user;
+        setSyncStatus("local", "管理员模式，本机共享配置可用");
+        return authState.user;
       },
       async refreshSession() {
         const user = await cloudbaseGetCurrentLoginUser(authState.user?.email || "", authState.session);
@@ -7635,8 +7941,9 @@
         };
       },
       async signOut() {
+        const wasAdmin = isAdminActive();
         try {
-          if (authState.session) {
+          if (authState.session && !wasAdmin) {
             const { auth } = getCloudBaseClient();
             if (typeof auth.signOut === "function") await auth.signOut();
           }
@@ -7646,16 +7953,20 @@
         this.clearSession();
         currentUser = getLocalUser();
         interviewRecords = interviewService.list();
-        modelConfig = { ...modelConfig, apiKey: "", asrApiKey: "" };
-        storageService.setJson(MODEL_KEY, modelConfig);
+        if (!wasAdmin) {
+          modelConfig = { ...modelConfig, apiKey: "", asrApiKey: "" };
+          storageService.setJson(MODEL_KEY, modelConfig);
+        }
         clearGeneratedResultState();
         render();
         setSyncStatus("local");
       },
       clearSession() {
         storageService.remove(AUTH_SESSION_KEY);
+        storageService.remove(DEMO_ADMIN_SESSION_KEY);
         authState.session = null;
         authState.user = null;
+        authState.adminSession = null;
         authState.mode = "local";
         authState.syncStatus = "local";
         authState.syncMessage = "本地保存，换设备不可见";
@@ -8444,7 +8755,7 @@
         "accountModeLabel", "openAccountBtn", "accountMenu", "accountMenuEmail", "accountMenuSync", "accountMenuUserId", "menuSyncNowBtn", "menuImportLocalDataBtn", "menuAccountInfoBtn", "menuSignOutBtn", "openDevCloudBtn",
         "accountModal", "accountModalTitle", "accountModalNote", "closeAccountBtn", "accountSignedInPanel", "accountSignedOutPanel", "accountAuthMessage", "authFormTitle", "authFormDesc", "accountEmailInput", "accountPasswordInput", "accountConfirmPasswordInput", "authPrimaryBtn", "continueLocalBtn", "authSwitchText", "toggleAuthModeBtn", "goLoginAfterVerifyBtn", "openDevConfigFromAuthBtn", "signOutBtn", "syncNowBtn", "importLocalDataBtn", "localImportPrompt", "confirmImportLocalBtn", "skipImportLocalBtn",
         "devCloudModal", "closeDevCloudBtn", "devCloudMessage", "saveCloudConfigBtn", "testCloudConfigBtn", "testCloudInitBtn", "testCloudAuthBtn", "testCloudEmailAuthBtn", "testCloudDbBtn", "clearCloudConfigBtn", "copyCloudCollectionsBtn", "copyCloudRulesBtn", "supabaseUrlInput", "cloudbaseRegionInput", "supabaseAnonKeyInput", "devCloudOrigin", "devCloudConfigSource", "cloudDiagnosticList", "accountDiagnosticPanel", "refreshAccountDiagnosticBtn", "clearLegacyAuthStateBtn", "accountUserEmail", "accountUserId", "accountSyncStatus",
-        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "importStatus", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
+        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "importStatus", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
         "capturePanel", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard", "uploadTitle", "recordTitle", "textTitle", "textDesc",
         "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
         "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn",
@@ -8481,7 +8792,7 @@
         setAppPage(button.dataset.appPage);
       });
       els.openAccountBtn.addEventListener("click", () => {
-        if (isCloudActive()) {
+        if (isCloudActive() || isAdminActive()) {
           toggleAccountMenu();
         } else {
           openAccountModal("signIn");
@@ -8582,6 +8893,13 @@
         event.preventDefault();
         saveInterviewFromForm();
       });
+      [els.interviewCompanyInput, els.interviewRoleInput].forEach(input => {
+        input.addEventListener("input", () => {
+          if (els.interviewFormMessage.classList.contains("show")) {
+            validateInterviewRequiredFields(getRecordFromForm());
+          }
+        });
+      });
       els.resetInterviewFormBtn.addEventListener("click", closeInterviewFormModal);
       els.recordTab.addEventListener("click", () => setInputMode("record"));
       els.uploadTab.addEventListener("click", () => setInputMode("upload"));
@@ -8657,7 +8975,7 @@
         render();
         showToast(isDeveloperMode() ? "已切换为本地模拟模式" : "已回到直接生成模式");
       });
-      els.openModelFromErrorBtn.addEventListener("click", openModelModal);
+      els.openModelFromErrorBtn.addEventListener("click", openDevCloudModal);
       els.openModelBtn.addEventListener("click", openModelModal);
       els.closeModelBtn.addEventListener("click", closeModelModal);
       els.modelModal.addEventListener("click", event => {
@@ -8731,7 +9049,7 @@
 
     function openDevCloudModal() {
       if (!isDeveloperMode()) {
-        showToast("开发者配置仅本地调试可见");
+        showToast(isDevCloudConfigAllowed() ? "请先使用 admin / datou123 登录后再进入开发者模式" : "开发者配置仅本地调试可见");
         return;
       }
       fillCloudConfigForm();
@@ -8747,7 +9065,7 @@
     }
 
     function toggleAccountMenu() {
-      if (!isCloudActive()) return;
+      if (!isCloudActive() && !isAdminActive()) return;
       els.accountMenu?.classList.toggle("show");
     }
 
@@ -8767,25 +9085,35 @@
       if (!els.accountSignedOutPanel) return;
       const isSignUp = authUiState.formMode === "signUp";
       const runtimeStatus = getAuthRuntimeStatus();
+      const isAdmin = runtimeStatus === "admin";
       const isCloud = runtimeStatus === "cloud";
       const isUnconfigured = runtimeStatus === "cloud-unconfigured";
-      if (els.accountModalTitle) els.accountModalTitle.textContent = isCloud
+      if (els.accountModalTitle) els.accountModalTitle.textContent = isAdmin
+        ? "管理员模式"
+        : isCloud
         ? "账号信息"
         : (isSignUp ? "注册声流 Senlo" : "登录声流 Senlo");
-      if (els.accountModalNote) els.accountModalNote.textContent = isCloud
+      if (els.accountModalNote) els.accountModalNote.textContent = isAdmin
+        ? "当前已进入本地 Demo 管理员模式，可配置对本机所有用户生效的模型、ASR 和云端设置。"
+        : isCloud
         ? "你已登录，面试记录、转写文本和 AI 复盘结果会按当前账号同步。"
         : "登录后可在多设备间同步面试记录、转写文本和 AI 复盘结果。";
-      if (els.authFormTitle) els.authFormTitle.textContent = isUnconfigured ? "云端服务尚未配置" : (isSignUp ? "创建账号" : "登录账号");
+      if (els.authFormTitle) els.authFormTitle.textContent = isUnconfigured && isSignUp ? "云端服务尚未配置" : (isSignUp ? "创建账号" : "登录账号");
       if (els.authFormDesc) els.authFormDesc.textContent = isUnconfigured
-        ? (isDevCloudConfigAllowed()
-          ? "当前仍是本地模式。请先打开开发者云端配置，填写 CloudBase 环境 ID、地域和 Web 安全客户端 key，再登录测试。"
-          : "当前云端服务尚未配置完成，请联系管理员。你仍可继续本地体验。")
+        ? (isSignUp
+          ? "当前云端服务尚未配置完成，暂不能创建真实账号。"
+          : "输入 admin / datou123 可进入本地管理员模式；真实用户登录需要管理员先完成云端配置。")
         : (isSignUp
           ? "使用邮箱创建账号。注册后如果收到验证邮件，请先完成验证再登录。"
-          : "使用邮箱和密码登录。登录后，面试记录、转写和 AI 复盘历史会自动同步。");
+          : "普通用户使用邮箱登录；管理员使用 admin / datou123 进入开发者模式。");
       [els.accountEmailInput, els.accountPasswordInput, els.accountConfirmPasswordInput].forEach(input => {
-        if (input) input.disabled = authUiState.isBusy || isUnconfigured;
+        if (input) input.disabled = authUiState.isBusy || (isUnconfigured && isSignUp);
       });
+      if (els.accountEmailInput) {
+        els.accountEmailInput.type = isSignUp ? "email" : "text";
+        els.accountEmailInput.autocomplete = isSignUp ? "email" : "username";
+        els.accountEmailInput.placeholder = isSignUp ? "邮箱，例如 name@example.com" : "邮箱，或输入 admin";
+      }
       if (els.accountPasswordInput) {
         els.accountPasswordInput.autocomplete = isSignUp ? "new-password" : "current-password";
         els.accountPasswordInput.placeholder = isSignUp ? "设置密码，至少 8 位" : "密码";
@@ -8794,17 +9122,17 @@
         els.accountConfirmPasswordInput.classList.toggle("hidden", !isSignUp);
       }
       if (els.authPrimaryBtn) {
-        els.authPrimaryBtn.disabled = authUiState.isBusy || isUnconfigured;
+        els.authPrimaryBtn.disabled = authUiState.isBusy || (isUnconfigured && isSignUp);
         els.authPrimaryBtn.textContent = authUiState.isBusy
           ? (isSignUp ? "注册中..." : "登录中...")
           : (isSignUp ? "注册" : "登录");
       }
-      if (els.authSwitchText) els.authSwitchText.textContent = isUnconfigured ? "当前处于本地模式" : (isSignUp ? "已有账号？" : "还没有账号？");
+      if (els.authSwitchText) els.authSwitchText.textContent = isUnconfigured ? "真实账号需要先完成云端配置" : (isSignUp ? "已有账号？" : "还没有账号？");
       if (els.toggleAuthModeBtn) {
         els.toggleAuthModeBtn.textContent = isSignUp ? "返回登录" : "立即注册";
         els.toggleAuthModeBtn.classList.toggle("hidden", isUnconfigured);
       }
-      if (els.openDevConfigFromAuthBtn) els.openDevConfigFromAuthBtn.classList.toggle("hidden", !isUnconfigured || !isDevCloudConfigAllowed());
+      if (els.openDevConfigFromAuthBtn) els.openDevConfigFromAuthBtn.classList.toggle("hidden", !isUnconfigured || !isDeveloperMode());
     }
 
     function fillCloudConfigForm() {
@@ -8876,7 +9204,11 @@
     }
 
     function renderAccountDiagnosticPanel() {
-      if (!els.accountDiagnosticPanel || !isDevCloudConfigAllowed()) return;
+      if (!els.accountDiagnosticPanel) return;
+      if (!isDeveloperMode()) {
+        els.accountDiagnosticPanel.innerHTML = "";
+        return;
+      }
       const runtimeStatus = getAuthRuntimeStatus();
       const config = authState.cloudbaseConfig || getRuntimeCloudBaseConfig();
       let clientStatus = "未初始化";
@@ -8911,8 +9243,8 @@
     }
 
     async function runCloudDiagnostic(scope = "all") {
-      if (!isDevCloudConfigAllowed()) {
-        showToast("开发者配置仅本地调试可见");
+      if (!isDeveloperMode()) {
+        showToast(isDevCloudConfigAllowed() ? "请先使用管理员账号进入开发者模式" : "开发者配置仅本地调试可见");
         return false;
       }
       if (!saveCloudConfigFromForm()) return false;
@@ -9065,22 +9397,32 @@
 
     async function handleAuthSubmit() {
       const action = authUiState.formMode;
-      const email = normalizeEmailForAuth(els.accountEmailInput.value);
-      els.accountEmailInput.value = email;
+      const account = normalizeEmailForAuth(els.accountEmailInput.value);
+      const isAdminLogin = action === "signIn" && isDemoAdminCredential(account, els.accountPasswordInput.value);
+      const email = account;
+      els.accountEmailInput.value = account;
       const password = els.accountPasswordInput.value;
       const confirmPassword = els.accountConfirmPasswordInput?.value || "";
-      if (!email || !password) {
-        showAccountMessage("请填写邮箱和密码。", "error");
+      if (!account || !password) {
+        showAccountMessage("请填写账号和密码。管理员账号为 admin。", "error");
+        return;
+      }
+      if (isAdminLogin) {
+        authService.signInDemoAdmin();
+        closeAccountModal();
+        renderAccountStatus();
+        render();
+        showToast("已进入管理员模式，可配置全局模型、ASR 和云端设置");
         return;
       }
       if (!isValidEmail(email)) {
-        showAccountMessage("这里需要填写邮箱地址，例如 name@example.com。CloudBase 会用它完成注册验证和登录。", "error");
+        showAccountMessage("普通账号请填写邮箱地址；管理员请使用 admin / datou123。", "error");
         els.accountEmailInput.focus();
         return;
       }
       if (!hasCloudConfig()) {
         showAccountMessage(isDevCloudConfigAllowed()
-          ? "云端服务尚未配置完成。请点击下方“去开发者云端配置”完成本地调试配置后再登录。"
+          ? "云端服务尚未配置完成。请先使用 admin / datou123 登录，进入开发者模式完成配置后再让普通用户登录。"
           : "账号服务尚未配置完成，请联系管理员。", "error");
         renderAuthForm();
         return;
@@ -9122,42 +9464,55 @@
     function renderAccountStatus() {
       if (!els.openAccountBtn) return;
       const runtimeStatus = getAuthRuntimeStatus();
+      const isAdmin = runtimeStatus === "admin";
       const isCloud = runtimeStatus === "cloud";
+      const isSignedIn = isCloud || isAdmin;
       const isConfigured = hasCloudConfig();
-      const status = isCloud ? (authState.syncStatus || "cloud") : "local";
+      const status = isCloud ? (authState.syncStatus || "cloud") : isAdmin ? "admin" : "local";
       if (els.accountModeLabel) {
-        els.accountModeLabel.textContent = isCloud ? "云端模式" : (!isConfigured && isDevCloudConfigAllowed() ? "本地模式 · 云端未配置" : "本地模式");
-        els.accountModeLabel.className = `account-mode-label ${isCloud ? "cloud" : ""}`.trim();
-        els.accountModeLabel.title = isCloud
+        els.accountModeLabel.textContent = isAdmin ? "管理员模式" : isCloud ? "云端模式" : (!isConfigured ? "本地模式 · 云端未配置" : "本地模式");
+        els.accountModeLabel.className = `account-mode-label ${isSignedIn ? "cloud" : ""}`.trim();
+        els.accountModeLabel.title = isAdmin
+          ? "本地 Demo 管理员，可配置对本机所有用户生效的模型、ASR 和云端设置"
+          : isCloud
           ? "已登录，数据会写入当前账号"
           : (isConfigured ? "当前为本地模式，登录后启用云端同步" : "云端服务尚未配置，当前记录仅保存在本设备");
       }
-      const accountLabel = authState.user?.email || authState.user?.displayName || "账号";
-      const label = isCloud ? accountLabel : "登录 / 注册";
+      const accountLabel = isAdmin ? "admin" : (authState.user?.email || authState.user?.displayName || "账号");
+      const label = isSignedIn ? accountLabel : "登录 / 注册";
       els.openAccountBtn.textContent = label;
-      els.openAccountBtn.className = `account-pill ${isCloud ? "cloud" : ""} ${status === "syncing" ? "syncing" : ""} ${status === "error" ? "error" : ""}`.trim();
-      els.openAccountBtn.title = isCloud
+      els.openAccountBtn.className = `account-pill ${isSignedIn ? "cloud" : ""} ${status === "syncing" ? "syncing" : ""} ${status === "error" ? "error" : ""}`.trim();
+      els.openAccountBtn.title = isAdmin
+        ? "管理员模式：点击查看菜单或退出"
+        : isCloud
         ? `User ID: ${getCurrentUserId()}${authState.lastSyncedAt ? `\n上次同步：${formatTime(authState.lastSyncedAt)}` : ""}`
         : (isConfigured ? "当前仅本地保存，换设备不可见。点击登录启用云端同步。" : "云端服务尚未配置，当前仅本地保存。");
-      if (!isCloud) closeAccountMenu();
-      if (els.accountSignedInPanel) els.accountSignedInPanel.classList.toggle("hidden", !isCloud);
-      if (els.accountSignedOutPanel) els.accountSignedOutPanel.classList.toggle("hidden", isCloud);
-      if (els.accountUserEmail) els.accountUserEmail.textContent = isCloud ? accountLabel : "-";
-      if (els.accountUserId) els.accountUserId.textContent = `User ID：${isCloud ? getCurrentUserId() : "-"}`;
+      if (!isSignedIn) closeAccountMenu();
+      if (els.accountSignedInPanel) els.accountSignedInPanel.classList.toggle("hidden", !isSignedIn);
+      if (els.accountSignedOutPanel) els.accountSignedOutPanel.classList.toggle("hidden", isSignedIn);
+      if (els.accountUserEmail) els.accountUserEmail.textContent = isSignedIn ? accountLabel : "-";
+      if (els.accountUserId) els.accountUserId.textContent = `User ID：${isSignedIn ? getCurrentUserId() : "-"}`;
       if (els.accountSyncStatus) {
         const last = isCloud && authState.lastSyncedAt ? ` · 上次同步 ${formatTime(authState.lastSyncedAt)}` : "";
-        els.accountSyncStatus.textContent = isCloud
+        els.accountSyncStatus.textContent = isAdmin
+          ? "管理员配置会保存为本机共享配置，普通用户可使用但不可见。"
+          : isCloud
           ? `${authState.syncMessage || getSyncStatusLabel(status)}${last}`
           : "当前数据仅保存在本设备";
       }
       if (els.localImportPrompt) {
         els.localImportPrompt.classList.toggle("hidden", !(isCloud && authUiState.hasLocalImportPrompt));
       }
-      if (els.accountMenuEmail) els.accountMenuEmail.textContent = isCloud ? accountLabel : "-";
-      if (els.accountMenuUserId) els.accountMenuUserId.textContent = `User ID：${isCloud ? getCurrentUserId() : "-"}`;
+      [els.syncNowBtn, els.importLocalDataBtn, els.menuSyncNowBtn, els.menuImportLocalDataBtn].filter(Boolean).forEach(button => {
+        button.classList.toggle("hidden", isAdmin);
+      });
+      if (els.accountMenuEmail) els.accountMenuEmail.textContent = isSignedIn ? accountLabel : "-";
+      if (els.accountMenuUserId) els.accountMenuUserId.textContent = `User ID：${isSignedIn ? getCurrentUserId() : "-"}`;
       if (els.accountMenuSync) {
         const last = isCloud && authState.lastSyncedAt ? ` · 上次同步 ${formatTime(authState.lastSyncedAt)}` : "";
-        els.accountMenuSync.textContent = isCloud
+        els.accountMenuSync.textContent = isAdmin
+          ? "管理员模式，本机共享配置已启用。"
+          : isCloud
           ? `${authState.syncMessage || getSyncStatusLabel(status)}${last}`
           : "本地保存，换设备不可见";
       }
@@ -9173,6 +9528,7 @@
 
     function closeInterviewFormModal() {
       els.interviewFormModal.classList.remove("show");
+      clearInterviewFormValidation();
     }
 
     function openInterviewTextImportModal() {
@@ -9189,6 +9545,47 @@
       if (!els.interviewImportTextMessage) return;
       els.interviewImportTextMessage.textContent = message;
       els.interviewImportTextMessage.className = `auth-message ${message ? "show" : ""} ${tone || ""}`.trim();
+    }
+
+    function showInterviewFormMessage(message = "", tone = "") {
+      if (!els.interviewFormMessage) return;
+      els.interviewFormMessage.textContent = message;
+      els.interviewFormMessage.className = `auth-message manager-form-message ${message ? "show" : ""} ${tone || ""}`.trim();
+    }
+
+    function setInterviewFieldInvalid(input, invalid) {
+      if (!input) return;
+      if (invalid) {
+        input.setAttribute("aria-invalid", "true");
+      } else {
+        input.removeAttribute("aria-invalid");
+      }
+    }
+
+    function clearInterviewFormValidation() {
+      setInterviewFieldInvalid(els.interviewCompanyInput, false);
+      setInterviewFieldInvalid(els.interviewRoleInput, false);
+      showInterviewFormMessage("");
+    }
+
+    function validateInterviewRequiredFields(record, { focus = false } = {}) {
+      const missingCompany = !record.company;
+      const missingRole = !record.role;
+      setInterviewFieldInvalid(els.interviewCompanyInput, missingCompany);
+      setInterviewFieldInvalid(els.interviewRoleInput, missingRole);
+      if (!missingCompany && !missingRole) {
+        showInterviewFormMessage("");
+        return true;
+      }
+      const missingLabels = [
+        missingCompany ? "面试公司" : "",
+        missingRole ? "面试岗位" : ""
+      ].filter(Boolean).join("和");
+      showInterviewFormMessage(`请补充${missingLabels}，保存后才能稳定关联复盘。`, "error");
+      if (focus) {
+        (missingCompany ? els.interviewCompanyInput : els.interviewRoleInput).focus();
+      }
+      return false;
     }
 
     function isMobileViewport() {
@@ -9383,16 +9780,19 @@
         console.warn(error);
       }
       try {
+        const sharedModelConfig = storageService.getJson(SHARED_MODEL_KEY, {});
         const savedModelConfig = storageService.getJson(MODEL_KEY, {});
-        modelConfig = { ...modelConfig, ...savedModelConfig };
-        migrateTextModelConfig(savedModelConfig);
-        migrateAsrConfig(savedModelConfig);
+        const mergedModelConfig = { ...savedModelConfig, ...sharedModelConfig };
+        modelConfig = { ...modelConfig, ...mergedModelConfig };
+        migrateTextModelConfig(mergedModelConfig);
+        migrateAsrConfig(mergedModelConfig);
       } catch (error) {
         console.warn(error);
       }
       state.autoSave = storageService.getString(AUTO_SAVE_KEY, "true") !== "false";
       interviewRecords = interviewService.list();
       if (state.mode === "api" && !modelConfig.apiKey) state.mode = "local";
+      if (!isDeveloperMode() && modelConfig.apiKey) state.mode = "api";
       if (modelConfig.apiKey && !savedMode) state.mode = "api";
       if (state.restored) setTimeout(() => showToast("已恢复上次编辑内容"), 300);
     }
@@ -9428,7 +9828,9 @@
     }
 
     function saveModelConfig() {
-      if (!storageService.setJson(MODEL_KEY, modelConfig)) {
+      const savedLocal = storageService.setJson(MODEL_KEY, modelConfig);
+      const savedShared = !isAdminActive() || storageService.setJson(SHARED_MODEL_KEY, modelConfig);
+      if (!savedLocal || !savedShared) {
         showToast("模型配置保存失败");
       }
       settingsService.save(modelConfig);
@@ -9556,7 +9958,7 @@
         displayName: String(user.displayName || "Local User"),
         email: String(user.email || ""),
         avatarUrl: String(user.avatarUrl || ""),
-        authMode: user.authMode === "cloud" ? "cloud" : "local",
+        authMode: user.authMode === "cloud" ? "cloud" : user.authMode === "admin" ? "admin" : "local",
         createdAt,
         updatedAt: user.updatedAt || createdAt
       };
@@ -10768,10 +11170,10 @@
       return statusMatched && (!query || text.includes(query));
     }
 
-    function renderCompactEmptyState({ state = "empty", label = "待输入", title = "", description = "", cards = [], actions = "" } = {}) {
-      const previewCards = cards.slice(0, 4).map(card => `
-        <div class="empty-preview-card">
-          <strong>${escapeHtml(card.title || "")}</strong>
+	    function renderCompactEmptyState({ state = "empty", label = "待输入", title = "", description = "", cards = [], actions = "" } = {}) {
+	      const previewCards = cards.slice(0, 4).map(card => `
+	        <div class="empty-preview-card">
+	          <strong>${escapeHtml(card.title || "")}</strong>
           <span>${escapeHtml(card.description || "")}</span>
         </div>
       `).join("");
@@ -10799,11 +11201,37 @@
             ${actions || ""}
           </div>
           ${previewCards ? `<div class="empty-preview">${previewCards}</div>` : ""}
-        </div>
-      `;
-    }
+	        </div>
+	      `;
+	    }
 
-    function renderInterviewManager() {
+	    function renderQueueEmptyState() {
+	      const rows = [
+	        ["01", "下一场时间", "有排期后自动按临近程度排序。"],
+	        ["02", "公司与岗位", "把不同机会拆成清楚的队列项。"],
+	        ["03", "会议与联系人", "准备前不用再翻聊天记录。"]
+	      ].map(([index, title, description]) => `
+	        <div class="queue-empty-row">
+	          <span>${escapeHtml(index)}</span>
+	          <div>
+	            <strong>${escapeHtml(title)}</strong>
+	            <small>${escapeHtml(description)}</small>
+	          </div>
+	        </div>
+	      `).join("");
+	      return `
+	        <div class="queue-empty-state">
+	          <div class="queue-empty-copy">
+	            <div class="queue-empty-kicker">待提交</div>
+	            <h3>队列还没有面试记录</h3>
+	            <p>上方已经提供新增、Excel 导入和文本识别入口；提交第一条面试信息后，这里会变成按下一场时间排序的面试列表。</p>
+	          </div>
+	          <div class="queue-empty-steps" aria-hidden="true">${rows}</div>
+	        </div>
+	      `;
+	    }
+
+	    function renderInterviewManager() {
       if (!els.interviewList) return;
       let records = interviewRecords.map(normalizeInterviewRecord);
       records = backfillMissingCompaniesLocally(records);
@@ -10831,18 +11259,9 @@
         managerState.status = "all";
         els.interviewSearchInput.value = "";
         els.interviewStatusFilter.value = "all";
-        els.interviewList.innerHTML = renderCompactEmptyState({
-          label: "待提交",
-          title: "面试队列会自动帮你排优先级",
-          description: "提交第一条面试信息后，这里会按下一场面试时间排序，把最近要准备的公司、岗位、会议地址和联系人放到最前面，减少翻聊天记录和漏看时间的成本。",
-          cards: [
-            { title: "最近优先", description: "越快要面试的机会越靠前。" },
-            { title: "进展聚合", description: "公司、岗位、轮次和结果放在一起。" },
-            { title: "复盘承接", description: "每一轮面试后都能继续补充记录。" }
-          ]
-        });
-        return;
-      }
+	        els.interviewList.innerHTML = renderQueueEmptyState();
+	        return;
+	      }
 
       const filtered = records.filter(matchesInterviewFilter);
       els.interviewList.innerHTML = "";
@@ -10856,7 +11275,14 @@
             { title: "关键词", description: "支持公司、岗位、base 和联系人。" },
             { title: "进展状态", description: "按待进行、已通过、已挂筛选。" },
             { title: "时间排序", description: "匹配后仍按下一场时间优先展示。" }
-          ]
+          ],
+          actions: `<div class="empty-actions"><button class="btn" type="button" data-action="clear-interview-filter">清空搜索和筛选</button></div>`
+        });
+        els.interviewList.querySelector("[data-action='clear-interview-filter']")?.addEventListener("click", () => {
+          managerState.search = "";
+          managerState.status = "all";
+          renderInterviewManager();
+          showToast("已清空搜索和筛选");
         });
         return;
       }
@@ -11085,6 +11511,7 @@
         node.querySelector(".round-result").value = round.result || "pending";
         node.querySelector(".round-note").value = round.note || "";
       });
+      clearInterviewFormValidation();
       renderInterviewManager();
     }
 
@@ -11110,9 +11537,8 @@
           record = await hydrateMissingCompany(record);
           if (record.company) els.interviewCompanyInput.value = record.company;
         }
-        if (!record.company || !record.role) {
+        if (!validateInterviewRequiredFields(record, { focus: true })) {
           showToast("请至少填写面试公司和岗位，之后才能稳定关联复盘");
-          (record.company ? els.interviewRoleInput : els.interviewCompanyInput).focus();
           return;
         }
         const existingIndex = interviewRecords.findIndex(item => item.id === record.id);
@@ -13505,17 +13931,18 @@
       state.lastApiFailed = false;
       closeModelModal();
       render();
-      showToast("模型配置已保存");
+      showToast(isAdminActive() ? "模型和 ASR 配置已保存为本机共享配置" : "模型配置已保存");
     }
 
     function clearModelConfig() {
       if (!confirm("清除后将删除本地保存的API Key和模型配置，是否继续？")) return;
       storageService.remove(MODEL_KEY);
+      if (isAdminActive()) storageService.remove(SHARED_MODEL_KEY);
       modelConfig = createDefaultModelConfig();
       state.mode = "local";
       fillModelForm();
       render();
-      showToast("已清除模型配置");
+      showToast(isAdminActive() ? "已清除本机共享模型和 ASR 配置" : "已清除模型配置");
     }
 
     async function testModelConnection() {
