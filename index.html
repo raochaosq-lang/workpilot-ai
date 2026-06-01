@@ -6120,6 +6120,9 @@
         </div>
         <div class="manager-header-actions">
           <input id="interviewImportInput" class="file-input" type="file" accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values,text/plain">
+          <button id="addInterviewBtn" class="btn primary" type="button">新增面试</button>
+          <button id="importInterviewFileBtn" class="btn" type="button">导入文件</button>
+          <button id="importInterviewTextBtn" class="btn" type="button">粘贴识别</button>
           <button id="exportDataBtn" class="btn" type="button">导出数据</button>
         </div>
       </section>
@@ -8755,7 +8758,7 @@
         "accountModeLabel", "openAccountBtn", "accountMenu", "accountMenuEmail", "accountMenuSync", "accountMenuUserId", "menuSyncNowBtn", "menuImportLocalDataBtn", "menuAccountInfoBtn", "menuSignOutBtn", "openDevCloudBtn",
         "accountModal", "accountModalTitle", "accountModalNote", "closeAccountBtn", "accountSignedInPanel", "accountSignedOutPanel", "accountAuthMessage", "authFormTitle", "authFormDesc", "accountEmailInput", "accountPasswordInput", "accountConfirmPasswordInput", "authPrimaryBtn", "continueLocalBtn", "authSwitchText", "toggleAuthModeBtn", "goLoginAfterVerifyBtn", "openDevConfigFromAuthBtn", "signOutBtn", "syncNowBtn", "importLocalDataBtn", "localImportPrompt", "confirmImportLocalBtn", "skipImportLocalBtn",
         "devCloudModal", "closeDevCloudBtn", "devCloudMessage", "saveCloudConfigBtn", "testCloudConfigBtn", "testCloudInitBtn", "testCloudAuthBtn", "testCloudEmailAuthBtn", "testCloudDbBtn", "clearCloudConfigBtn", "copyCloudCollectionsBtn", "copyCloudRulesBtn", "supabaseUrlInput", "cloudbaseRegionInput", "supabaseAnonKeyInput", "devCloudOrigin", "devCloudConfigSource", "cloudDiagnosticList", "accountDiagnosticPanel", "refreshAccountDiagnosticBtn", "clearLegacyAuthStateBtn", "accountUserEmail", "accountUserId", "accountSyncStatus",
-        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "importStatus", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
+        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "addInterviewBtn", "importInterviewFileBtn", "importInterviewTextBtn", "importStatus", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
         "capturePanel", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard", "uploadTitle", "recordTitle", "textTitle", "textDesc",
         "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
         "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn",
@@ -8880,6 +8883,12 @@
       els.submitInterviewImportTextBtn.addEventListener("click", handleInterviewTextImport);
       els.clearInterviewImportTextBtn.addEventListener("click", closeInterviewTextImportModal);
       els.exportDataBtn.addEventListener("click", exportAllUserData);
+      els.addInterviewBtn.addEventListener("click", () => {
+        resetInterviewForm();
+        openInterviewFormModal();
+      });
+      els.importInterviewFileBtn.addEventListener("click", () => els.interviewImportInput.click());
+      els.importInterviewTextBtn.addEventListener("click", openInterviewTextImportModal);
       els.interviewImportInput.addEventListener("change", handleInterviewImportFile);
       els.interviewSearchInput.addEventListener("input", () => {
         managerState.search = els.interviewSearchInput.value.trim();
