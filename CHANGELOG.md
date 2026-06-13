@@ -32,6 +32,16 @@ Browser-verified end-to-end, no new code defects (the relevant fixes from Round 
 - Save-to-history dedups on re-save; linking a review to an interview round writes a `summaryId` round marker, and deleting that history record unlinks it (round marker cleared, toast "已删除历史记录，并取消面试轮次复盘标记").
 - Regenerate confirms before overwriting ("覆盖当前复盘结果？" with recoverability copy); history search empty-state offers a "清空搜索" recovery; long-source (>20000 chars) generation prompts a cost/latency confirmation and cancelling preserves the input.
 
+### Round 3 — `senlo-test-20260613-r3-import` (CSV / TSV / TXT / XLSX / JSON import + heuristics)
+
+Built a real 2304-byte XLSX fixture (worksheet deliberately named `xl/worksheets/data.xml`, not `sheet1.xml`, so it is only reachable via the workbook-relationship lookup) and confirmed the **`relPattern` fix is what makes import succeed** — rows parsed correctly through the full read→recognize→normalize→merge pipeline. Also unit-verified the shared-string and column-bounds fixes against crafted worksheet XML.
+
+- **XLSX fixes verified (from Round 1):** rich-text `<si>` concatenation, `inlineStr`, empty `<v></v>` → `""` (not `sharedStrings[0]`), and a `ZZZZZZ1` column ref clamped to append (no 300M-element sparse array, no crash).
+- **CSV/TSV:** quoted fields preserve embedded commas (`未来,智能科技`) and newlines (`算法\n产品负责人`); delimiter auto-detection picks `,` vs `\t`; result column normalizes (通过/pass/已offer→passed, 未通过/挂了→failed, 待定/空→pending); dates `2026-08-15 10:30` and slash-form `2026/08/20 16:00` both normalize to `datetime-local`.
+- **Text paste:** free-form `label：value` and tab-table both parse; company inference (`字节跳动` from prose) works; round-prefixed columns (`一面是否通过`, `二面是否通过`) map to the right round.
+- **JSON import** parses arrays; empty / unrecognized / malformed inputs throw and surface friendly messages ("没有识别到有效内容。" / "没有识别到面试记录。…").
+- **New fix — text-import heuristic pollution:** `applyTextImportHeuristics` assigned any token containing "面试" to `整体进展`, so a `JD：负责AI面试产品…` line leaked into the progress field. Added a guard that skips tokens beginning with another field's label (JD/公司/岗位/base/联系人/时间/地址/…); legit unlabeled progress phrases ("已约二面") are still detected.
+
 ## 2026-06-07
 
 ### Step `senlo-level3-20260607-07-confirmation-polish`

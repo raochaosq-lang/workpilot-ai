@@ -11264,7 +11264,8 @@
         if (!row.联系人微信名 && /HR|联系人|微信|对接人|猎头/i.test(token)) {
           row.联系人微信名 = cleanTextImportValue(token.replace(/^(HR|联系人|联系人微信名|联系人微信|微信|对接人|猎头)[：:\s]*/i, ""));
         }
-        if (!row.整体进展 && /已约|约面|面试|推进|待安排|待定|通过|未通过|offer|流程|进展/i.test(token)) {
+        const looksLikeOtherField = /^\s*(jd|岗位jd|岗位描述|职位描述|岗位要求|job\s*description|公司|面试公司|企业|投递公司|目标公司|岗位|面试岗位|职位|应聘岗位|目标岗位|base|base地点|工作地点|办公地点|城市|联系人|联系人微信名?|微信名?|hr|对接人|猎头|意向|个人意向|求职意向|时间|面试时间|日期|地址|会议地址|地点|备注)\s*[：:]/i.test(token);
+        if (!row.整体进展 && !looksLikeOtherField && /已约|约面|面试|推进|待安排|待定|通过|未通过|offer|流程|进展/i.test(token)) {
           row.整体进展 = token;
         }
       });
