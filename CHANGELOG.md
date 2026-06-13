@@ -42,6 +42,15 @@ Built a real 2304-byte XLSX fixture (worksheet deliberately named `xl/worksheets
 - **JSON import** parses arrays; empty / unrecognized / malformed inputs throw and surface friendly messages ("没有识别到有效内容。" / "没有识别到面试记录。…").
 - **New fix — text-import heuristic pollution:** `applyTextImportHeuristics` assigned any token containing "面试" to `整体进展`, so a `JD：负责AI面试产品…` line leaked into the progress field. Added a guard that skips tokens beginning with another field's label (JD/公司/岗位/base/联系人/时间/地址/…); legit unlabeled progress phrases ("已约二面") are still detected.
 
+### Round 4 — `senlo-test-20260613-r4-persistence-account` (persistence, export, account/dev mode, model config)
+
+- **Persistence:** 5 interview records + history survive a full page reload and re-render; localStorage keys intact.
+- **Export:** full-data JSON export prompts the privacy confirmation, then produces valid JSON with all top-level keys (interviews/history/transcripts/summaryReports/user/…); Markdown export prompts its privacy confirmation and emits a report carrying the "## 分析模式 / 规则快速分析 / 不等同于真实大模型判断" disclaimer so local reports are never passed off as real-model output.
+- **Admin / developer mode:** `admin / datou123` login on a local-debug origin enters developer mode (header badges 管理员模式 · admin · 开发者模式; dev tools become visible).
+- **Model config:** saving writes provider + keys to the device-local shared key `senlo_shared_model_config_v1`; an ordinary user on the same browser inherits it (mode → `api`). **Re-verified the XSS fix through the real save→render path** — an `<img onerror>` payload in the ASR-provider field renders inert (`&lt;img&gt;`, no element, sentinel stays 0).
+- **Admin sign-out preserves shared secrets:** after admin signs out, `senlo_shared_model_config_v1` (incl. API key) is retained and the admin session/dev tools are cleared (dev buttons `display:none`) — matching the AGENTS.md rule that account work must not break model settings.
+- **New fix — productized model-config clear:** `clearModelConfig` used the native `confirm()`; replaced with `showConfirmDialog` showing admin-vs-ordinary consequence copy ("普通用户也会失去这套共享配置…回退到规则快速分析"). Verified the dialog clears `senlo_shared_model_config_v1` and resets to defaults on confirm.
+
 ## 2026-06-07
 
 ### Step `senlo-level3-20260607-07-confirmation-polish`

@@ -14959,8 +14959,17 @@
       showToast(isAdminActive() ? "模型和 ASR 配置已保存为本机共享配置" : "模型配置已保存");
     }
 
-    function clearModelConfig() {
-      if (!confirm("清除后将删除本地保存的API Key和模型配置，是否继续？")) return;
+    async function clearModelConfig() {
+      const ok = await showConfirmDialog({
+        kicker: "清除配置",
+        title: isAdminActive() ? "清除本机共享模型配置？" : "清除模型配置？",
+        message: isAdminActive()
+          ? "将删除本机保存的文本模型与 ASR 的 API Key 和配置（普通用户也会失去这套共享配置），清除后会回退到规则快速分析。配置只保存在本浏览器，云端和代码不受影响。"
+          : "将删除本机保存的 API Key 和模型配置，清除后会回退到规则快速分析。",
+        confirmText: "清除配置",
+        cancelText: "取消"
+      });
+      if (!ok) return;
       storageService.remove(MODEL_KEY);
       if (isAdminActive()) storageService.remove(SHARED_MODEL_KEY);
       modelConfig = createDefaultModelConfig();
