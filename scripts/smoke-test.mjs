@@ -112,6 +112,23 @@ function runStaticChecks() {
   assert(/async signOut\(\)[\s\S]*const wasAdmin = isAdminActive\(\)[\s\S]*if \(!wasAdmin\)/.test(html), "Admin sign-out may wipe shared model secrets");
   assert(html.includes("escapeHtml") && html.includes("escapeAttr"), "HTML escaping helpers are missing");
 
+  // Guards added during the 2026-06-13 five-round test pass.
+  assert(html.includes("文本模型：${escapeHtml(modelConfig.provider)") && html.includes("转写模型：${escapeHtml(asrProvider)"), "Model status must escape provider/asrProvider (XSS)");
+  assert(html.includes("rawIndex != null && String(rawIndex).trim()"), "XLSX shared-string empty-index guard is missing");
+  assert(html.includes("columnIndex > 16384"), "XLSX column-index bounds clamp is missing");
+  const relLine = (html.match(/const relPattern = new RegExp\([^\n]*/) || [""])[0];
+  assert(relLine.includes("Relationship") && !relLine.includes("\\\\\\\\b"), "XLSX relationship regex word boundary is broken (\\\\b)");
+  assert(html.includes('test(String(sourceTime || ""))) return null'), "findSourceEvidence must reject empty/invalid sourceTime");
+  assert(html.includes("fall through to structured fallback"), "parseModelJson fallback parse must be wrapped in try/catch");
+  assert(/async function closeInterviewFormModal[\s\S]*showConfirmDialog[\s\S]*放弃修改并关闭/.test(html), "Interview-form unsaved guard must use the product confirm dialog");
+  assert(/async function clearModelConfig[\s\S]*showConfirmDialog/.test(html), "clearModelConfig must use the product confirm dialog");
+  assert(html.includes("looksLikeOtherField"), "Text-import heuristic must not assign labeled tokens to 整体进展");
+  assert(html.includes("Number(raw.roundIndex ?? index + 1)"), "normalizeInterviewRound must preserve roundIndex 0 (use ??)");
+  assert(html.includes("item.roundIndex == null"), "normalizeHistoryRecord must treat null/undefined roundIndex uniformly");
+  assert(html.includes('.slice(0, 48)') && html.includes('.replace(/-+$/, "")'), "buildExportFileName must trim trailing hyphens");
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.panel-head,\s*\.section-head \{\s*background: transparent;/.test(html), "Dark mode must flatten panel-head/section-head backgrounds");
+  assert(/\.manager-filter-toolbar \{[\s\S]*?background: var\(--card-soft\);/.test(html), "Filter toolbar must use a themed (dark-aware) background");
+
   const domReadyIndex = html.indexOf('document.addEventListener("DOMContentLoaded"');
   const bindingStart = domReadyIndex >= 0 ? html.indexOf("[", domReadyIndex) : -1;
   const bindingEnd = bindingStart >= 0 ? html.indexOf("].forEach(id => els[id] = document.getElementById(id));", bindingStart) : -1;

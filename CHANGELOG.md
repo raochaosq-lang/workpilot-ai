@@ -51,6 +51,17 @@ Built a real 2304-byte XLSX fixture (worksheet deliberately named `xl/worksheets
 - **Admin sign-out preserves shared secrets:** after admin signs out, `senlo_shared_model_config_v1` (incl. API key) is retained and the admin session/dev tools are cleared (dev buttons `display:none`) — matching the AGENTS.md rule that account work must not break model settings.
 - **New fix — productized model-config clear:** `clearModelConfig` used the native `confirm()`; replaced with `showConfirmDialog` showing admin-vs-ordinary consequence copy ("普通用户也会失去这套共享配置…回退到规则快速分析"). Verified the dialog clears `senlo_shared_model_config_v1` and resets to defaults on confirm.
 
+### Round 5 — `senlo-test-20260613-r5-responsive-a11y` (responsive, dark mode, a11y, keyboard, stress, regression)
+
+- **Stress:** injected 205 records — the manager renders in ~28ms, search narrows to 1/205 with a correct summary, and status/derived filters work at scale without errors.
+- **Responsive:** 375px mobile layout stacks the header, nav and action buttons cleanly; spotlight + queue reflow correctly.
+- **Dark mode — two fixes:**
+  - `.manager-filter-toolbar` used a hardcoded `#f8fafc` background with `#475569` text, leaving a light bar (and light-on-light text) in dark mode. Switched both to themed variables (`--card-soft` / `--text-secondary`) — identical in light mode, correct (`#172033` / `#9caec5`) in dark mode.
+  - `.panel-head` (white `linear-gradient`) and `.section-head` (`#fbfdff`) kept light backgrounds in dark mode because the dark block only overrode their border. Added `background: transparent` for both in the dark media query so they inherit the dark panel; light mode is untouched.
+- **Keyboard:** `n` opens a new record on the manager (and is suppressed while typing in an input/textarea via `isEditableEventTarget`); `Cmd/Ctrl+K` focuses the manager search / review input; `Esc` closes modals.
+- **Accessibility:** nav `aria-current` toggles page↔false on switch; account button exposes `aria-haspopup="menu"` + `aria-expanded`; loading panel is `role="status" aria-live="polite"`, error panel is `role="alert"`.
+- **Regression:** added 14 `scripts/smoke-test.mjs` guards locking in every fix from rounds 1–5 (XSS escaping, XLSX relationship/shared-string/column-bounds, source-evidence guard, parseModelJson try/catch, both productized confirm dialogs, text-import heuristic guard, roundIndex nullish handling, export-filename trim, dark-mode toolbar/header). `npm run check` passes; app boots with no console errors across both pages; the model→local import fallback degrades gracefully on auth failure.
+
 ## 2026-06-07
 
 ### Step `senlo-level3-20260607-07-confirmation-polish`
