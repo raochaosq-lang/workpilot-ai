@@ -1,0 +1,119 @@
+# Changelog
+
+## 2026-06-13
+
+Five-round full-coverage test pass (real browser-driven verification via local dev server + an adversarial multi-agent code audit). Each round seeds its own normal / edge / malformed / bulk data, fixes defects in place, and is verified before tagging.
+
+### Round 1 — `senlo-test-20260613-r1-manager-core` (interview management + cross-cutting defects)
+
+Browser-verified: create/edit/delete, required-field validation, search + status + derived quick filters, filtered empty-state recovery, post-save next-action banner, unsaved-change guard, and localStorage persistence across a server restart. Injected `<script>`/`<img onerror>`/`<svg onload>` payloads through the real form path and confirmed they render as inert escaped text (sentinel never fired).
+
+Defects found (by the adversarial audit + manual testing) and fixed:
+
+- **XSS (high):** `renderModelStatus()` interpolated the user-controlled `provider` and free-text `asrProvider` model-config values into `innerHTML` without escaping. Now escaped via `escapeHtml`. Verified a payload in `asrProvider`/`provider` renders inert.
+- **XLSX import (high):** the workbook-relationship regex used `\\\\b`, which compiles to a literal `\b` (backslash-b) instead of a `\b` word boundary, so the relationship→worksheet lookup never matched and silently fell back. Fixed the escaping.
+- **XLSX import (high):** shared-string cells with an empty/missing `<v>` index resolved to `Number("")===0` and returned `sharedStrings[0]` (wrong value). Now validated as a finite, in-range integer or treated as empty.
+- **XLSX import (medium):** a malformed/malicious column ref (e.g. `ZZZZZZ1`) produced a giant sparse array (memory DoS). Column index is now clamped to Excel's max (16384) or appended.
+- **Source evidence (medium):** `findSourceEvidence()` with an empty/invalid `sourceTime` parsed to `[0,0]` and always matched the first transcript segment, showing bogus evidence. Now guarded (and `parseTimeRange` hoisted out of the loop).
+- **Model JSON (medium):** the second-pass `JSON.parse` in `parseModelJson()` was not wrapped in try/catch, so a malformed model response threw instead of degrading to the structured fallback. Now wrapped.
+- **Data normalization:** `normalizeInterviewRound` used `||` for `roundIndex` (dropped a valid `0`) → `??`; `normalizeHistoryRecord` mapped `null` roundIndex to `0` (spurious round-1 link) while `undefined`→`null` — now both missing values map to `null`.
+- **Transcript segments:** segment filter now drops whitespace-only segments, not just empty ones.
+- **Export filename:** `buildExportFileName` now collapses repeated hyphens and trims leading/trailing hyphens so names like `name -2026-06-13.json` are clean.
+- **UX consistency:** the interview-form unsaved-change guard used the native `confirm()`; replaced with the product `showConfirmDialog` (kicker/title/desc + "继续编辑 / 放弃修改并关闭"). Verified discard does not persist the edit and cancel keeps it.
+
+
+
+### Step `senlo-level3-20260607-07-confirmation-polish`
+
+- Replaced native long-transcript generation confirmation with the product confirmation dialog, including cost/latency and recoverability copy.
+- Replaced Markdown/JSON export confirmation with the product confirmation dialog so privacy-sensitive downloads no longer rely on browser-native `confirm`.
+- Updated regeneration to confirm before overwriting any existing report, not only manually edited reports.
+- Removed remaining user-facing `AI 正在生成结果` loading copy from normal navigation blockers.
+- Extended `scripts/smoke-test.mjs` to guard product confirmation for long-source generation, export, and regeneration overwrite.
+
+### Step `senlo-level3-20260607-06-trial-flow-closure`
+
+- Added a one-click sample transcript entry so first-time users can complete the local review flow without preparing their own transcript.
+- Added a post-save next-action banner after creating or updating an interview record, with direct actions for review, further editing, another new record, or returning to the workbench.
+- Added derived quick filters for `即将面试`, `已过期待更新`, `待补时间`, and `待复盘` without changing the data schema.
+- Replaced high-frequency native confirmations for interview deletion, transcript clearing, workspace reset, regeneration overwrite, and history deletion with a product confirmation dialog that explains object, consequence, and recoverability.
+- Added analysis-mode metadata to Markdown exports so local rules-based reports are not confused with real large-model output.
+- Extended `scripts/smoke-test.mjs` to guard the sample transcript path, post-save guide, derived quick filters, product confirmation dialog, and Markdown analysis-mode export.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md`.
+- `npm run dev` was blocked by the current sandbox (`EPERM` local port binding). The script returned the fallback URL `file:///Users/raochaodembpm2max/Documents/selon/index.html`.
+- In-app Browser validation of the fallback `file://` URL was blocked by Browser URL policy, so real click-through verification still needs a normal local browser or static hosting environment.
+
+### Step `senlo-step-20260607-01-ux-clarity`
+
+- Changed the AI review default input path from audio upload to pasted transcript text, including reset and restored-state fallback.
+- Clarified unconfigured ASR states: audio upload now explains that transcription is not connected and directs users to paste existing transcript text.
+- Renamed local non-model output to `规则快速分析` across status, trust note, result metadata, toast, and history labels.
+- Productized unconfigured account state as local experience instead of an available login/register path.
+- Extended `scripts/smoke-test.mjs` to guard the default paste-text path, ASR fallback copy, rules-based analysis labeling, and unconfigured-account state.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md`.
+- Git tag creation was blocked by `.git/refs/tags/*.lock Operation not permitted`; checkpoint patch saved to `/private/tmp/selon-checkpoints/senlo-step-20260607-01-ux-clarity.patch`.
+
+### Step `senlo-step-20260607-02-data-safety`
+
+- Added privacy confirmation before exporting the current Markdown report, a history Markdown report, or the full local JSON data package.
+- Added confirmation before clearing pasted transcript input, with clear copy that saved history reports are not deleted.
+- Added a long-input generation confirmation and inline quality hint to warn about slower generation and possible model cost before users send very long transcripts.
+- Extended `scripts/smoke-test.mjs` to guard export confirmation, clear-input confirmation, and long-source confirmation.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md`.
+- Git tag creation was blocked by `.git/refs/tags/*.lock Operation not permitted`; checkpoint patch saved to `/private/tmp/selon-checkpoints/senlo-step-20260607-02-data-safety.patch`.
+
+### Step `senlo-step-20260607-03-history-recovery`
+
+- Added a one-click clear-search recovery action to the history filtered empty state.
+- Expanded history deletion confirmation with the exact affected record and consequences.
+- When deleting a history report that is linked to an interview round, the round review marker is now unlinked so the interview queue does not show a stale `有复盘` state.
+- Extended `scripts/smoke-test.mjs` to guard the history clear-search action, delete consequence copy, and round-marker unlink path.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md`.
+- Git tag creation was blocked by `.git/refs/tags/*.lock Operation not permitted`; checkpoint patch saved to `/private/tmp/selon-checkpoints/senlo-step-20260607-03-history-recovery.patch`.
+
+### Step `senlo-step-20260607-04-docs-trust-boundary`
+
+- Updated README to document the paste-transcript-first AI review path, ASR dependency, rules-based fallback, long-input warning, and sensitive export confirmation.
+- Corrected the local run path to `/Users/raochaodembpm2max/Documents/selon`.
+- Clarified that CloudBase sync is only available after real cloud configuration and login; unconfigured users remain in local experience.
+- Updated `cloudbase/README.md` to match the current admin-mode entry and sync boundary wording.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md README.md cloudbase/README.md`.
+- Git tag creation was blocked by `.git/refs/tags/*.lock Operation not permitted`; checkpoint patch saved to `/private/tmp/selon-checkpoints/senlo-step-20260607-04-docs-trust-boundary.patch`.
+
+### Step `senlo-step-20260607-05-first-paint-copy`
+
+- Updated static first-paint account copy to default to local experience instead of implying login/sync before CloudBase config is known.
+- Replaced ambiguous `AI正在分析中...` loading copy with neutral `正在分析中...`.
+- Updated the error fallback action for ordinary users to `使用规则分析`, while developer mode still uses local simulation wording.
+- Removed an unnecessary `AI 为什么引用这段` label from the source drawer so evidence copy matches both rules-based and real-model output.
+- Extended `scripts/smoke-test.mjs` to guard static local-experience copy and neutral loading/fallback wording.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs CHANGELOG.md README.md cloudbase/README.md`.
+- Git tag creation was blocked by `.git/refs/tags/*.lock Operation not permitted`; checkpoint patch saved to `/private/tmp/selon-checkpoints/senlo-step-20260607-05-first-paint-copy.patch`.
+
+### UX optimization
+
+- Improved interview manager filtering with a visible result summary and one-click reset path.
+- Added unsaved-change protection for the interview form, including close, backdrop, and cancel actions.
+- Expanded interview deletion confirmation with record details and consequence copy.
+- Added busy feedback for interview form save actions to reduce accidental repeated submits.
+- Added an AI review context bar that keeps the linked interview, round, time, and location visible.
+- Added input quality hints for review source text, including short-content and speaker-segment guidance.
+- Improved AI review empty, loading, and error states with clearer next-step language and accessibility semantics.
+- Added global keyboard handling for Escape, Command/Ctrl+K, and manager-page quick create.
+- Added navigation and account menu accessibility state with `aria-current` and `aria-expanded`.
+
+### Verification
+
+- Updated `scripts/smoke-test.mjs` to cover the new UX safeguards, recovery paths, and accessibility markers.
+- Verified with `npm run check`.
+- Verified with `git diff --check -- index.html scripts/smoke-test.mjs`.
+
+### Environment note
+
+- Local dev server and Git write operations were blocked by the current sandbox (`EPERM` / `.git/index.lock Operation not permitted`), so phase patches were saved under `/private/tmp/selon-checkpoints/`.

@@ -36,6 +36,14 @@ function runStaticChecks() {
     "interviewFormMessage",
     "interviewSearchInput",
     "interviewStatusFilter",
+    "managerQuickFilters",
+    "interviewFilterSummary",
+    "clearInterviewFilterBtn",
+    "interviewNextActionBanner",
+    "reviewContextBar",
+    "sourceQualityHint",
+    "fillSampleTranscriptBtn",
+    "confirmModal",
     "modelModal",
     "devCloudModal",
     "historyModal",
@@ -55,11 +63,46 @@ function runStaticChecks() {
   assert(html.includes("els.interviewList.innerHTML = renderQueueEmptyState();"), "Interview queue empty state still uses the large hero empty block");
   assert(!html.includes("面试队列会自动帮你排优先级"), "Queue empty copy is too close to the top hero empty state");
   assert(html.includes('data-action="clear-interview-filter"') && html.includes("已清空搜索和筛选"), "Filtered empty state lacks a clear recovery action");
+  assert(html.includes("function renderInterviewFilterToolbar") && html.includes("已筛出"), "Interview filter result summary is missing");
+  assert(html.includes("function renderInterviewQuickFilters") && html.includes("needs-review") && html.includes("待复盘"), "Derived quick filters are missing");
+  assert(html.includes("function renderInterviewNextActionBanner") && html.includes("去复盘") && html.includes("继续补充") && html.includes("再新增一条"), "Post-save next-action guide is missing");
+  assert(html.includes("function isInterviewFormDirty") && html.includes("还没有保存"), "Interview form unsaved-change guard is missing");
+  assert(html.includes("function buildDeleteInterviewConfirmMessage") && html.includes("已保存的历史复盘不会被自动删除"), "Interview delete confirmation lacks consequence copy");
+  assert(html.includes("function showConfirmDialog") && html.includes("confirmModalTitle") && html.includes("confirmPrimaryBtn"), "Product confirmation dialog is missing");
+  assert(html.includes("function renderReviewContextBar") && html.includes("当前复盘对象"), "Review context bar is missing");
+  assert(html.includes("function getSourceQualityHint") && html.includes("内容偏短"), "Input quality hint is missing");
+  assert(html.includes("function getSampleTranscriptText") && html.includes("已填入示例转写稿，可以直接生成复盘"), "One-click sample transcript path is missing");
+  assert(html.includes("已取消面试关联，当前输入内容已保留"), "Review unlink action does not preserve input");
+  assert(html.includes('id="uploadTab" class="capture-tab"') && html.includes('id="textTab" class="capture-tab active"'), "Default review input tab should be paste text");
+  assert(html.includes('id="uploadCard" class="capture-card upload-flow"') && html.includes('id="textCard" class="capture-card active"'), "Default review input card should be paste text");
+  assert(html.includes('inputMode: "text"') && html.includes('saved.inputMode || "text"') && html.includes('state.inputMode = "text";'), "Review input mode does not default/reset to paste text");
+  assert(html.includes("function hasAsrConfig") && html.includes("转写服务暂未接入，请先粘贴已有转写文本"), "ASR unconfigured state lacks paste-text fallback");
+  assert(html.includes("转写服务未配置") && html.includes("音频转写服务暂未接入，请先粘贴已有转写文本"), "Upload transcription controls do not explain missing ASR service");
+  assert(html.includes("规则快速分析") && html.includes("不等同于真实大模型判断"), "Local analysis is not clearly labeled as rules-based");
+  assert(html.includes("function normalizeModelUsedLabel") && html.includes('state.modelUsed = state.mode === "api" ? getModelName() : (isDeveloperMode() ? "本地模拟分析" : "规则快速分析")'), "History/result model labels can misrepresent local analysis");
+  assert(html.includes("## 分析模式") && html.includes("buildMinutesText(item.result, scenarioKey, item.modelUsed)"), "Markdown export does not preserve analysis mode");
+  assert(html.includes("当前为本地体验，云端账号尚未配置") && html.includes("等待管理员配置"), "Unconfigured account state is not productized for local experience");
+  assert(/async function shouldConfirmLongSourceBeforeGenerate[\s\S]*showConfirmDialog[\s\S]*生成可能更慢/.test(html), "Long source generation should use the product confirmation dialog");
+  assert(/async function confirmReportExport[\s\S]*导出数据会下载当前账号可见的面试记录[\s\S]*showConfirmDialog/.test(html), "Sensitive export should use the product confirmation dialog");
+  assert(html.includes("清空当前转写文本？") && html.includes("已取消清空，输入内容已保留"), "Clear-source confirmation is missing");
+  assert(/async function regenerate[\s\S]*if \(hasResult\(\)\)[\s\S]*showConfirmDialog[\s\S]*覆盖当前复盘结果/.test(html), "Regeneration should confirm before overwriting any existing result");
+  assert(html.includes("function clearHistorySearch") && html.includes('data-action="clear-history-search"') && html.includes("已清空历史搜索"), "History filtered empty state lacks a clear-search recovery action");
+  assert(html.includes("function buildDeleteHistoryConfirmMessage") && html.includes("同步取消该轮次的复盘标记"), "History delete confirmation lacks consequence copy");
+  assert(html.includes("function unlinkHistoryFromInterviewRound") && html.includes("已删除历史记录，并取消面试轮次复盘标记"), "Deleting history does not unlink interview round review markers");
+  assert(html.includes('id="openAccountBtn" class="account-pill" type="button" aria-haspopup="menu" aria-expanded="false">本地体验</button>'), "Static first paint should not imply cloud login before config is known");
+  assert(html.includes("当前仅本地保存，云端账号配置完成后才会启用登录和多设备同步"), "Static account modal copy overpromises sync");
+  assert(html.includes("正在分析中...") && !html.includes("AI正在分析中") && !html.includes("AI 正在生成结果"), "Loading copy should not imply real AI when rules fallback may be used");
+  assert(html.includes("使用规则分析") && html.includes("已切换为规则快速分析"), "Fallback action should be rules-based for ordinary users");
+  assert(html.includes('id="loadingPanel" class="loading-panel hidden" role="status" aria-live="polite"'), "Loading panel lacks status semantics");
+  assert(html.includes('id="errorPanel" class="error-panel hidden" role="alert"'), "Error panel lacks alert semantics");
+  assert(html.includes("function handleGlobalKeydown") && html.includes('keyLower === "n"') && html.includes('keyLower === "k"'), "Global keyboard shortcuts are missing");
+  assert(html.includes('setAttribute("aria-current", page === "manager" ? "page" : "false")'), "App nav aria-current state is missing");
+  assert(html.includes('aria-haspopup="menu" aria-expanded="false"') && html.includes('setAttribute("aria-expanded", String(open))'), "Account menu expanded state is missing");
   assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.queue-empty-state/.test(html), "Queue empty state dark-mode styling is missing");
   assert(/@media \(max-width: 1120px\)/.test(html), "Laptop/tablet header breakpoint is missing");
   assert(/@media \(max-width: 768px\)/.test(html), "Mobile breakpoint is missing");
   assert(/@media \(max-width: 560px\)/.test(html), "Small phone breakpoint is missing");
-  assert(/confirm\(`确定删除/.test(html), "Interview delete confirmation is missing");
+  assert(/showConfirmDialog\(\{[\s\S]*buildDeleteInterviewConfirmMessage\(record\)/.test(html), "Interview delete confirmation is missing");
   assert(html.includes("function validateInterviewRequiredFields"), "Interview form required-field validation helper is missing");
   assert(html.includes("interviewFormMessage") && html.includes("aria-invalid"), "Interview form validation lacks persistent inline feedback");
   assert(/function saveInterviewFromForm[\s\S]*validateInterviewRequiredFields\(record, \{ focus: true \}\)/.test(html), "Interview form save path does not enforce required-field validation");

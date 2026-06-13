@@ -720,17 +720,137 @@
       margin-bottom: 14px;
     }
 
+    .manager-quick-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: -2px 0 14px;
+    }
+
+    .quick-filter-chip {
+      min-height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: #334155;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .quick-filter-chip:hover {
+      border-color: #93c5fd;
+      color: #1d4ed8;
+      background: #eff6ff;
+    }
+
+    .quick-filter-chip.active {
+      border-color: #2563eb;
+      color: #1d4ed8;
+      background: #dbeafe;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.13);
+    }
+
+    .quick-filter-chip span {
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 950;
+    }
+
+    .quick-filter-chip.active span {
+      background: #fff;
+      color: #1d4ed8;
+    }
+
+    .manager-filter-toolbar {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: -4px 0 14px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+    }
+
+    .manager-filter-toolbar span {
+      min-width: 0;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
     .interview-list {
       display: grid;
       gap: 10px;
     }
 
-    .manager-list-panel.is-empty .manager-filter-grid {
+    .manager-list-panel.is-empty .manager-filter-grid,
+    .manager-list-panel.is-empty .manager-quick-filters,
+    .manager-list-panel.is-empty .manager-filter-toolbar {
       display: none;
     }
 
     .manager-list-panel.is-empty .panel-body {
       padding: 18px;
+    }
+
+    .next-action-banner {
+      margin: 0 0 16px;
+      padding: 14px;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      box-shadow: 0 14px 34px rgba(37, 99, 235, 0.08);
+    }
+
+    .next-action-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .next-action-copy strong {
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 950;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .next-action-copy span {
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .next-action-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
     }
 
     .queue-empty-state {
@@ -1500,6 +1620,60 @@
       line-height: 1.55;
     }
 
+    .capture-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .review-context-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin: 0 0 12px;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eff6ff, #f8fafc);
+    }
+
+    .review-context-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .review-context-copy span {
+      color: #2563eb;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .review-context-copy strong {
+      color: #0f172a;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 950;
+      overflow-wrap: anywhere;
+    }
+
+    .review-context-copy small {
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .review-context-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .record-indicator {
       display: inline-flex;
       align-items: center;
@@ -1750,6 +1924,19 @@
       color: var(--text-secondary);
       font-size: 12px;
       flex-wrap: wrap;
+    }
+
+    .input-meta-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .source-quality-hint {
+      color: #475569;
+      font-weight: 800;
     }
 
     .input-controls {
@@ -3759,6 +3946,62 @@
       padding: 24px;
     }
 
+    .modal-mask.confirm-modal {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 95;
+    }
+
+    .confirm-dialog {
+      width: min(440px, calc(100vw - 32px));
+      max-height: calc(100vh - 40px);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.26);
+      overflow: hidden;
+      display: grid;
+    }
+
+    .confirm-dialog-head {
+      padding: 18px 18px 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .confirm-dialog-kicker {
+      color: #2563eb;
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .confirm-dialog-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 950;
+    }
+
+    .confirm-dialog-desc {
+      padding: 14px 18px 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+
+    .confirm-dialog-actions {
+      padding: 18px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .drawer {
       width: min(520px, calc(100vw - 28px));
       height: calc(100vh - 28px);
@@ -3994,6 +4237,70 @@
       display: grid;
       gap: 12px;
       padding: 14px 16px 16px;
+    }
+
+    .dev-config-primary {
+      border: 1px solid var(--primary);
+      background: var(--primary-light);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .dev-config-advanced {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card-soft);
+    }
+
+    .dev-config-advanced > summary,
+    .dev-config-tests > summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .dev-config-advanced > summary::-webkit-details-marker,
+    .dev-config-tests > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .dev-config-advanced > summary::before,
+    .dev-config-tests > summary::before {
+      content: "▸";
+      font-size: 12px;
+      transition: transform 0.15s ease;
+      color: var(--muted);
+    }
+
+    .dev-config-advanced[open] > summary::before,
+    .dev-config-tests[open] > summary::before {
+      transform: rotate(90deg);
+    }
+
+    .dev-config-advanced-body {
+      display: grid;
+      gap: 12px;
+      padding: 0 14px 14px;
+    }
+
+    .dev-config-tests {
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
+    }
+
+    .dev-config-tests > summary {
+      padding: 10px 12px;
+      font-weight: 500;
+    }
+
+    .dev-config-tests .auth-actions,
+    .dev-config-tests #cloudDiagnosticList {
+      margin: 0 12px 12px;
     }
 
     .auth-grid,
@@ -5150,9 +5457,43 @@
       }
 
       .manager-filter-grid,
+      .manager-filter-toolbar,
       .manager-form-grid,
       .round-editor-grid {
         grid-template-columns: minmax(0, 1fr);
+      }
+
+      .manager-quick-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .quick-filter-chip {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .manager-filter-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .manager-filter-toolbar .mini-btn {
+        width: 100%;
+      }
+
+      .next-action-banner {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .next-action-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+      }
+
+      .next-action-buttons .mini-btn {
+        width: 100%;
       }
 
       .record-meta-grid {
@@ -5256,6 +5597,22 @@
 
       .capture-card.upload-flow.active {
         display: flex;
+      }
+
+      .review-context-bar {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        padding: 11px;
+      }
+
+      .review-context-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+      }
+
+      .review-context-actions .mini-btn {
+        width: 100%;
       }
 
       .capture-copy {
@@ -5991,11 +6348,23 @@
 	        width: 100%;
 	      }
 
-	      .manager-header-actions,
 	      .manager-stats,
 	      .stats-grid,
 	      #modelModal .model-actions {
 	        grid-template-columns: minmax(0, 1fr);
+	      }
+
+	      .manager-header-actions {
+	        grid-template-columns: repeat(3, minmax(0, 1fr));
+	        gap: 8px;
+	      }
+
+	      .manager-header-actions #addInterviewBtn {
+	        grid-column: 1 / -1;
+	      }
+
+	      .manager-header-actions .btn {
+	        padding: 0 8px;
 	      }
 
 	      .record-rounds {
@@ -6082,7 +6451,7 @@
         <div class="account-area">
           <span id="accountModeLabel" class="account-mode-label">本地模式</span>
           <div class="account-menu-wrap">
-            <button id="openAccountBtn" class="account-pill" type="button">登录 / 注册</button>
+            <button id="openAccountBtn" class="account-pill" type="button" aria-haspopup="menu" aria-expanded="false">本地体验</button>
             <div id="accountMenu" class="account-menu" role="menu" aria-label="账号菜单">
               <strong id="accountMenuEmail">未登录</strong>
               <span id="accountMenuSync">本地保存，换设备不可见。</span>
@@ -6127,6 +6496,7 @@
         </div>
       </section>
       <div id="importStatus" class="import-status hidden"></div>
+      <div id="interviewNextActionBanner" class="next-action-banner hidden" aria-live="polite"></div>
       <section id="nextInterviewSpotlight" class="next-interview-spotlight empty" aria-label="下一场面试"></section>
 
       <section class="manager-stats" aria-label="面试概览">
@@ -6150,9 +6520,18 @@
               <select id="interviewStatusFilter" class="select" aria-label="面试状态筛选">
                 <option value="all">全部状态</option>
                 <option value="pending">待进行</option>
+                <option value="upcoming">即将面试</option>
+                <option value="needs-update">已过期待更新</option>
+                <option value="unscheduled">待补时间</option>
+                <option value="needs-review">待复盘</option>
                 <option value="passed">已通过</option>
                 <option value="failed">已挂</option>
               </select>
+            </div>
+            <div id="managerQuickFilters" class="manager-quick-filters" aria-label="快捷视图"></div>
+            <div class="manager-filter-toolbar" aria-live="polite">
+              <span id="interviewFilterSummary">共 0 条，按下一场时间排序。</span>
+              <button id="clearInterviewFilterBtn" class="mini-btn hidden" type="button">清空筛选</button>
             </div>
             <div id="interviewList" class="interview-list"></div>
           </div>
@@ -6294,11 +6673,11 @@
         <div class="panel-body">
           <div id="capturePanel" class="capture-panel">
             <div class="capture-tabs" aria-label="输入方式">
-              <button id="uploadTab" class="capture-tab active" type="button"><span class="tab-full">上传音频</span><span class="tab-short">上传</span></button>
+              <button id="uploadTab" class="capture-tab" type="button"><span class="tab-full">上传音频</span><span class="tab-short">上传</span></button>
               <button id="recordTab" class="capture-tab" type="button"><span class="tab-full">录音转写</span><span class="tab-short">录音</span></button>
-              <button id="textTab" class="capture-tab" type="button"><span class="tab-full">粘贴文字</span><span class="tab-short">粘贴</span></button>
+              <button id="textTab" class="capture-tab active" type="button"><span class="tab-full">粘贴文字</span><span class="tab-short">粘贴</span></button>
             </div>
-            <div id="uploadCard" class="capture-card upload-flow active">
+            <div id="uploadCard" class="capture-card upload-flow">
               <div class="capture-copy">
                 <strong id="uploadTitle">上传面试录音</strong>
               </div>
@@ -6326,12 +6705,26 @@
                 <button id="recordBtn" class="btn primary" type="button">开始录音转写</button>
               </div>
             </div>
-            <div id="textCard" class="capture-card">
+            <div id="textCard" class="capture-card active">
               <div class="capture-copy">
                 <strong id="textTitle">粘贴已有面试转写稿</strong>
                 <span id="textDesc">适合从录音笔、Plaud、钉钉、飞书妙记等工具复制文本后继续复盘。</span>
               </div>
-              <button id="focusTextBtn" class="btn" type="button">粘贴到下方</button>
+              <div class="capture-card-actions">
+                <button id="focusTextBtn" class="btn" type="button">粘贴到下方</button>
+                <button id="fillSampleTranscriptBtn" class="btn ghost" type="button">填入示例</button>
+              </div>
+            </div>
+          </div>
+          <div id="reviewContextBar" class="review-context-bar hidden" aria-live="polite">
+            <div class="review-context-copy">
+              <span>当前复盘对象</span>
+              <strong id="reviewContextTitle">未关联面试记录</strong>
+              <small id="reviewContextMeta">从面试队列点击“去复盘”后，会自动带入公司、岗位和轮次。</small>
+            </div>
+            <div class="review-context-actions">
+              <button id="reviewContextEditBtn" class="mini-btn" type="button">编辑记录</button>
+              <button id="reviewContextClearBtn" class="mini-btn" type="button">取消关联</button>
             </div>
           </div>
           <div id="sourceWrap" class="source-wrap">
@@ -6343,7 +6736,7 @@
             <div id="speakerPreview" class="speaker-preview hidden" aria-label="说话人视图"></div>
             <textarea id="sourceText" class="meeting-input" placeholder="粘贴面试转写稿，最好保留面试官和候选人的说话人标记。"></textarea>
             <div id="inputMeta" class="input-meta">
-              <span id="charCount">已输入 0 字</span>
+              <span class="input-meta-main"><span id="charCount">已输入 0 字</span><span id="sourceQualityHint" class="source-quality-hint">等待输入</span></span>
               <button id="clearSourceBtn" class="btn ghost" type="button">清空输入</button>
             </div>
           </div>
@@ -6386,7 +6779,7 @@
           </div>
         </div>
         <div class="panel-body">
-          <div id="loadingPanel" class="loading-panel hidden">
+          <div id="loadingPanel" class="loading-panel hidden" role="status" aria-live="polite">
             <div class="loading-row"><span class="spinner"></span><span id="loadingText">正在识别面试问题...</span></div>
             <div class="loading-steps" aria-hidden="true">
               <span id="loadingStepOne">识别问题</span>
@@ -6397,12 +6790,12 @@
             <div class="loading-progress"><span></span></div>
           </div>
 
-          <div id="errorPanel" class="error-panel hidden">
+          <div id="errorPanel" class="error-panel hidden" role="alert">
             <strong>生成失败</strong>
             <div id="errorText">请稍后重试，当前输入内容会保留。</div>
             <div class="error-actions">
               <button id="retryBtn" class="btn" type="button">重试</button>
-              <button id="fallbackBtn" class="btn" type="button">切换本地模式</button>
+              <button id="fallbackBtn" class="btn" type="button">使用规则分析</button>
               <button id="openModelFromErrorBtn" class="btn" type="button">进入开发者模式</button>
             </div>
           </div>
@@ -6554,8 +6947,8 @@
     <aside class="drawer account-dialog">
       <div class="drawer-head">
         <div>
-          <h3 id="accountModalTitle" class="drawer-title">登录声流 Senlo</h3>
-          <p id="accountModalNote" class="panel-note">登录后可在多设备间同步面试记录、转写文本和 AI 复盘结果。</p>
+          <h3 id="accountModalTitle" class="drawer-title">本地体验</h3>
+          <p id="accountModalNote" class="panel-note">当前仅本地保存，云端账号配置完成后才会启用登录和多设备同步。</p>
         </div>
         <button id="closeAccountBtn" class="icon-btn" type="button" aria-label="关闭账号弹窗" title="关闭">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -6590,8 +6983,8 @@
         <section id="accountSignedOutPanel" class="account-panel">
           <div class="account-card">
             <div class="auth-form-head">
-              <h4 id="authFormTitle">登录账号</h4>
-              <p id="authFormDesc">使用邮箱和密码登录。登录后，面试记录、转写和 AI 复盘历史会自动同步。</p>
+              <h4 id="authFormTitle">本地体验</h4>
+              <p id="authFormDesc">云端账号服务尚未配置时，可以继续在本设备保存面试记录和复盘。</p>
             </div>
             <div class="auth-grid">
               <input id="accountEmailInput" class="input" type="text" autocomplete="username" placeholder="邮箱，或输入 admin">
@@ -6599,7 +6992,7 @@
               <input id="accountConfirmPasswordInput" class="input hidden" type="password" autocomplete="new-password" placeholder="再次输入密码">
             </div>
             <div class="auth-actions">
-              <button id="authPrimaryBtn" class="btn primary" type="button">登录</button>
+              <button id="authPrimaryBtn" class="btn primary" type="button" disabled>等待管理员配置</button>
               <button id="continueLocalBtn" class="btn ghost" type="button">继续本地体验</button>
             </div>
             <div class="auth-footer">
@@ -6629,64 +7022,76 @@
       </div>
       <div class="drawer-body">
         <div class="developer-config-body">
-          <p class="account-card-desc">普通用户可以直接使用产品能力；这里用于开发者调试云端账号、数据隔离和模型服务。不要填写腾讯云服务端密钥。</p>
           <div id="devCloudMessage" class="auth-message"></div>
-          <div class="account-setup">
-            <strong>配置前先确认</strong>
-            <ol>
-              <li>已开启邮箱/账号密码登录。</li>
-              <li>Web 安全域名包含当前访问地址。</li>
-              <li>数据库已创建 7 个集合，并按 <code>user_id</code> 做安全规则隔离。</li>
-            </ol>
-            <div class="account-setup-actions">
-              <button id="copyCloudCollectionsBtn" class="mini-btn" type="button">复制集合列表</button>
-              <button id="copyCloudRulesBtn" class="mini-btn" type="button">复制规则要点</button>
-            </div>
-          </div>
-          <div class="account-setup">
-            <strong>当前环境</strong>
-            <ol>
-              <li>当前页面域名：<code id="devCloudOrigin">-</code></li>
-              <li>配置来源：<code id="devCloudConfigSource">默认空配置</code></li>
-            </ol>
-          </div>
-          <div class="account-setup">
+
+          <!-- ① 模型 / ASR：最常用，置顶高亮 -->
+          <div class="account-setup dev-config-primary">
             <div class="diagnostic-head">
-              <strong>模型配置与语音识别</strong>
+              <strong>① 模型 / 语音识别（ASR）</strong>
               <div class="account-setup-actions">
                 <button id="openModelBtn" class="mini-btn primary" type="button">配置模型 / ASR</button>
               </div>
             </div>
             <span id="modelStatus" class="status-pill warn" tabindex="0" role="button" data-tooltip="文本模型未配置；转写模型未配置。点击进入开发者模型设置。"><span class="status-dot"></span>文本模型：未配置 · 转写模型：未配置</span>
-            <p class="account-card-desc">模型 Key 仅开发者可见，只保存在当前设备。普通用户不会看到这一步，也不需要自己配置。</p>
+            <p class="account-card-desc">文本大模型和语音转文字（ASR）都在这里配置。Key 仅开发者可见，只保存在当前设备；普通用户不会看到这一步，也不需要自己配置。</p>
           </div>
-          <div class="cloud-config-grid">
-            <input id="supabaseUrlInput" class="input" placeholder="CloudBase 环境 ID，例如 prod-xxxx">
-            <input id="cloudbaseRegionInput" class="input" placeholder="地域，例如 ap-shanghai">
-            <input id="supabaseAnonKeyInput" class="input" type="password" placeholder="Web 安全客户端 key / accessKey">
-          </div>
-          <div class="auth-actions">
-            <button id="saveCloudConfigBtn" class="btn" type="button">保存云端配置</button>
-            <button id="testCloudConfigBtn" class="btn" type="button">测试云端连接</button>
-            <button id="clearCloudConfigBtn" class="btn danger" type="button">清除配置</button>
-          </div>
-          <div class="auth-actions">
-            <button id="testCloudInitBtn" class="btn ghost" type="button">测试初始化</button>
-            <button id="testCloudAuthBtn" class="btn ghost" type="button">测试 Auth</button>
-            <button id="testCloudEmailAuthBtn" class="btn ghost" type="button">测试邮箱登录能力</button>
-            <button id="testCloudDbBtn" class="btn ghost" type="button">测试数据库权限</button>
-          </div>
-          <div id="cloudDiagnosticList" class="account-setup"></div>
-          <div class="account-setup dev-account-diagnostic">
-            <div class="diagnostic-head">
-              <strong>账号状态诊断</strong>
-              <div class="account-setup-actions">
-                <button id="refreshAccountDiagnosticBtn" class="mini-btn" type="button">刷新诊断</button>
-                <button id="clearLegacyAuthStateBtn" class="mini-btn danger" type="button">清理旧账号状态</button>
+
+          <!-- ② 云端账号同步：高级，默认折叠 -->
+          <details class="dev-config-advanced">
+            <summary>② 云端账号同步（高级 · 可选）</summary>
+            <div class="dev-config-advanced-body">
+              <p class="account-card-desc">普通用户无需配置即可使用产品。这里用于开发者调试 CloudBase 账号、数据隔离和跨设备同步。不要填写腾讯云服务端密钥。</p>
+              <div class="account-setup">
+                <strong>配置前先确认</strong>
+                <ol>
+                  <li>已开启邮箱/账号密码登录。</li>
+                  <li>Web 安全域名包含当前访问地址。</li>
+                  <li>数据库已创建 7 个集合，并按 <code>user_id</code> 做安全规则隔离。</li>
+                </ol>
+                <div class="account-setup-actions">
+                  <button id="copyCloudCollectionsBtn" class="mini-btn" type="button">复制集合列表</button>
+                  <button id="copyCloudRulesBtn" class="mini-btn" type="button">复制规则要点</button>
+                </div>
+              </div>
+              <div class="account-setup">
+                <strong>当前环境</strong>
+                <ol>
+                  <li>当前页面域名：<code id="devCloudOrigin">-</code></li>
+                  <li>配置来源：<code id="devCloudConfigSource">默认空配置</code></li>
+                </ol>
+              </div>
+              <div class="cloud-config-grid">
+                <input id="supabaseUrlInput" class="input" placeholder="CloudBase 环境 ID，例如 prod-xxxx">
+                <input id="cloudbaseRegionInput" class="input" placeholder="地域，例如 ap-shanghai">
+                <input id="supabaseAnonKeyInput" class="input" type="password" placeholder="Web 安全客户端 key / accessKey">
+              </div>
+              <div class="auth-actions">
+                <button id="saveCloudConfigBtn" class="btn" type="button">保存云端配置</button>
+                <button id="testCloudConfigBtn" class="btn" type="button">测试云端连接</button>
+                <button id="clearCloudConfigBtn" class="btn danger" type="button">清除配置</button>
+              </div>
+              <details class="dev-config-tests">
+                <summary>云端连通性测试</summary>
+                <div class="auth-actions">
+                  <button id="testCloudInitBtn" class="btn ghost" type="button">测试初始化</button>
+                  <button id="testCloudAuthBtn" class="btn ghost" type="button">测试 Auth</button>
+                  <button id="testCloudEmailAuthBtn" class="btn ghost" type="button">测试邮箱登录能力</button>
+                  <button id="testCloudDbBtn" class="btn ghost" type="button">测试数据库权限</button>
+                </div>
+                <div id="cloudDiagnosticList" class="account-setup"></div>
+              </details>
+              <div class="account-setup dev-account-diagnostic">
+                <div class="diagnostic-head">
+                  <strong>账号状态诊断</strong>
+                  <div class="account-setup-actions">
+                    <button id="refreshAccountDiagnosticBtn" class="mini-btn" type="button">刷新诊断</button>
+                    <button id="clearLegacyAuthStateBtn" class="mini-btn danger" type="button">清理旧账号状态</button>
+                  </div>
+                </div>
+                <div id="accountDiagnosticPanel" class="diagnostic-grid"></div>
               </div>
             </div>
-            <div id="accountDiagnosticPanel" class="diagnostic-grid"></div>
-          </div>
+          </details>
         </div>
       </div>
     </aside>
@@ -6850,7 +7255,7 @@
           <div id="sourceDrawerText" class="source-quote">原文片段暂不可用，仅保留时间范围。</div>
         </div>
         <div class="source-evidence">
-          <strong>AI 为什么引用这段</strong>
+          <strong>为什么引用这段</strong>
           <p id="sourceDrawerReason">这段原文与当前面试问题、回答点评或改进建议相关。</p>
         </div>
         <div class="actions">
@@ -6859,6 +7264,20 @@
         </div>
       </div>
     </aside>
+  </div>
+
+  <div id="confirmModal" class="modal-mask confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalDesc">
+    <section class="confirm-dialog" role="document">
+      <div class="confirm-dialog-head">
+        <span id="confirmModalKicker" class="confirm-dialog-kicker">请确认</span>
+        <h3 id="confirmModalTitle" class="confirm-dialog-title">确认操作</h3>
+      </div>
+      <div id="confirmModalDesc" class="confirm-dialog-desc"></div>
+      <div class="confirm-dialog-actions">
+        <button id="confirmCancelBtn" class="btn" type="button">取消</button>
+        <button id="confirmPrimaryBtn" class="btn danger" type="button">确认</button>
+      </div>
+    </section>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -6933,6 +7352,7 @@
       model: "FunAudioLLM/SenseVoiceSmall",
       apiKey: ""
     };
+    const LONG_SOURCE_WARNING_LIMIT = 20000;
 
     const PROVIDERS = {
       "OpenAI": {
@@ -7207,7 +7627,7 @@
         record: "",
         text: ""
       },
-      inputMode: "upload",
+      inputMode: "text",
       scenario: DEFAULT_SCENARIO,
       audioFileName: "",
       outputType: DEFAULT_OUTPUT_TYPE,
@@ -7256,8 +7676,11 @@
     let interviewRecords = [];
     const managerState = {
       editingId: "",
+      formBaselineSignature: "",
       search: "",
-      status: "all"
+      status: "all",
+      nextActionRecordId: "",
+      nextActionMode: ""
     };
     const historyState = {
       search: ""
@@ -7278,6 +7701,8 @@
     const companyInferenceInFlight = new Set();
     const companyInferenceAttempted = new Set();
     let activeMobilePage = "input";
+    let confirmDialogResolver = null;
+    let confirmDialogLastFocus = null;
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SPEAKER_TONES = [
       { color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
@@ -8446,7 +8871,7 @@
         model_provider: modelConfig.provider || "",
         model_id: item.modelUsed || getModelName(),
         report_json: item.report || item.result || EMPTY_RESULT,
-        report_markdown: buildMinutesText(item.report || item.result || EMPTY_RESULT, state.scenario),
+        report_markdown: buildMinutesText(item.report || item.result || EMPTY_RESULT, state.scenario, item.modelUsed),
         created_at: item.createdAt || nowIso(),
         updated_at: item.updatedAt || nowIso()
       };
@@ -8758,11 +9183,11 @@
         "accountModeLabel", "openAccountBtn", "accountMenu", "accountMenuEmail", "accountMenuSync", "accountMenuUserId", "menuSyncNowBtn", "menuImportLocalDataBtn", "menuAccountInfoBtn", "menuSignOutBtn", "openDevCloudBtn",
         "accountModal", "accountModalTitle", "accountModalNote", "closeAccountBtn", "accountSignedInPanel", "accountSignedOutPanel", "accountAuthMessage", "authFormTitle", "authFormDesc", "accountEmailInput", "accountPasswordInput", "accountConfirmPasswordInput", "authPrimaryBtn", "continueLocalBtn", "authSwitchText", "toggleAuthModeBtn", "goLoginAfterVerifyBtn", "openDevConfigFromAuthBtn", "signOutBtn", "syncNowBtn", "importLocalDataBtn", "localImportPrompt", "confirmImportLocalBtn", "skipImportLocalBtn",
         "devCloudModal", "closeDevCloudBtn", "devCloudMessage", "saveCloudConfigBtn", "testCloudConfigBtn", "testCloudInitBtn", "testCloudAuthBtn", "testCloudEmailAuthBtn", "testCloudDbBtn", "clearCloudConfigBtn", "copyCloudCollectionsBtn", "copyCloudRulesBtn", "supabaseUrlInput", "cloudbaseRegionInput", "supabaseAnonKeyInput", "devCloudOrigin", "devCloudConfigSource", "cloudDiagnosticList", "accountDiagnosticPanel", "refreshAccountDiagnosticBtn", "clearLegacyAuthStateBtn", "accountUserEmail", "accountUserId", "accountSyncStatus",
-        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "addInterviewBtn", "importInterviewFileBtn", "importInterviewTextBtn", "importStatus", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
-        "capturePanel", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard", "uploadTitle", "recordTitle", "textTitle", "textDesc",
+        "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "addInterviewBtn", "importInterviewFileBtn", "importInterviewTextBtn", "importStatus", "interviewNextActionBanner", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "managerQuickFilters", "interviewFilterSummary", "clearInterviewFilterBtn", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
+        "capturePanel", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard", "uploadTitle", "recordTitle", "textTitle", "textDesc", "reviewContextBar", "reviewContextTitle", "reviewContextMeta", "reviewContextEditBtn", "reviewContextClearBtn",
         "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
-        "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn",
-        "sourceWrap", "textEmptyHint", "speakerPreview", "sourceText", "inputMeta", "charCount",
+        "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn", "fillSampleTranscriptBtn",
+        "sourceWrap", "textEmptyHint", "speakerPreview", "sourceText", "inputMeta", "charCount", "sourceQualityHint",
         "clearSourceBtn", "outputType", "localModeBtn", "apiModeBtn", "generateBtn",
         "clearAllBtn", "emptyHeroKicker", "emptyHeroTitle", "emptyHeroDesc", "emptyHeroStatus", "emptyPreviewOneTitle", "emptyPreviewOneDesc", "emptyPreviewTwoTitle", "emptyPreviewTwoDesc", "emptyPreviewThreeTitle", "emptyPreviewThreeDesc", "emptyPreviewFourTitle", "emptyPreviewFourDesc",
         "trustNote", "resultMeta", "loadingPanel", "loadingText", "errorPanel", "errorText", "retryBtn", "fallbackBtn",
@@ -8776,6 +9201,7 @@
         "customProviderInput", "apiKeyInput", "toggleKeyBtn", "baseUrlInput", "restoreBaseUrlBtn", "temperatureInput",
         "maxTokensInput", "timeoutInput", "asrProviderInput", "asrBaseUrlInput", "restoreAsrBaseUrlBtn", "asrModelInput", "asrApiKeyInput", "toggleAsrKeyBtn", "testMessage", "testModelBtn", "saveModelBtn", "clearModelBtn",
         "historyModal", "closeHistoryBtn", "historySearchInput", "historyList", "sourceModal", "closeSourceBtn", "sourceDrawerMeta", "sourceDrawerSpeaker", "sourceDrawerText", "sourceDrawerReason", "jumpTranscriptBtn", "copySourceBtn",
+        "confirmModal", "confirmModalKicker", "confirmModalTitle", "confirmModalDesc", "confirmCancelBtn", "confirmPrimaryBtn",
         "toast"
       ].forEach(id => els[id] = document.getElementById(id));
 
@@ -8872,7 +9298,7 @@
       });
       els.copyCloudCollectionsBtn.addEventListener("click", () => copyText(CLOUDBASE_COLLECTIONS.join("\n"), "已复制 CloudBase 集合列表"));
       els.copyCloudRulesBtn.addEventListener("click", () => copyText(CLOUDBASE_RULE_GUIDE, "已复制 CloudBase 安全规则要点"));
-      els.closeInterviewFormBtn.addEventListener("click", closeInterviewFormModal);
+      els.closeInterviewFormBtn.addEventListener("click", () => closeInterviewFormModal());
       els.interviewFormModal.addEventListener("click", event => {
         if (event.target === els.interviewFormModal) closeInterviewFormModal();
       });
@@ -8898,6 +9324,17 @@
         managerState.status = els.interviewStatusFilter.value;
         renderInterviewManager();
       });
+      if (els.managerQuickFilters) {
+        els.managerQuickFilters.addEventListener("click", event => {
+          const button = event.target.closest("[data-status]");
+          if (!button) return;
+          managerState.status = managerState.status === button.dataset.status ? "all" : button.dataset.status;
+          renderInterviewManager();
+        });
+      }
+      if (els.clearInterviewFilterBtn) {
+        els.clearInterviewFilterBtn.addEventListener("click", () => clearInterviewFilter());
+      }
       els.interviewForm.addEventListener("submit", event => {
         event.preventDefault();
         saveInterviewFromForm();
@@ -8909,7 +9346,7 @@
           }
         });
       });
-      els.resetInterviewFormBtn.addEventListener("click", closeInterviewFormModal);
+      els.resetInterviewFormBtn.addEventListener("click", () => closeInterviewFormModal());
       els.recordTab.addEventListener("click", () => setInputMode("record"));
       els.uploadTab.addEventListener("click", () => setInputMode("upload"));
       els.textTab.addEventListener("click", () => setInputMode("text"));
@@ -8927,6 +9364,39 @@
         els.sourceText.focus();
         showToast("可以直接粘贴转写稿或聊天记录");
       });
+      if (els.fillSampleTranscriptBtn) {
+        els.fillSampleTranscriptBtn.addEventListener("click", () => {
+          setInputMode("text");
+          setActiveSource(getSampleTranscriptText(), { trim: true });
+          state.error = "";
+          state.lastApiFailed = false;
+          clearGeneratedResultState();
+          saveState();
+          renderInputDependentState();
+          els.sourceText.focus({ preventScroll: true });
+          showToast("已填入示例转写稿，可以直接生成复盘");
+        });
+      }
+      if (els.reviewContextEditBtn) {
+        els.reviewContextEditBtn.addEventListener("click", () => {
+          const record = getLinkedInterviewRecord();
+          if (!record) {
+            showToast("关联的面试记录不存在，当前输入内容已保留");
+            return;
+          }
+          fillInterviewForm(record);
+          openInterviewFormModal();
+        });
+      }
+      if (els.reviewContextClearBtn) {
+        els.reviewContextClearBtn.addEventListener("click", () => {
+          state.linkedInterviewId = "";
+          state.linkedRoundIndex = null;
+          saveState();
+          render();
+          showToast("已取消面试关联，当前输入内容已保留");
+        });
+      }
       els.sourceText.addEventListener("input", () => {
         setActiveSource(els.sourceText.value);
         state.error = "";
@@ -8935,7 +9405,21 @@
         saveState();
         renderInputDependentState();
       });
-      els.clearSourceBtn.addEventListener("click", () => {
+      els.clearSourceBtn.addEventListener("click", async () => {
+        if (hasRealInput() || hasResult()) {
+          const ok = await showConfirmDialog({
+            kicker: "清空输入",
+            title: "清空当前转写文本？",
+            message: "清空输入会删除当前页面里的转写文本，并让当前生成结果失效。\n\n已保存的历史复盘不会被删除；如果你只是想重新生成，可以直接点“重新生成”。",
+            confirmText: "清空输入",
+            cancelText: "保留内容",
+            tone: "danger"
+          });
+          if (!ok) {
+            showToast("已取消清空，输入内容已保留");
+            return;
+          }
+        }
         setActiveSource("");
         state.error = "";
         state.lastApiFailed = false;
@@ -8982,7 +9466,7 @@
         setMode("local");
         state.error = "";
         render();
-        showToast(isDeveloperMode() ? "已切换为本地模拟模式" : "已回到直接生成模式");
+        showToast(isDeveloperMode() ? "已切换为本地模拟分析" : "已切换为规则快速分析");
       });
       els.openModelFromErrorBtn.addEventListener("click", openDevCloudModal);
       els.openModelBtn.addEventListener("click", openModelModal);
@@ -9014,6 +9498,13 @@
       els.sourceModal.addEventListener("click", event => {
         if (event.target === els.sourceModal) closeSourceModal();
       });
+      if (els.confirmModal) {
+        els.confirmModal.addEventListener("click", event => {
+          if (event.target === els.confirmModal) settleConfirmDialog(false);
+        });
+        els.confirmCancelBtn.addEventListener("click", () => settleConfirmDialog(false));
+        els.confirmPrimaryBtn.addEventListener("click", () => settleConfirmDialog(true));
+      }
       els.jumpTranscriptBtn.addEventListener("click", () => {
         if (state.activeSourceTime) {
           closeSourceModal();
@@ -9021,6 +9512,127 @@
         }
       });
       els.copySourceBtn.addEventListener("click", () => copyText(state.activeSourceText || "", "已复制原文片段"));
+      document.addEventListener("keydown", handleGlobalKeydown);
+    }
+
+    function isEditableEventTarget(target) {
+      const node = target instanceof Element ? target : null;
+      if (!node) return false;
+      return Boolean(node.closest("input, textarea, select, [contenteditable='true']"));
+    }
+
+    function isModalShown(node) {
+      return Boolean(node?.classList?.contains("show"));
+    }
+
+    function showConfirmDialog({
+      kicker = "请确认",
+      title = "确认操作",
+      message = "",
+      confirmText = "确认",
+      cancelText = "取消",
+      tone = "danger"
+    } = {}) {
+      if (!els.confirmModal) return Promise.resolve(window.confirm([title, message].filter(Boolean).join("\n\n")));
+      if (confirmDialogResolver) settleConfirmDialog(false);
+      confirmDialogLastFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      els.confirmModalKicker.textContent = kicker;
+      els.confirmModalTitle.textContent = title;
+      els.confirmModalDesc.textContent = message;
+      els.confirmPrimaryBtn.textContent = confirmText;
+      els.confirmCancelBtn.textContent = cancelText;
+      els.confirmPrimaryBtn.className = `btn ${tone === "danger" ? "danger" : "primary"}`;
+      els.confirmModal.classList.add("show");
+      setTimeout(() => els.confirmCancelBtn.focus({ preventScroll: true }), 20);
+      return new Promise(resolve => {
+        confirmDialogResolver = resolve;
+      });
+    }
+
+    function settleConfirmDialog(confirmed) {
+      if (!els.confirmModal || !confirmDialogResolver) return;
+      const resolve = confirmDialogResolver;
+      confirmDialogResolver = null;
+      els.confirmModal.classList.remove("show");
+      resolve(Boolean(confirmed));
+      if (confirmDialogLastFocus?.focus) {
+        setTimeout(() => confirmDialogLastFocus.focus({ preventScroll: true }), 20);
+      }
+      confirmDialogLastFocus = null;
+    }
+
+    function handleGlobalKeydown(event) {
+      const key = String(event.key || "");
+      if (key === "Escape") {
+        if (isModalShown(els.confirmModal)) {
+          settleConfirmDialog(false);
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.sourceModal)) {
+          closeSourceModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.historyModal)) {
+          closeHistoryModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.modelModal)) {
+          closeModelModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.devCloudModal)) {
+          closeDevCloudModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.interviewTextImportModal)) {
+          closeInterviewTextImportModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.interviewFormModal)) {
+          closeInterviewFormModal();
+          event.preventDefault();
+          return;
+        }
+        if (isModalShown(els.accountModal)) {
+          closeAccountModal();
+          event.preventDefault();
+          return;
+        }
+        if (els.accountMenu?.classList.contains("show")) {
+          closeAccountMenu();
+          event.preventDefault();
+        }
+        return;
+      }
+
+      const keyLower = key.toLowerCase();
+      const commandKey = event.metaKey || event.ctrlKey;
+      if (commandKey && keyLower === "k") {
+        event.preventDefault();
+        if (state.appPage === "manager") {
+          els.interviewSearchInput.focus();
+          els.interviewSearchInput.select();
+          showToast("已定位到面试搜索");
+        } else {
+          setInputMode("text");
+          revealSourceInput();
+          showToast("已定位到复盘输入框");
+        }
+        return;
+      }
+
+      if (isEditableEventTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (keyLower === "n" && state.appPage === "manager") {
+        event.preventDefault();
+        resetInterviewForm();
+        openInterviewFormModal();
+      }
     }
 
     async function bootstrapAuth() {
@@ -9075,11 +9687,14 @@
 
     function toggleAccountMenu() {
       if (!isCloudActive() && !isAdminActive()) return;
-      els.accountMenu?.classList.toggle("show");
+      const open = !els.accountMenu?.classList.contains("show");
+      els.accountMenu?.classList.toggle("show", open);
+      els.openAccountBtn?.setAttribute("aria-expanded", String(open));
     }
 
     function closeAccountMenu() {
       els.accountMenu?.classList.remove("show");
+      els.openAccountBtn?.setAttribute("aria-expanded", "false");
     }
 
     function setAuthFormMode(mode = "signIn", { silent = false } = {}) {
@@ -9106,22 +9721,32 @@
         ? "当前已进入本地 Demo 管理员模式，可配置对本机所有用户生效的模型、ASR 和云端设置。"
         : isCloud
         ? "你已登录，面试记录、转写文本和 AI 复盘结果会按当前账号同步。"
+        : isUnconfigured
+        ? "当前是本地体验；云端账号尚未配置，面试记录和复盘只保存在本设备。"
         : "登录后可在多设备间同步面试记录、转写文本和 AI 复盘结果。";
-      if (els.authFormTitle) els.authFormTitle.textContent = isUnconfigured && isSignUp ? "云端服务尚未配置" : (isSignUp ? "创建账号" : "登录账号");
+      const devLogin = isDevCloudConfigAllowed();
+      const disableCloudAuth = isUnconfigured && (!devLogin || isSignUp);
+      if (els.authFormTitle) els.authFormTitle.textContent = isUnconfigured
+        ? (devLogin ? "开发者登录" : "本地体验")
+        : (isSignUp ? "创建账号" : "登录账号");
       if (els.authFormDesc) els.authFormDesc.textContent = isUnconfigured
         ? (isSignUp
           ? "当前云端服务尚未配置完成，暂不能创建真实账号。"
-          : "输入 admin / datou123 可进入本地管理员模式；真实用户登录需要管理员先完成云端配置。")
+          : (devLogin
+            ? "输入 admin / datou123 可进入本地管理员模式；真实用户登录需要管理员先完成云端配置。"
+            : "云端账号服务尚未配置完成，暂不能登录真实账号；你可以继续使用本地模式体验。"))
         : (isSignUp
           ? "使用邮箱创建账号。注册后如果收到验证邮件，请先完成验证再登录。"
-          : "普通用户使用邮箱登录；管理员使用 admin / datou123 进入开发者模式。");
+          : (devLogin
+            ? "普通用户使用邮箱登录；管理员使用 admin / datou123 进入开发者模式。"
+            : "使用邮箱登录后，面试记录、转写和复盘会按账号在多设备间同步。"));
       [els.accountEmailInput, els.accountPasswordInput, els.accountConfirmPasswordInput].forEach(input => {
-        if (input) input.disabled = authUiState.isBusy || (isUnconfigured && isSignUp);
+        if (input) input.disabled = authUiState.isBusy || disableCloudAuth;
       });
       if (els.accountEmailInput) {
         els.accountEmailInput.type = isSignUp ? "email" : "text";
         els.accountEmailInput.autocomplete = isSignUp ? "email" : "username";
-        els.accountEmailInput.placeholder = isSignUp ? "邮箱，例如 name@example.com" : "邮箱，或输入 admin";
+        els.accountEmailInput.placeholder = isSignUp || !devLogin ? "邮箱，例如 name@example.com" : "邮箱，或输入 admin";
       }
       if (els.accountPasswordInput) {
         els.accountPasswordInput.autocomplete = isSignUp ? "new-password" : "current-password";
@@ -9131,12 +9756,18 @@
         els.accountConfirmPasswordInput.classList.toggle("hidden", !isSignUp);
       }
       if (els.authPrimaryBtn) {
-        els.authPrimaryBtn.disabled = authUiState.isBusy || (isUnconfigured && isSignUp);
+        els.authPrimaryBtn.disabled = authUiState.isBusy || disableCloudAuth;
         els.authPrimaryBtn.textContent = authUiState.isBusy
           ? (isSignUp ? "注册中..." : "登录中...")
+          : isUnconfigured && !devLogin
+          ? "等待管理员配置"
+          : isUnconfigured && devLogin
+          ? "进入开发者模式"
           : (isSignUp ? "注册" : "登录");
       }
-      if (els.authSwitchText) els.authSwitchText.textContent = isUnconfigured ? "真实账号需要先完成云端配置" : (isSignUp ? "已有账号？" : "还没有账号？");
+      if (els.authSwitchText) els.authSwitchText.textContent = isUnconfigured
+        ? (devLogin ? "真实账号需要先完成云端配置" : "当前可继续本地体验")
+        : (isSignUp ? "已有账号？" : "还没有账号？");
       if (els.toggleAuthModeBtn) {
         els.toggleAuthModeBtn.textContent = isSignUp ? "返回登录" : "立即注册";
         els.toggleAuthModeBtn.classList.toggle("hidden", isUnconfigured);
@@ -9407,13 +10038,14 @@
     async function handleAuthSubmit() {
       const action = authUiState.formMode;
       const account = normalizeEmailForAuth(els.accountEmailInput.value);
-      const isAdminLogin = action === "signIn" && isDemoAdminCredential(account, els.accountPasswordInput.value);
+      const devLogin = isDevCloudConfigAllowed();
+      const isAdminLogin = action === "signIn" && devLogin && isDemoAdminCredential(account, els.accountPasswordInput.value);
       const email = account;
       els.accountEmailInput.value = account;
       const password = els.accountPasswordInput.value;
       const confirmPassword = els.accountConfirmPasswordInput?.value || "";
       if (!account || !password) {
-        showAccountMessage("请填写账号和密码。管理员账号为 admin。", "error");
+        showAccountMessage(devLogin ? "请填写账号和密码。管理员账号为 admin。" : "请填写邮箱和密码。", "error");
         return;
       }
       if (isAdminLogin) {
@@ -9425,7 +10057,7 @@
         return;
       }
       if (!isValidEmail(email)) {
-        showAccountMessage("普通账号请填写邮箱地址；管理员请使用 admin / datou123。", "error");
+        showAccountMessage(devLogin ? "普通账号请填写邮箱地址；管理员请使用 admin / datou123。" : "请填写有效的邮箱地址。", "error");
         els.accountEmailInput.focus();
         return;
       }
@@ -9488,14 +10120,14 @@
           : (isConfigured ? "当前为本地模式，登录后启用云端同步" : "云端服务尚未配置，当前记录仅保存在本设备");
       }
       const accountLabel = isAdmin ? "admin" : (authState.user?.email || authState.user?.displayName || "账号");
-      const label = isSignedIn ? accountLabel : "登录 / 注册";
+      const label = isSignedIn ? accountLabel : (!isConfigured ? "本地体验" : "登录 / 注册");
       els.openAccountBtn.textContent = label;
       els.openAccountBtn.className = `account-pill ${isSignedIn ? "cloud" : ""} ${status === "syncing" ? "syncing" : ""} ${status === "error" ? "error" : ""}`.trim();
       els.openAccountBtn.title = isAdmin
         ? "管理员模式：点击查看菜单或退出"
         : isCloud
         ? `User ID: ${getCurrentUserId()}${authState.lastSyncedAt ? `\n上次同步：${formatTime(authState.lastSyncedAt)}` : ""}`
-        : (isConfigured ? "当前仅本地保存，换设备不可见。点击登录启用云端同步。" : "云端服务尚未配置，当前仅本地保存。");
+        : (isConfigured ? "当前仅本地保存，换设备不可见。点击登录启用云端同步。" : "当前为本地体验，云端账号尚未配置。");
       if (!isSignedIn) closeAccountMenu();
       if (els.accountSignedInPanel) els.accountSignedInPanel.classList.toggle("hidden", !isSignedIn);
       if (els.accountSignedOutPanel) els.accountSignedOutPanel.classList.toggle("hidden", isSignedIn);
@@ -9523,7 +10155,7 @@
           ? "管理员模式，本机共享配置已启用。"
           : isCloud
           ? `${authState.syncMessage || getSyncStatusLabel(status)}${last}`
-          : "本地保存，换设备不可见";
+          : (isConfigured ? "本地保存，换设备不可见" : "本地体验，云端账号尚未配置");
       }
       renderDeveloperToolsVisibility();
       renderAuthForm();
@@ -9535,9 +10167,21 @@
       setTimeout(() => els.interviewCompanyInput.focus({ preventScroll: true }), 30);
     }
 
-    function closeInterviewFormModal() {
+    async function closeInterviewFormModal(options = {}) {
+      if (!options.force && isInterviewFormDirty()) {
+        const ok = await showConfirmDialog({
+          kicker: "未保存",
+          title: "关闭未保存的面试记录？",
+          message: "当前面试记录还没有保存。关闭后，本次填写或修改的内容不会保留。",
+          confirmText: "放弃修改并关闭",
+          cancelText: "继续编辑",
+          tone: "danger"
+        });
+        if (!ok) return false;
+      }
       els.interviewFormModal.classList.remove("show");
       clearInterviewFormValidation();
+      return true;
     }
 
     function openInterviewTextImportModal() {
@@ -9575,6 +10219,39 @@
       setInterviewFieldInvalid(els.interviewCompanyInput, false);
       setInterviewFieldInvalid(els.interviewRoleInput, false);
       showInterviewFormMessage("");
+    }
+
+    function getInterviewFormDraftSnapshot() {
+      return {
+        editingId: managerState.editingId || "",
+        company: els.interviewCompanyInput?.value || "",
+        role: els.interviewRoleInput?.value || "",
+        baseLocation: els.interviewBaseLocationInput?.value || "",
+        intention: els.interviewIntentionInput?.value || "",
+        contactWechat: els.interviewContactWechatInput?.value || "",
+        overallProgress: els.interviewOverallProgressInput?.value || "",
+        jd: els.interviewJdInput?.value || "",
+        rounds: Array.from(els.roundFields?.querySelectorAll(".round-editor") || []).map(node => ({
+          time: node.querySelector(".round-time")?.value || "",
+          location: node.querySelector(".round-location")?.value || "",
+          result: node.querySelector(".round-result")?.value || "pending",
+          note: node.querySelector(".round-note")?.value || ""
+        }))
+      };
+    }
+
+    function getInterviewFormDraftSignature() {
+      return JSON.stringify(getInterviewFormDraftSnapshot());
+    }
+
+    function markInterviewFormPristine() {
+      managerState.formBaselineSignature = getInterviewFormDraftSignature();
+    }
+
+    function isInterviewFormDirty() {
+      if (!els.interviewFormModal?.classList.contains("show")) return false;
+      if (!managerState.formBaselineSignature) return false;
+      return getInterviewFormDraftSignature() !== managerState.formBaselineSignature;
     }
 
     function validateInterviewRequiredFields(record, { focus = false } = {}) {
@@ -9629,6 +10306,8 @@
       if (page === "manager") document.body.dataset.scenario = DEFAULT_SCENARIO;
       els.managerNavBtn.classList.toggle("active", page === "manager");
       els.reviewNavBtn.classList.toggle("active", page === "review");
+      els.managerNavBtn.setAttribute("aria-current", page === "manager" ? "page" : "false");
+      els.reviewNavBtn.setAttribute("aria-current", page === "review" ? "page" : "false");
       els.interviewManagerPage.classList.toggle("hidden", page !== "manager");
       els.reviewWorkspacePage.classList.toggle("hidden", page !== "review");
       els.mobilePageTabs.classList.toggle("hidden", page !== "review");
@@ -9650,7 +10329,7 @@
       const next = getValidScenario(value);
       if (next === state.scenario) return true;
       if (state.isLoading) {
-        showToast("AI 正在生成结果，完成后再切换场景");
+        showToast("正在生成结果，完成后再切换场景");
         return false;
       }
       if (isRecording) {
@@ -9758,7 +10437,7 @@
         const canRestorePrivateState = !saved.userId || saved.userId === getCurrentUserId();
         const savedOutputType = saved.outputType || DEFAULT_OUTPUT_TYPE;
         const outputType = getValidOutputType(savedOutputType);
-        const inputMode = getValidInputMode(saved.inputMode || "upload");
+        const inputMode = getValidInputMode(saved.inputMode || "text");
         const sourceByMode = normalizeSourceByMode(saved.sourceByMode, inputMode, saved.source || "");
         Object.assign(state, {
           appPage: getValidAppPage(saved.appPage || "manager"),
@@ -10035,6 +10714,35 @@
       return getEffectiveInput().length > 0;
     }
 
+    async function shouldConfirmLongSourceBeforeGenerate() {
+      const length = getEffectiveInput().length;
+      if (length <= LONG_SOURCE_WARNING_LIMIT) return false;
+      const ok = await showConfirmDialog({
+        kicker: "长文本分析",
+        title: "继续生成这份长文本？",
+        message: `当前输入约 ${length} 字，生成可能更慢；如果接入真实模型，也可能带来更高调用成本。\n\n建议先删掉无关寒暄或分段复盘。当前输入会保留，取消后可以继续整理。`,
+        confirmText: "继续生成",
+        cancelText: "先整理文本",
+        tone: "primary"
+      });
+      return !ok;
+    }
+
+    async function confirmReportExport(scope = "current") {
+      const isAll = scope === "all";
+      const message = isAll
+        ? "导出数据会下载当前账号可见的面试记录、复盘历史、转写文本、上传文件元数据和用户信息。请确认当前设备和下载目录安全。继续导出吗？"
+        : "导出的 Markdown 可能包含公司、岗位、面试原文、复盘结论和下一步建议。请确认不会泄露隐私或敏感信息。继续导出吗？";
+      return showConfirmDialog({
+        kicker: "导出确认",
+        title: isAll ? "导出完整本地数据？" : "导出这份复盘？",
+        message,
+        confirmText: isAll ? "导出 JSON" : "导出 Markdown",
+        cancelText: "取消导出",
+        tone: "primary"
+      });
+    }
+
     function hashSource(text = state.source) {
       const value = getEffectiveInput(text);
       let hash = 0;
@@ -10073,6 +10781,23 @@
 
     function getModelName() {
       return modelConfig.customModel || modelConfig.model || "未选择模型";
+    }
+
+    function hasAsrConfig() {
+      const asrLabel = modelConfig.asrModel || ASR_DEFAULTS.model;
+      return Boolean(modelConfig.asrApiKey && modelConfig.asrBaseUrl && asrLabel);
+    }
+
+    function getAnalysisModeLabel() {
+      if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed) return `真实大模型：${getModelName()}`;
+      return isDeveloperMode() ? "本地模拟分析" : "规则快速分析";
+    }
+
+    function normalizeModelUsedLabel(value = "") {
+      const text = String(value || "").trim();
+      if (!text) return getAnalysisModeLabel();
+      if (!isDeveloperMode() && (text === "本地模拟" || text === "声流内置分析")) return "规则快速分析";
+      return text;
     }
 
     function markEdited() {
@@ -10340,7 +11065,7 @@
       const location = sanitizeInterviewLocation(raw.location || raw.method || raw.address || raw.interviewMethodOrLocation || "");
       const result = ["pending", "passed", "failed", "unknown"].includes(raw.result) ? raw.result : "pending";
       return {
-        roundIndex: Number(raw.roundIndex || index + 1),
+        roundIndex: Number(raw.roundIndex ?? index + 1),
         time,
         interviewTime: time,
         location,
@@ -10654,7 +11379,7 @@
         const sheetMatch = workbookXml.match(/<sheet\b[^>]*r:id="([^"]+)"/);
         const relId = sheetMatch?.[1];
         if (relId) {
-          const relPattern = new RegExp(`<Relationship\\\\b[^>]*Id="${escapeRegExp(relId)}"[^>]*Target="([^"]+)"`);
+          const relPattern = new RegExp(`<Relationship\\b[^>]*Id="${escapeRegExp(relId)}"[^>]*Target="([^"]+)"`);
           const relMatch = relsXml.match(relPattern);
           if (relMatch?.[1]) {
             const target = relMatch[1].replace(/^\/+/, "");
@@ -10745,12 +11470,14 @@
           const attrs = cellMatch[1];
           const body = cellMatch[2];
           const ref = attrs.match(/\br="([A-Z]+)\d+"/)?.[1] || "";
-          const columnIndex = ref ? columnNameToIndex(ref) : row.length;
+          let columnIndex = ref ? columnNameToIndex(ref) : row.length;
+          if (!Number.isInteger(columnIndex) || columnIndex < 0 || columnIndex > 16384) columnIndex = row.length;
           const type = attrs.match(/\bt="([^"]+)"/)?.[1] || "";
           let value = "";
           if (type === "s") {
-            const index = Number((body.match(/<v>([\s\S]*?)<\/v>/) || [])[1]);
-            value = sharedStrings[index] || "";
+            const rawIndex = (body.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
+            const index = rawIndex != null && String(rawIndex).trim() !== "" ? Number(rawIndex) : NaN;
+            value = Number.isInteger(index) && index >= 0 ? (sharedStrings[index] || "") : "";
           } else if (type === "inlineStr") {
             value = Array.from(body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)).map(item => decodeXml(item[1])).join("");
           } else {
@@ -11124,6 +11851,39 @@
         .sort((a, b) => getInterviewTimeMs(a.time) - getInterviewTimeMs(b.time))[0] || null;
     }
 
+    function getReviewableInterviewRound(record, referenceMs = Date.now()) {
+      return (record.rounds || [])
+        .map((round, index) => ({ ...round, index }))
+        .find(round => {
+          if (round.summaryId) return false;
+          const time = getInterviewTimeMs(round.time);
+          const isPastPending = time !== null && time < referenceMs && round.result === "pending";
+          const hasFinalResult = round.result === "passed" || round.result === "failed";
+          const hasReviewNotes = Boolean(String(round.note || "").trim());
+          return hasFinalResult || isPastPending || hasReviewNotes;
+        }) || null;
+    }
+
+    function needsInterviewTime(record) {
+      const progress = getInterviewProgress(record);
+      if (["passed", "failed"].includes(progress.key)) return false;
+      return !(record.rounds || []).some(round => round.time);
+    }
+
+    function getInterviewDerivedStatusCounts(records = []) {
+      return records.reduce((acc, record) => {
+        const progress = getInterviewProgress(record);
+        if (getFutureInterview(record)) acc.upcoming += 1;
+        if (getOverdueInterview(record)) acc["needs-update"] += 1;
+        if (needsInterviewTime(record)) acc.unscheduled += 1;
+        if (getReviewableInterviewRound(record)) acc["needs-review"] += 1;
+        if (["upcoming", "needs-update", "in-progress", "unscheduled"].includes(progress.key)) acc.pending += 1;
+        if (progress.key === "passed") acc.passed += 1;
+        if (progress.key === "failed") acc.failed += 1;
+        return acc;
+      }, { pending: 0, upcoming: 0, "needs-update": 0, unscheduled: 0, "needs-review": 0, passed: 0, failed: 0 });
+    }
+
     function compareInterviewRecords(a, b) {
       const nextA = getFutureInterview(a);
       const nextB = getFutureInterview(b);
@@ -11175,8 +11935,68 @@
       const pendingKeys = ["upcoming", "needs-update", "in-progress", "unscheduled"];
       const statusMatched = managerState.status === "all"
         || progress.key === managerState.status
-        || (managerState.status === "pending" && pendingKeys.includes(progress.key));
+        || (managerState.status === "pending" && pendingKeys.includes(progress.key))
+        || (managerState.status === "needs-review" && Boolean(getReviewableInterviewRound(record)))
+        || (managerState.status === "unscheduled" && needsInterviewTime(record));
       return statusMatched && (!query || text.includes(query));
+    }
+
+    function getManagerStatusFilterLabel(status = managerState.status) {
+      return {
+        all: "全部状态",
+        pending: "待进行",
+        upcoming: "即将面试",
+        "needs-update": "已过期待更新",
+        unscheduled: "待补时间",
+        "needs-review": "待复盘",
+        passed: "已通过",
+        failed: "已挂"
+      }[status] || "全部状态";
+    }
+
+    function hasInterviewFilter() {
+      return Boolean(managerState.search) || managerState.status !== "all";
+    }
+
+    function clearInterviewFilter(options = {}) {
+      managerState.search = "";
+      managerState.status = "all";
+      renderInterviewManager();
+      if (!options.silent) showToast("已清空搜索和筛选");
+    }
+
+    function renderInterviewFilterToolbar(totalCount = 0, filteredCount = totalCount) {
+      if (!els.interviewFilterSummary || !els.clearInterviewFilterBtn) return;
+      const hasFilter = hasInterviewFilter();
+      const statusLabel = getManagerStatusFilterLabel();
+      if (!totalCount) {
+        els.interviewFilterSummary.textContent = "暂无面试记录，先新增或导入第一条机会。";
+      } else if (hasFilter) {
+        const queryText = managerState.search ? `关键词“${managerState.search}”` : "";
+        const statusText = managerState.status !== "all" ? statusLabel : "";
+        const condition = [queryText, statusText].filter(Boolean).join(" · ");
+        els.interviewFilterSummary.textContent = `已筛出 ${filteredCount} / ${totalCount} 条${condition ? `（${condition}）` : ""}。`;
+      } else {
+        els.interviewFilterSummary.textContent = `共 ${totalCount} 条，已按下一场时间优先排序。`;
+      }
+      els.clearInterviewFilterBtn.classList.toggle("hidden", !hasFilter);
+    }
+
+    function renderInterviewQuickFilters(records = []) {
+      if (!els.managerQuickFilters) return;
+      const counts = getInterviewDerivedStatusCounts(records);
+      const items = [
+        ["upcoming", "即将面试", counts.upcoming],
+        ["needs-update", "已过期待更新", counts["needs-update"]],
+        ["unscheduled", "待补时间", counts.unscheduled],
+        ["needs-review", "待复盘", counts["needs-review"]]
+      ];
+      els.managerQuickFilters.innerHTML = items.map(([status, label, count]) => `
+        <button class="quick-filter-chip ${managerState.status === status ? "active" : ""}" type="button" data-status="${escapeAttr(status)}" aria-pressed="${managerState.status === status ? "true" : "false"}">
+          ${escapeHtml(label)}
+          <span>${Number(count) || 0}</span>
+        </button>
+      `).join("");
     }
 
 	    function renderCompactEmptyState({ state = "empty", label = "待输入", title = "", description = "", cards = [], actions = "" } = {}) {
@@ -11260,19 +12080,27 @@
       els.interviewSearchInput.value = managerState.search;
       els.interviewStatusFilter.value = managerState.status;
       recognizeMissingCompaniesInBackground(records);
+      renderInterviewQuickFilters(records);
+      renderInterviewNextActionBanner(records);
       renderNextInterviewSpotlight(records);
       listPanel?.classList.toggle("is-empty", records.length === 0);
 
       if (!records.length) {
         managerState.search = "";
         managerState.status = "all";
+        managerState.nextActionRecordId = "";
+        managerState.nextActionMode = "";
         els.interviewSearchInput.value = "";
         els.interviewStatusFilter.value = "all";
+        renderInterviewQuickFilters([]);
+        renderInterviewNextActionBanner([]);
+        renderInterviewFilterToolbar(0, 0);
 	        els.interviewList.innerHTML = renderQueueEmptyState();
 	        return;
 	      }
 
       const filtered = records.filter(matchesInterviewFilter);
+      renderInterviewFilterToolbar(records.length, filtered.length);
       els.interviewList.innerHTML = "";
       if (!filtered.length) {
         els.interviewList.innerHTML = renderCompactEmptyState({
@@ -11287,17 +12115,57 @@
           ],
           actions: `<div class="empty-actions"><button class="btn" type="button" data-action="clear-interview-filter">清空搜索和筛选</button></div>`
         });
-        els.interviewList.querySelector("[data-action='clear-interview-filter']")?.addEventListener("click", () => {
-          managerState.search = "";
-          managerState.status = "all";
-          renderInterviewManager();
-          showToast("已清空搜索和筛选");
-        });
+        els.interviewList.querySelector("[data-action='clear-interview-filter']")?.addEventListener("click", () => clearInterviewFilter());
         return;
       }
       filtered
         .sort(compareInterviewRecords)
         .forEach(record => renderInterviewCard(record));
+    }
+
+    function renderInterviewNextActionBanner(records = []) {
+      if (!els.interviewNextActionBanner) return;
+      const record = records.find(item => item.id === managerState.nextActionRecordId);
+      if (!record) {
+        els.interviewNextActionBanner.classList.add("hidden");
+        els.interviewNextActionBanner.innerHTML = "";
+        return;
+      }
+      const isUpdate = managerState.nextActionMode === "updated";
+      const next = getFutureInterview(record) || getOverdueInterview(record);
+      const title = [record.company || "未填写公司", record.role || "未填写岗位"].join(" / ");
+      const desc = isUpdate
+        ? "记录已更新。你可以带着这条机会去复盘，也可以继续补充 JD、时间、地址和面试结果。"
+        : "新增成功。下一步建议先去复盘补充面试文本，或把 JD、时间和会议地址补齐，之后作战台会自动排序。";
+      const nextText = next ? `${getRoundLabel(next.index)} · ${formatInterviewDate(next.time, { relative: true })}` : "时间待补充";
+      els.interviewNextActionBanner.classList.remove("hidden");
+      els.interviewNextActionBanner.innerHTML = `
+        <div class="next-action-copy">
+          <strong>${escapeHtml(isUpdate ? `已更新：${title}` : `已保存：${title}`)}</strong>
+          <span>${escapeHtml(desc)} 当前轮次：${escapeHtml(nextText)}。</span>
+        </div>
+        <div class="next-action-buttons">
+          <button class="mini-btn primary" type="button" data-action="review">去复盘</button>
+          <button class="mini-btn" type="button" data-action="edit">继续补充</button>
+          <button class="mini-btn" type="button" data-action="new">再新增一条</button>
+          <button class="mini-btn" type="button" data-action="dismiss">返回作战台</button>
+        </div>
+      `;
+      els.interviewNextActionBanner.querySelector("[data-action='review']")?.addEventListener("click", () => startReviewFromInterview(record.id));
+      els.interviewNextActionBanner.querySelector("[data-action='edit']")?.addEventListener("click", () => editInterviewRecord(record.id));
+      els.interviewNextActionBanner.querySelector("[data-action='new']")?.addEventListener("click", () => {
+        managerState.nextActionRecordId = "";
+        managerState.nextActionMode = "";
+        resetInterviewForm();
+        openInterviewFormModal();
+        renderInterviewManager();
+      });
+      els.interviewNextActionBanner.querySelector("[data-action='dismiss']")?.addEventListener("click", () => {
+        managerState.nextActionRecordId = "";
+        managerState.nextActionMode = "";
+        renderInterviewManager();
+        showToast("已回到面试作战台");
+      });
     }
 
     function backfillMissingCompaniesLocally(records = []) {
@@ -11520,6 +12388,7 @@
         node.querySelector(".round-result").value = round.result || "pending";
         node.querySelector(".round-note").value = round.note || "";
       });
+      markInterviewFormPristine();
       clearInterviewFormValidation();
       renderInterviewManager();
     }
@@ -11535,14 +12404,28 @@
       openInterviewFormModal();
     }
 
+    function buildDeleteInterviewConfirmMessage(record) {
+      const next = getFutureInterview(record) || getOverdueInterview(record);
+      const title = record.company || record.role || "这条面试记录";
+      const detailLines = [
+        `确定删除「${title}」吗？`,
+        "",
+        `岗位：${record.role || "未填写岗位"}`,
+        `下一场/最近一场：${next ? `${getRoundLabel(next.index)} · ${formatInterviewDate(next.time, { relative: true })}` : "暂无排期"}`,
+        "",
+        "删除后，这条记录会从本机面试队列移除；已导出的备份文件和已保存的历史复盘不会被自动删除。"
+      ];
+      return detailLines.join("\n");
+    }
+
     async function saveInterviewFromForm() {
       let record = getRecordFromForm();
       const originalButtonText = els.saveInterviewBtn.textContent;
       const shouldInferCompany = !record.company && buildCompanyInferenceText(record);
       try {
+        els.saveInterviewBtn.disabled = true;
+        els.saveInterviewBtn.textContent = shouldInferCompany ? "识别公司中..." : "保存中...";
         if (shouldInferCompany) {
-          els.saveInterviewBtn.disabled = true;
-          els.saveInterviewBtn.textContent = "识别公司中...";
           record = await hydrateMissingCompany(record);
           if (record.company) els.interviewCompanyInput.value = record.company;
         }
@@ -11558,7 +12441,10 @@
         }
         saveInterviewRecords();
         fillInterviewForm(record);
-        closeInterviewFormModal();
+        closeInterviewFormModal({ force: true });
+        managerState.nextActionRecordId = record.id;
+        managerState.nextActionMode = existingIndex >= 0 ? "updated" : "created";
+        renderInterviewManager();
         showToast(record.company && shouldInferCompany ? `已识别公司并保存：${record.company}` : (existingIndex >= 0 ? "面试记录已更新" : "面试记录已保存"));
       } finally {
         els.saveInterviewBtn.disabled = false;
@@ -11566,14 +12452,26 @@
       }
     }
 
-    function deleteInterviewRecord(id) {
+    async function deleteInterviewRecord(id) {
       const record = interviewRecords.find(item => item.id === id);
       if (!record) return;
-      if (!confirm(`确定删除「${record.company || record.role || "这条面试记录"}」吗？`)) return;
+      const ok = await showConfirmDialog({
+        kicker: "删除面试",
+        title: "删除这条面试记录？",
+        message: buildDeleteInterviewConfirmMessage(record),
+        confirmText: "删除记录",
+        cancelText: "取消",
+        tone: "danger"
+      });
+      if (!ok) return;
       interviewRecords = interviewRecords.filter(item => item.id !== id);
       saveInterviewRecords();
       interviewService.remove(id);
       if (managerState.editingId === id) resetInterviewForm();
+      if (managerState.nextActionRecordId === id) {
+        managerState.nextActionRecordId = "";
+        managerState.nextActionMode = "";
+      }
       renderInterviewManager();
       showToast("已删除面试记录");
     }
@@ -11582,7 +12480,7 @@
       const record = interviewRecords.find(item => item.id === id);
       if (!record) return;
       if (state.isLoading) {
-        showToast("AI 正在生成结果，完成后再进入复盘");
+        showToast("正在生成结果，完成后再进入复盘");
         return;
       }
       state.scenario = "interview";
@@ -11636,12 +12534,36 @@
       return lines.join("\n\n");
     }
 
+    function getSampleTranscriptText() {
+      const record = getLinkedInterviewRecord();
+      const linkedContext = record ? buildInterviewRecordContext(record, state.linkedRoundIndex) : "";
+      const company = record?.company || "星澜协同科技";
+      const role = record?.role || "AI 产品经理";
+      const transcript = [
+        "【示例转写稿】",
+        `00:00 面试官：我们先从背景开始。你为什么对${company}的${role}感兴趣？`,
+        "00:35 候选人：我长期在协同办公和 AI 工具方向做产品，比较关注如何把模型能力落到真实工作流里。这个岗位既有用户场景，也有跨团队推进空间，所以我很感兴趣。",
+        "01:40 面试官：你最近做过一个最有代表性的 AI 项目是什么？",
+        "02:05 候选人：我做过一个面试复盘工具，从录音转写、结构化总结到下一轮准备建议。我负责需求拆解、原型、评估指标和灰度验证，重点解决用户不知道如何复盘、复盘结果不可行动的问题。",
+        "03:20 面试官：如果模型输出不稳定，你会怎么设计兜底？",
+        "03:45 候选人：我会先把输入、权限、成本和失败场景分层。无模型配置时使用规则分析并明确标注；模型失败时保留原文、允许重试和切换本地分析；涉及敏感数据时避免把密钥和原文暴露到前端日志。",
+        "05:10 面试官：你如何判断这个工具对用户真的有帮助？",
+        "05:35 候选人：我会看三个指标：用户是否能在五分钟内完成第一份复盘，是否愿意保存并回看历史，以及下一轮面试前是否会根据建议补充准备材料。同时会人工抽查建议是否具体、可执行。",
+        "07:00 面试官：如果研发资源只有两周，你会怎么取舍？",
+        "07:25 候选人：我会优先保证新增面试、粘贴转写、生成复盘、保存历史和导出结果的闭环。音频转写、云同步和多模型接入可以先标注为需要配置，不让用户误以为一定可用。",
+        "09:10 面试官：你有什么问题想问我们？",
+        "09:30 候选人：我想了解团队现在最需要 AI 产品经理解决的是用户增长、工作流深度集成，还是模型效果评估体系。这样我能更好判断入职后的优先级。"
+      ].join("\n");
+      return [linkedContext, transcript].filter(Boolean).join("\n\n");
+    }
+
     function render() {
       renderScenario();
       renderAppPage();
       renderInterviewManager();
       els.sourceText.value = state.source;
       els.outputType.value = state.outputType;
+      renderReviewContextBar();
       renderInputMode();
       renderInputMeta();
       renderSpeakerPreview();
@@ -11669,6 +12591,7 @@
     function renderInputDependentState() {
       renderScenario();
       renderAppPage();
+      renderReviewContextBar();
       renderInputMode();
       renderInputMeta();
       renderSpeakerPreview();
@@ -11681,10 +12604,45 @@
       saveState();
     }
 
+    function renderReviewContextBar() {
+      if (!els.reviewContextBar) return;
+      if (!state.linkedInterviewId) {
+        els.reviewContextBar.classList.add("hidden");
+        return;
+      }
+      els.reviewContextBar.classList.remove("hidden");
+      const record = getLinkedInterviewRecord();
+      if (!record) {
+        els.reviewContextTitle.textContent = "关联的面试记录不存在";
+        els.reviewContextMeta.textContent = "当前转写和复盘输入仍会保留；可以取消关联后继续生成，或回到面试队列重新选择。";
+        if (els.reviewContextEditBtn) els.reviewContextEditBtn.disabled = true;
+        return;
+      }
+      const round = getLinkedInterviewRound();
+      const roundLabel = state.linkedRoundIndex == null ? "推荐轮次" : getRoundLabel(Number(state.linkedRoundIndex) || 0);
+      const roundTime = round?.time ? formatInterviewDate(round.time, { relative: true }) : "时间待补充";
+      const roundLocation = round?.location || "地址待补充";
+      els.reviewContextTitle.textContent = `${record.company || "待识别公司"} · ${record.role || "未填写岗位"}`;
+      els.reviewContextMeta.textContent = `${roundLabel} · ${roundTime} · ${roundLocation}`;
+      if (els.reviewContextEditBtn) els.reviewContextEditBtn.disabled = false;
+    }
+
+    function getSourceQualityHint() {
+      if (!hasRealInput()) return "等待输入";
+      const length = getEffectiveInput().length;
+      const segments = getTranscriptSegments();
+      if (length > LONG_SOURCE_WARNING_LIMIT) return "内容较长，建议先删减无关片段或分段复盘";
+      if (length < 80) return "内容偏短，建议补充至少一段完整问答";
+      if (segments.length >= 3) return `已识别 ${segments.length} 段说话人片段，适合生成`;
+      if (segments.length > 0) return `已识别 ${segments.length} 段片段，可继续补充`;
+      return "已准备生成；保留说话人标记会更准确";
+    }
+
     function renderInputMeta() {
       const hasInput = hasRealInput();
       const length = getEffectiveInput().length;
       els.charCount.textContent = `已输入 ${length} 字`;
+      if (els.sourceQualityHint) els.sourceQualityHint.textContent = getSourceQualityHint();
       els.inputMeta.classList.toggle("hidden", !hasInput);
       els.textEmptyHint.classList.toggle("hidden", hasInput || state.inputMode !== "text");
     }
@@ -11774,7 +12732,7 @@
             time: inferSourceTime(line, index)
           };
         })
-        .filter(segment => segment.text);
+        .filter(segment => segment.text && segment.text.trim());
     }
 
     function inferSourceTime(text, index = 0) {
@@ -11863,8 +12821,11 @@
     function findSourceEvidence(sourceTime) {
       const segments = getTranscriptSegments();
       if (!segments.length) return null;
-      return segments.find(segment => segment.time === sourceTime) || segments.find(segment => {
-        const [sourceStart, sourceEnd] = parseTimeRange(sourceTime);
+      const exact = segments.find(segment => segment.time === sourceTime);
+      if (exact) return exact;
+      if (!/\d{1,2}:\d{2}/.test(String(sourceTime || ""))) return null;
+      const [sourceStart, sourceEnd] = parseTimeRange(sourceTime);
+      return segments.find(segment => {
         const [segmentStart, segmentEnd] = parseTimeRange(segment.time);
         return sourceStart <= segmentEnd && sourceEnd >= segmentStart;
       }) || null;
@@ -11884,6 +12845,7 @@
 
     function renderInputMode() {
       const isInputBusy = isRecording || isAudioTranscribing;
+      const asrReady = hasAsrConfig();
       if (els.capturePanel) {
         els.capturePanel.classList.toggle("is-busy", isInputBusy);
         els.capturePanel.dataset.mode = state.inputMode;
@@ -11918,12 +12880,26 @@
       }
       if (selectedAudioFile) {
         if (!isAudioTranscribing) renderAudioMeta();
-        els.transcribeAudioBtn.disabled = isAudioTranscribing;
+        if (!asrReady && !isDeveloperMode()) {
+          els.audioMeta.textContent = `${selectedAudioFile.name} · 转写服务暂未接入，请先粘贴已有转写文本`;
+        }
+        els.transcribeAudioBtn.disabled = isAudioTranscribing || (!asrReady && !isDeveloperMode());
+        if (!isAudioTranscribing) {
+          els.transcribeAudioBtn.textContent = asrReady || isDeveloperMode() ? "转写音频" : "转写服务未配置";
+          els.transcribeAudioBtn.title = asrReady || isDeveloperMode()
+            ? "将所选音频转写为文字"
+            : "音频转写服务暂未接入，请先粘贴已有转写文本";
+        }
         els.audioPreview.classList.add("show");
       } else {
         updateAudioPickerState();
-        els.audioMeta.textContent = state.audioFileName ? `${state.audioFileName} · 请重新选择文件后转写` : "尚未选择音频";
+        els.audioMeta.textContent = !asrReady && !isDeveloperMode()
+          ? "转写服务暂未接入，请先粘贴已有转写文本"
+          : (state.audioFileName ? `${state.audioFileName} · 请重新选择文件后转写` : "尚未选择音频");
         els.transcribeAudioBtn.disabled = true;
+        els.transcribeAudioBtn.title = !asrReady && !isDeveloperMode()
+          ? "音频转写服务暂未接入，请先粘贴已有转写文本"
+          : "请先选择音频文件";
         els.audioPreview.classList.remove("show");
       }
     }
@@ -11937,7 +12913,12 @@
     function renderGenerateButton() {
       const scenario = getScenario();
       const disabled = state.isLoading || !hasRealInput();
-      els.generateBtn.textContent = state.isLoading ? "AI正在分析中..." : scenario.generateLabel;
+      els.generateBtn.textContent = state.isLoading ? "正在分析中..." : (hasRealInput() ? scenario.generateLabel : "先添加面试内容");
+      els.generateBtn.title = state.isLoading
+        ? "正在生成，请稍候"
+        : hasRealInput()
+          ? "生成结构化面试复盘"
+          : "请先上传音频、录音转写或粘贴面试内容";
       els.generateBtn.disabled = disabled;
       els.regenerateBtn.disabled = disabled;
       const needsGeneration = hasRealInput() && (!hasResult() || isResultStale() || isLegacyOrRestoredResult() || isRestoredResult());
@@ -11953,10 +12934,12 @@
       const modelLabel = getModelName();
       const asrLabel = modelConfig.asrModel || ASR_DEFAULTS.model;
       const asrProvider = modelConfig.asrProvider || ASR_DEFAULTS.provider;
-      const hasAsrConfig = Boolean(modelConfig.asrApiKey && modelConfig.asrBaseUrl && asrLabel);
-      const textShort = modelConfig.apiKey ? `文本模型：${modelConfig.provider || "已配置"}` : "文本模型：未配置";
-      const asrShort = hasAsrConfig ? `转写模型：${asrProvider || "已配置"}` : "转写模型：未配置";
-      const asrTooltip = hasAsrConfig
+      const asrReady = hasAsrConfig();
+      const textShort = modelConfig.apiKey
+        ? `文本模型：${escapeHtml(modelConfig.provider) || "已配置"}`
+        : (isDeveloperMode() ? "文本模型：本地模拟分析" : "文本模型：规则快速分析");
+      const asrShort = asrReady ? `转写模型：${escapeHtml(asrProvider) || "已配置"}` : "转写模型：未配置";
+      const asrTooltip = asrReady
         ? `转写模型（语音转文字 ASR）：${asrProvider} / ${asrLabel}；状态：已配置`
         : "转写模型（语音转文字 ASR）：未配置 API Key";
       const tested = modelConfig.lastTestedAt ? `上次测试：${formatTime(modelConfig.lastTestedAt)}` : "尚未测试连接";
@@ -11969,7 +12952,7 @@
         els.modelStatus.innerHTML = `<span class="status-dot"></span>${textShort} · ${asrShort}`;
       } else if (!modelConfig.apiKey) {
         els.modelStatus.classList.add("neutral");
-        els.modelStatus.dataset.tooltip = `文本模型：未配置 API Key，可使用本地模拟；${asrTooltip}`;
+        els.modelStatus.dataset.tooltip = `文本模型：未配置 API Key，将使用${isDeveloperMode() ? "本地模拟分析" : "规则快速分析"}；${asrTooltip}`;
         els.modelStatus.innerHTML = `<span class="status-dot"></span>${textShort} · ${asrShort}`;
       } else {
         els.modelStatus.classList.add("warn");
@@ -12010,7 +12993,7 @@
       if (!hasResult() && hasRealInput() && !modelConfig.apiKey) {
         els.trustNote.textContent = isDeveloperMode()
           ? "开发者可在模型设置中接入真实模型；普通用户路径不会显示这一步。"
-          : "内容已准备好，可以直接生成复盘。";
+          : "内容已准备好，将使用规则快速分析生成；接入真实模型后可获得更贴近原文的复盘。";
         els.trustNote.classList.add("local");
         return;
       }
@@ -12018,8 +13001,8 @@
         els.trustNote.textContent = `${getReviewLinkLabel()}当前由 ${getModelName()} 生成，已按「${scenario.reportName}」结构完成拆解。`;
       } else {
         els.trustNote.textContent = isDeveloperMode()
-          ? `${getReviewLinkLabel()}当前为本地模拟。接入模型服务后，${scenario.reportName}会更细、更贴近原文。`
-          : `${getReviewLinkLabel()}当前为快速分析结果，可继续编辑、复制或保存。`;
+          ? `${getReviewLinkLabel()}当前为本地模拟分析。接入模型服务后，${scenario.reportName}会更细、更贴近原文。`
+          : `${getReviewLinkLabel()}当前为规则快速分析，不等同于真实大模型判断；可继续编辑、复制或保存。`;
         els.trustNote.classList.add("local");
       }
     }
@@ -12049,7 +13032,7 @@
       if (isLegacyOrRestoredResult() || isRestoredResult()) chunks.push("上次生成结果");
       const linkLabel = getReviewLinkLabel().replace(/。$/, "");
       if (linkLabel) chunks.push(linkLabel);
-      chunks.push(state.modelUsed ? `由 ${state.modelUsed} 生成` : (state.mode === "api" ? `由 ${getModelName()} 生成` : (isDeveloperMode() ? "由本地模拟生成" : "由声流内置分析生成")));
+      chunks.push(`由 ${normalizeModelUsedLabel(state.modelUsed)} 生成`);
       if (state.generatedAt) chunks.push(`生成于 ${formatTime(state.generatedAt)}`);
       if (state.editedAt) chunks.push(`已编辑 ${formatTime(state.editedAt)}`);
       els.resultMeta.textContent = chunks.join(" · ");
@@ -12073,6 +13056,9 @@
         els.openModelFromErrorBtn.classList.toggle("hidden", !isDeveloperMode());
         els.openModelFromErrorBtn.hidden = !isDeveloperMode();
       }
+      if (els.fallbackBtn) {
+        els.fallbackBtn.textContent = isDeveloperMode() ? "切换本地模拟" : "使用规则分析";
+      }
     }
 
     function renderEmptyState() {
@@ -12094,9 +13080,9 @@
           : "请稍后重试；当前输入内容已经保留，不需要重新粘贴。";
       } else if (!hasCurrentResult) {
         emptyState = "ready";
-        emptyLabel = "等待结果";
-        els.emptyHeroTitle.textContent = "等待结果中";
-        els.emptyHeroDesc.textContent = scenario.readyDesc;
+        emptyLabel = "可生成";
+        els.emptyHeroTitle.textContent = "内容已准备好";
+        els.emptyHeroDesc.textContent = `${scenario.readyDesc} 点击“${scenario.generateLabel}”后，会自动写入历史记录。`;
       }
       els.emptyHero.dataset.state = emptyState;
       els.emptyHeroKicker.textContent = emptyLabel;
@@ -12142,7 +13128,7 @@
       els.biggestStrength.textContent = coach.strength || "等待提炼";
       els.biggestRisk.textContent = coach.risk || "等待提炼";
       if (document.activeElement !== els.summaryBlock) {
-        els.summaryBlock.textContent = coach.coachTakeaway || `生成后，AI 会输出一段真正能指导下一步行动的${scenario.summaryTitle}。`;
+        els.summaryBlock.textContent = coach.coachTakeaway || `生成后会输出一段真正能指导下一步行动的${scenario.summaryTitle}。`;
         els.summaryBlock.style.color = coach.coachTakeaway ? "var(--text)" : "var(--text-secondary)";
       }
     }
@@ -12193,7 +13179,7 @@
       const scenario = getScenario();
       els.taskFilters.innerHTML = "";
       if (!state.result.interviewerFocus.length) {
-        els.taskFilters.innerHTML = `<div class="empty">${scenario.key === "culture" ? "AI 会从措辞、反应和上下文中提取对方真正关心的诉求与边界。" : "AI 会从追问密度、问题类型和回答反馈中提取面试官真正关注的能力项。"}</div>`;
+        els.taskFilters.innerHTML = `<div class="empty">${scenario.key === "culture" ? "分析会从措辞、反应和上下文中提取对方真正关心的诉求与边界。" : "分析会从追问密度、问题类型和回答反馈中提取面试官真正关注的能力项。"}</div>`;
         return;
       }
       state.result.interviewerFocus.forEach(item => {
@@ -12344,7 +13330,7 @@
 
     function prepareInputModeSwitch(nextMode) {
       if (state.isLoading) {
-        showToast("AI 正在生成结果，完成后再切换输入模式");
+        showToast("正在生成结果，完成后再切换输入模式");
         return false;
       }
       if (isRecording && nextMode !== "record") {
@@ -12496,6 +13482,7 @@
       els.audioMeta.textContent = `正在转写 ${selectedAudioFile.name}，请稍候`;
       renderInputMode();
       let wasAborted = false;
+      let transcriptionErrorText = "";
       try {
         const text = await requestAudioTranscription(selectedAudioFile, config, audioTranscriptionController.signal);
         state.currentTranscriptId = createId();
@@ -12519,11 +13506,9 @@
         console.warn(error);
         if (error?.name === "AbortError") {
           wasAborted = true;
-          els.audioMeta.textContent = "音频转写已终止";
           showToast("已终止音频转写");
         } else {
-          els.audioMeta.textContent = humanizeTranscriptionError(error);
-          els.audioMeta.title = String(error?.message || error || "");
+          transcriptionErrorText = humanizeTranscriptionError(error);
           showToast("音频转写失败，请检查接口配置");
         }
       } finally {
@@ -12532,7 +13517,16 @@
         els.transcribeAudioBtn.disabled = false;
         els.transcribeAudioBtn.textContent = "转写音频";
         renderInputMode();
-        if (wasAborted && els.audioMeta) els.audioMeta.textContent = "音频转写已终止";
+        // renderInputMode() rebuilds audioMeta from file info, so re-apply abort/error
+        // messages afterwards to keep the inline feedback from being wiped.
+        if (els.audioMeta) {
+          if (wasAborted) {
+            els.audioMeta.textContent = "音频转写已终止";
+          } else if (transcriptionErrorText) {
+            els.audioMeta.textContent = transcriptionErrorText;
+            els.audioMeta.title = transcriptionErrorText;
+          }
+        }
       }
     }
 
@@ -12807,6 +13801,11 @@
         setMobilePage("input");
         return;
       }
+      if (await shouldConfirmLongSourceBeforeGenerate()) {
+        renderInputDependentState();
+        showToast("已取消生成，输入内容已保留");
+        return;
+      }
       if (state.mode === "api" && !modelConfig.apiKey) state.mode = "local";
       state.isLoading = true;
       state.error = "";
@@ -12827,7 +13826,7 @@
         state.generatedAt = nowIso();
         state.generatedSourceHash = hashSource();
         state.editedAt = "";
-        state.modelUsed = state.mode === "api" ? getModelName() : (isDeveloperMode() ? "本地模拟" : "声流内置分析");
+        state.modelUsed = state.mode === "api" ? getModelName() : (isDeveloperMode() ? "本地模拟分析" : "规则快速分析");
         state.activeResultTab = "summarySection";
         state.restored = false;
         state.isLoading = false;
@@ -12835,7 +13834,7 @@
         saveCurrentToHistory({ silent: true });
         showToast(state.mode === "api"
           ? "真实大模型已生成，已自动写入历史记录"
-          : (isDeveloperMode() ? "已生成本地模拟结果，并自动写入历史记录" : "已生成复盘结果，并自动写入历史记录"));
+          : (isDeveloperMode() ? "已生成本地模拟分析结果，并自动写入历史记录" : "已生成规则快速分析结果，并自动写入历史记录"));
       } catch (error) {
         console.warn(error);
         state.lastApiFailed = true;
@@ -12856,8 +13855,18 @@
         setMobilePage("input");
         return;
       }
-      if (hasResult() && state.editedAt) {
-        const ok = confirm("重新生成会覆盖当前AI结果，已手动编辑的内容可能丢失。当前结果已自动写入历史记录，是否继续？");
+      if (hasResult()) {
+        const editedCopy = state.editedAt
+          ? "你手动编辑过的内容可能丢失。"
+          : "当前页面展示的结果会被新结果替换。";
+        const ok = await showConfirmDialog({
+          kicker: "重新生成",
+          title: "覆盖当前复盘结果？",
+          message: `重新生成会覆盖当前页面展示的${getScenario().reportName}，${editedCopy}\n\n当前结果已自动写入历史记录，可以从历史记录中找回；输入原文会继续保留。`,
+          confirmText: "重新生成",
+          cancelText: "先不覆盖",
+          tone: "danger"
+        });
         if (!ok) return;
       }
       await generate();
@@ -13767,7 +14776,13 @@
         const scenario = getScenario();
         const start = text.indexOf("{");
         const end = text.lastIndexOf("}");
-        if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1));
+        if (start >= 0 && end > start) {
+          try {
+            return JSON.parse(text.slice(start, end + 1));
+          } catch (innerError) {
+            /* fall through to structured fallback below */
+          }
+        }
         return {
           summary: text.slice(0, 800) || "模型返回为空，已保留原始结果以便人工复核。",
           interviewInfo: normalizeInterviewInfo({}),
@@ -14138,8 +15153,16 @@
       };
     }
 
-    function clearAll() {
-      if (!confirm("确定清空当前内容和结果吗？")) return;
+    async function clearAll() {
+      const ok = await showConfirmDialog({
+        kicker: "重置复盘",
+        title: "清空当前复盘工作区？",
+        message: "这会清空当前输入、关联面试记录、生成结果和临时音频信息。\n\n已保存的历史复盘、面试队列和已导出的文件不会被删除；清空后默认回到“粘贴文字”模式。",
+        confirmText: "清空工作区",
+        cancelText: "保留当前内容",
+        tone: "danger"
+      });
+      if (!ok) return;
       if (isRecording) stopRecording(false);
       if (isAudioTranscribing) abortAudioTranscription();
       selectedAudioFile = null;
@@ -14147,7 +15170,7 @@
       selectedAudioUrl = "";
       state.source = "";
       state.sourceByMode = createEmptySourceByMode();
-      state.inputMode = "upload";
+      state.inputMode = "text";
       state.audioFileName = "";
       state.result = cloneData(EMPTY_RESULT);
       state.error = "";
@@ -14234,7 +15257,9 @@
 
     function normalizeHistoryRecord(item = {}) {
       const createdAt = item.createdAt || item.generatedAt || nowIso();
-      const rawRoundIndex = Number.isInteger(item.roundIndex) ? item.roundIndex : Number(item.roundIndex);
+      const rawRoundIndex = item.roundIndex == null
+        ? NaN
+        : (Number.isInteger(item.roundIndex) ? item.roundIndex : Number(item.roundIndex));
       const roundIndex = Number.isFinite(rawRoundIndex) ? Math.max(0, Math.min(3, rawRoundIndex)) : null;
       return {
         id: item.id || createId(),
@@ -14371,6 +15396,58 @@
       els.historyModal.classList.remove("show");
     }
 
+    function clearHistorySearch() {
+      historyState.search = "";
+      if (els.historySearchInput) els.historySearchInput.value = "";
+      renderHistory();
+      showToast("已清空历史搜索");
+    }
+
+    function buildDeleteHistoryConfirmMessage(item = {}) {
+      const parts = [
+        item.title || "未命名复盘",
+        item.companyName || "",
+        item.positionName || ""
+      ].filter(Boolean).join(" / ");
+      return [
+        `确定删除这条历史复盘吗？${parts ? `\n\n${parts}` : ""}`,
+        "",
+        "删除后：",
+        "1. 历史列表中不再显示这份复盘。",
+        "2. 如果它关联了面试轮次，会同步取消该轮次的复盘标记。",
+        "3. 面试队列记录和当前输入内容不会被删除。"
+      ].join("\n");
+    }
+
+    function unlinkHistoryFromInterviewRound(item = {}) {
+      if (!item.interviewId || item.roundIndex == null) return false;
+      const recordIndex = interviewRecords.findIndex(record => record.id === item.interviewId);
+      if (recordIndex < 0) return false;
+      const record = normalizeInterviewRecord(interviewRecords[recordIndex]);
+      const roundIndex = Math.max(0, Math.min(record.rounds.length - 1, Number(item.roundIndex) || 0));
+      const round = record.rounds[roundIndex];
+      if (!round) return false;
+      const nextRound = { ...round };
+      let changed = false;
+      if (item.summaryReportId && nextRound.summaryId === item.summaryReportId) {
+        nextRound.summaryId = "";
+        changed = true;
+      }
+      if (item.transcriptId && nextRound.transcriptId === item.transcriptId) {
+        nextRound.transcriptId = "";
+        changed = true;
+      }
+      if (item.audioFileId && nextRound.uploadedFileId === item.audioFileId) {
+        nextRound.uploadedFileId = "";
+        changed = true;
+      }
+      if (!changed) return false;
+      record.rounds[roundIndex] = nextRound;
+      interviewRecords[recordIndex] = normalizeInterviewRecord(record);
+      saveInterviewRecords();
+      return true;
+    }
+
     function renderHistory() {
       const list = getHistory();
       const query = historyState.search.toLowerCase();
@@ -14395,6 +15472,7 @@
             label: "无匹配",
             title: "没有匹配的历史记录",
             description: "换一个公司、岗位、复盘标题或核心结论关键词试试。历史记录会继续保留，不会因为搜索为空而丢失。",
+            actions: `<button class="mini-btn primary" data-action="clear-history-search" type="button">清空搜索</button>`,
             cards: [
               { title: "按公司找", description: "适合快速回到某一次面试。" },
               { title: "按岗位找", description: "比较同类岗位的回答变化。" },
@@ -14411,6 +15489,8 @@
               { title: "复制导出", description: "适合整理到笔记、文档或求职记录里。" }
             ]
           });
+        const clearHistorySearchBtn = els.historyList.querySelector("[data-action='clear-history-search']");
+        if (clearHistorySearchBtn) clearHistorySearchBtn.addEventListener("click", clearHistorySearch);
         return;
       }
       visibleList.forEach(item => {
@@ -14420,9 +15500,7 @@
         const relation = item.companyName || item.positionName
           ? ` · ${[item.companyName, item.positionName, item.roundIndex == null ? "" : `第${Number(item.roundIndex) + 1}轮`].filter(Boolean).join(" / ")}`
           : "";
-        const modelUsedLabel = !isDeveloperMode() && item.modelUsed === "本地模拟"
-          ? "声流内置分析"
-          : (item.modelUsed || (isDeveloperMode() ? "本地模拟" : "声流内置分析"));
+        const modelUsedLabel = normalizeModelUsedLabel(item.modelUsed);
         card.innerHTML = `
           <div class="history-title">${escapeHtml(item.title)}</div>
           <div class="history-meta">${escapeHtml(itemScenario.reportName)}${escapeHtml(relation)} · ${escapeHtml(modelUsedLabel)} · 生成于 ${escapeHtml(formatTime(item.generatedAt))}${item.editedAt ? " · 已编辑" : ""}</div>
@@ -14459,14 +15537,24 @@
           render();
           showToast("已打开历史记录");
         });
-        card.querySelector("[data-action='copy']").addEventListener("click", () => copyText(buildMinutesText(item.result, itemScenario.key), itemScenario.historyCopyToast));
+        card.querySelector("[data-action='copy']").addEventListener("click", () => copyText(buildMinutesText(item.result, itemScenario.key, item.modelUsed), itemScenario.historyCopyToast));
         card.querySelector("[data-action='export']").addEventListener("click", () => exportHistoryMarkdown(item));
-        card.querySelector("[data-action='delete']").addEventListener("click", () => {
-          if (!confirm("确定删除这条历史记录吗？")) return;
+        card.querySelector("[data-action='delete']").addEventListener("click", async () => {
+          const ok = await showConfirmDialog({
+            kicker: "删除历史",
+            title: "删除这份历史复盘？",
+            message: buildDeleteHistoryConfirmMessage(item),
+            confirmText: "删除历史",
+            cancelText: "取消",
+            tone: "danger"
+          });
+          if (!ok) return;
+          const unlinked = unlinkHistoryFromInterviewRound(item);
           saveHistory(list.filter(history => history.id !== item.id));
           historyService.remove(item.id);
+          if (unlinked) renderInterviewManager();
           renderHistory();
-          showToast("已删除历史记录");
+          showToast(unlinked ? "已删除历史记录，并取消面试轮次复盘标记" : "已删除历史记录");
         });
         els.historyList.appendChild(card);
       });
@@ -14512,12 +15600,14 @@
       ].filter(Boolean).join("\n")).join("\n\n");
     }
 
-    function buildMinutesText(result = state.result, scenarioKey = state.scenario) {
+    function buildMinutesText(result = state.result, scenarioKey = state.scenario, modelUsed = state.modelUsed) {
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       const info = r.interviewInfo;
       const dossierText = scenario.dossier.map(([label, key]) => `${label}：${info[key] || "待识别"}`).join("\n");
-      return `# ${scenario.reportName}\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+      const modeText = normalizeModelUsedLabel(modelUsed);
+      const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
+      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
     }
 
     function buildTodoListText(result = state.result, scenarioKey = state.scenario) {
@@ -14527,9 +15617,13 @@
       return r.nextSteps.map((step, index) => `${index + 1}. 【${step.type}】${step.title}：${step.detail}`).join("\n");
     }
 
-    function exportCurrentReportMarkdown() {
+    async function exportCurrentReportMarkdown() {
       if (!shouldShowFormalResult()) {
         showToast("暂无可导出的复盘报告");
+        return;
+      }
+      if (!(await confirmReportExport("current"))) {
+        showToast("已取消导出，复盘内容未下载");
         return;
       }
       const linked = getLinkedInterviewRecord();
@@ -14538,14 +15632,22 @@
       showToast("已导出 Markdown 复盘报告");
     }
 
-    function exportHistoryMarkdown(item) {
+    async function exportHistoryMarkdown(item) {
+      if (!(await confirmReportExport("history"))) {
+        showToast("已取消导出，历史复盘未下载");
+        return;
+      }
       const scenarioKey = getValidScenario(item.scenario || DEFAULT_SCENARIO);
       const filename = buildExportFileName(item.companyName || item.title || "历史复盘", "md");
-      downloadTextFile(filename, buildMinutesText(item.result, scenarioKey), "text/markdown;charset=utf-8");
+      downloadTextFile(filename, buildMinutesText(item.result, scenarioKey, item.modelUsed), "text/markdown;charset=utf-8");
       showToast("已导出历史复盘 Markdown");
     }
 
-    function exportAllUserData() {
+    async function exportAllUserData() {
+      if (!(await confirmReportExport("all"))) {
+        showToast("已取消导出，本地数据未下载");
+        return;
+      }
       const payload = {
         exportedAt: nowIso(),
         app: "Senlo",
@@ -14571,7 +15673,10 @@
       const safeName = String(name || "senlo-export")
         .replace(/[\\/:*?"<>|]+/g, "-")
         .replace(/\s+/g, "-")
-        .slice(0, 48) || "senlo-export";
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 48)
+        .replace(/-+$/, "") || "senlo-export";
       const date = new Date().toISOString().slice(0, 10);
       return `${safeName}-${date}.${ext}`;
     }
