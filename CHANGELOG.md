@@ -21,7 +21,18 @@ Defects found (by the adversarial audit + manual testing) and fixed:
 - **Export filename:** `buildExportFileName` now collapses repeated hyphens and trims leading/trailing hyphens so names like `name -2026-06-13.json` are clean.
 - **UX consistency:** the interview-form unsaved-change guard used the native `confirm()`; replaced with the product `showConfirmDialog` (kicker/title/desc + "继续编辑 / 放弃修改并关闭"). Verified discard does not persist the edit and cancel keeps it.
 
+### Round 2 — `senlo-test-20260613-r2-review-flow` (AI review + rules analysis + history)
 
+Browser-verified end-to-end, no new code defects (the relevant fixes from Round 1 were confirmed in real flows):
+
+- Default input path is paste-text; one-click "填入示例" loads a 13-segment sample transcript and the quality hint reports "已识别 13 段说话人片段，适合生成".
+- Rules-based generation (no model configured) produces a full structured report — 8 Q&A cards, 6 interviewer-focus items, 6 next steps, 4 key conclusions, tasks and risks — correctly labeled "规则快速分析 · 不等同于真实大模型判断", never as real-model output.
+- **Verified the `findSourceEvidence` fix:** a valid `sourceTime` opens the correct transcript segment in the 原文依据 drawer, while empty / "未定位" / `undefined` now return `null` instead of falsely highlighting the first segment.
+- **Verified the `normalizeHistoryRecord` roundIndex fix:** saving a review linked to round 1 (index 0) preserves `roundIndex: 0`; an unlinked save keeps `roundIndex: null` (no spurious round-1 link).
+- Save-to-history dedups on re-save; linking a review to an interview round writes a `summaryId` round marker, and deleting that history record unlinks it (round marker cleared, toast "已删除历史记录，并取消面试轮次复盘标记").
+- Regenerate confirms before overwriting ("覆盖当前复盘结果？" with recoverability copy); history search empty-state offers a "清空搜索" recovery; long-source (>20000 chars) generation prompts a cost/latency confirmation and cancelling preserves the input.
+
+## 2026-06-07
 
 ### Step `senlo-level3-20260607-07-confirmation-polish`
 
