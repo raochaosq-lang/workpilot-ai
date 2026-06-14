@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-14 — Two-round bug-fix & hardening pass (R7 + R8)
+
+Two further full test rounds over the recruiter-routing build, each a multi-agent adversarial bug hunt with every candidate independently verified before fixing. Fixes applied in place and locked with executable regression assertions; `npm run check` (smoke + logic) and interactive browser verification both green. The logic harness grew from 126 → 139 assertions.
+
+This pass also folds in the earlier same-session fixes to the cloud-sync layer and the AI-review failure path (see "Defects fixed" → cloud sync / generation below).
+
+### Round 7 — `senlo-test-20260614-r7-bugfix-hardening` (correctness, data-loss, crashes)
+
+Adversarial hunt across 7 dimensions (recruiter routing, AI-review generation, cloud sync, import pipeline, XSS/secrets, state/normalization, malformed/bulk inputs); 15 findings confirmed, 8 refuted (XSS surface and API-key device-locality re-confirmed clean). Fixed:
+
+- **Crash / silent demotion (high+med):** `normalizeResult` and the recruiter normalizers threw `TypeError` on `null` array elements or a non-array `facts` container — breaking the history modal, aborting cloud refresh mid-way, and silently demoting a valid model response to the rules fallback. Added null/non-array guards across every list normalizer (`normalizeQaCards`/`FocusItems`/`ConcernItems`/`ImprovementItems`/`NextSteps`/`StringList`/`RecruiterFacts`/`RecruiterActions` + the top-level task/risk/question maps), coerced object/string `facts` containers, and made `historyService.list` + the cloud refresh maps per-record fault-tolerant.
+- **Routing misclassification (high+med):** `detectContentRouting` only recognized the four literal `面试官/候选人` labels, so named-speaker transcripts (`张伟：`/`王芳：`) and short labeled exchanges mentioning interview-internal vocab (`职业定位`/`市场`/`简历`) mis-routed to `recruiterConversation`. Now treats a real multi-speaker dialog (≥2 named speakers, excluding the `说话人N` fallback) or any canonical label in a ≥2-segment exchange as transcript evidence, and dropped interview-internal terms from the strong-recruiter short-circuit.
+- **Reopen layout bug (high+med):** auto re-detection on render/reopen overwrote `state.contentType`, hiding a generated recruiter report behind the interview layout. `renderContentRouting`/`loadAll` now skip re-detection while a formal result is shown, and the manual content-type override is persisted in history and restored on reopen.
+- **XLSX corruption (high):** `parseWorksheetXml` did not match self-closing empty cells (`<c r="B2" s="3"/>`), so a blank cell swallowed the next cell and shifted every later column. Regex now matches both self-closing and paired cells.
+- **Cloud sync (high):** manual 同步 (`refreshAllCloudData`) bypassed the serialized mutation chain — a stale read could silently revert a just-saved local edit and report a false 已同步. It now drains in-flight writes before reading, and if a queued write failed it preserves local data and surfaces the error instead of overwriting.
+- **Import pipeline (med):** ragged comma tables (a trailing cell omitted) were rejected by the strict equal-column gate and lost; `looksLikeDelimitedTable` now accepts a dominant column count. `.txt` / single-column CSV imports failed with "empty import file"; they now route through the prose/label extractor.
+- **Cap propagation (low):** transcripts/summaries/uploaded-file 100-caps were local-only; eviction now also deletes from the cloud (mirrors the history 50-cap), so a later refresh can't resurrect them.
+
+### Round 8 — `senlo-test-20260614-r8-regression-a11y-darkmode` (regression + polish)
+
+Fresh hunt (regression review of every R7 change + a11y, responsive/dark-mode, bulk performance, copy consistency, account/auth); 14 findings confirmed, 3 refuted. R7 changes regressed nothing — the routing, eviction and drain fixes held. Fixed:
+
+- **Dark-mode contrast (high):** high/mid `.improvement-card`s (recruiter "风险与下一步行动" + interview "待提升点") kept light-mode backgrounds via higher-specificity selectors, leaving light title/body text near-invisible; `.count-badge` and ordinal chips likewise kept near-white fills. Added dark-mode overrides — browser-verified the cards re-tint and badges become readable.
+- **Text-import substring mis-match (low):** `findTextImportValue` matched any label *containing* an alias, so prose like "我对这家公司的整体印象：…" was assigned as a company. Now requires exact or `endsWith` match.
+- **Recruiter company noise (low):** rules-path `inferRecruiterFacts` leaked speaker/verb prefixes (e.g. "猎头说腾讯") into 推荐公司/团队; now stripped and run through `sanitizeCompanyName`.
+- **Cross-user routing leak (low):** `loadAll` restored `contentType`/`recruiterSubtype`/`contentRoutingManual` unconditionally; now gated on `canRestorePrivateState` like the other private fields.
+- **Accessibility (low):** added `aria-labelledby` to the model/history/source dialogs (were unnamed to screen readers) and Enter/Space keyboard activation to the `role="button"` model-status pill.
+
+Known, deliberately-deferred polish (need real browser verification, no functional/correctness impact): modal focus-trap + focus-restore + initial-focus-into-dialog, the account-menu `role="menu"` and capture-tab `role="tab"` keyboard patterns, and debounce/memoization micro-optimizations for the bulk-data (200+ records / ~20k-char transcript) render paths.
+
 ## 2026-06-14 — Five-round verification pass (deep logic + adversarial bug hunt)
 
 Added a second, executable test layer (`scripts/logic-test.mjs`, 126 assertions) that bootstraps the real inline app script in a Node sandbox and exercises pure helpers with adversarial inputs. Wired it into `npm run check` (`smoke-test.mjs && logic-test.mjs`). Ran a 6-dimension adversarial bug hunt (each candidate double-verified) plus interactive browser verification of every core flow.

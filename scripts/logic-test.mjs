@@ -52,6 +52,7 @@ const exposed = [
   "normalizeImportedResult", "normalizeImportKey", "findImportedValue", "normalizeImportedDateValue",
   "normalizeDateTimeLocal", "excelSerialToDateTimeLocal", "sanitizeInterviewLocation",
   "normalizeInterviewRecord", "normalizeInterviewRound", "mergeInterviewRecordData",
+  "normalizeResult", "normalizeRecruiterFacts",
   "detectContentRouting", "detectRecruiterSubtype",
   "escapeHtml", "escapeAttr", "escapeRegExp",
   "clampPercent", "formatPercent", "normalizePercentValue",
@@ -77,6 +78,7 @@ const {
   normalizeImportedResult, normalizeImportKey, findImportedValue, normalizeImportedDateValue,
   normalizeDateTimeLocal, excelSerialToDateTimeLocal, sanitizeInterviewLocation,
   normalizeInterviewRecord, normalizeInterviewRound, mergeInterviewRecordData,
+  normalizeResult, normalizeRecruiterFacts,
   detectContentRouting, detectRecruiterSubtype,
   escapeHtml, escapeAttr, escapeRegExp,
   clampPercent, formatPercent, normalizePercentValue,
@@ -130,6 +132,12 @@ eq(decodeXml("a&amp;lt;b"), "a&lt;b", "decodeXml no double-unescape");
   const xml = '<row r="1"><c r="A1" t="s"><v>99</v></c><c r="B1" t="s"><v></v></c></row>';
   const rows = parseWorksheetXml(xml, ["only"]);
   deep(rows, [], "parseWorksheetXml out-of-range and empty shared index -> empty");
+}
+{
+  // R7 regression: a self-closing empty cell (<c r="B2" s="3"/>) must NOT swallow
+  // the following cell; columns stay aligned and the empty cell becomes "".
+  const xml = '<row r="2"><c r="A2" t="s"><v>0</v></c><c r="B2" s="3"/><c r="C2" t="s"><v>1</v></c><c r="D2" t="s"><v>2</v></c></row>';
+  deep(parseWorksheetXml(xml, ["腾讯", "北京", "高"]), [["腾讯", "", "北京", "高"]], "parseWorksheetXml self-closing empty cell keeps alignment");
 }
 
 // ---- JSON parsing ----
@@ -268,9 +276,31 @@ deep(uniqueBy([{ id: 1 }, { id: 1 }, { id: 2 }], "id"), [{ id: 1 }, { id: 2 }], 
   eq(merged2.rounds[0].result, "passed", "merge still keeps existing result when import pending");
 }
 
+// ---- normalizer null / non-array safety (R7) ----
+ok(Array.isArray(normalizeRecruiterFacts([null])), "normalizeRecruiterFacts tolerates null element");
+{
+  const facts = normalizeRecruiterFacts({ "推荐公司/团队": "腾讯", "推荐岗位": "AI产品经理" });
+  eq((facts.find(f => f.label === "推荐公司/团队") || {}).value, "腾讯", "recruiter facts as label->value object preserved");
+}
+{
+  // null array elements in model output must not throw — otherwise a valid model
+  // response is silently demoted to the rules fallback and the history modal breaks.
+  let threw = false;
+  try { normalizeResult({ recruiterReport: { risks: [null, "信息不完整"], facts: [null], nextActions: [null] }, risks: [null], tasks: [null], qaCards: [null], questions: [null], improvements: [null], nextSteps: [null] }); }
+  catch (error) { threw = true; }
+  ok(!threw, "normalizeResult tolerates null array elements throughout");
+}
+
 // ---- content routing (spot-check beyond smoke fixtures) ----
 eq(detectContentRouting("00:00 面试官：请自我介绍").contentType, "interview", "routing interview");
 eq(detectContentRouting("猎头说有个腾讯岗位 base 深圳 年包80万").contentType, "recruiterConversation", "routing recruiter");
+// R7: named-speaker interview transcripts that mention interview-internal vocab
+// (职业定位/市场/简历) must NOT mis-route to recruiterConversation.
+eq(detectContentRouting("张伟：先做个自我介绍吧\n王芳：我是产品经理\n张伟：聊聊你的职业定位和市场判断\n王芳：我会结合简历项目经历来说\n张伟：好的").contentType, "interview", "routing named-speaker interview");
+// R7: short labeled transcript (<3 segments) with an overlap word must stay interview.
+eq(detectContentRouting("面试官：自我介绍\n候选人：我是PM，聊聊我的简历项目经历和职业定位方向").contentType, "interview", "routing short labeled interview");
+// R7: multi-line recruiter prose (no real speaker labels) must stay recruiter.
+eq(detectContentRouting("猎头老师好\n这边有个腾讯的AI产品经理岗位\n年包80万，base深圳，问你是否考虑").contentType, "recruiterConversation", "routing multiline recruiter prose");
 
 // ---- text import heuristics regression (labeled token must not pollute 整体进展) ----
 {
@@ -278,6 +308,32 @@ eq(detectContentRouting("猎头说有个腾讯岗位 base 深圳 年包80万").c
   eq(fields.面试公司, "字节跳动", "text import company");
   eq(fields.整体进展, "一面通过", "text import progress");
   ok(!/JD|岗位描述/.test(String(fields.整体进展 || "")), "labeled JD token not leaked into progress");
+}
+{
+  // R8: a prose label that merely embeds a generic alias substring (公司) must NOT
+  // be assigned as a field via the loosened includes() match.
+  const fields = extractInterviewFieldsFromText("我对这家公司的整体印象：很好");
+  ok(fields.面试公司 !== "很好", "prose embedding alias substring is not assigned as company");
+}
+
+// ---- text-import table gate regression (R7) ----
+{
+  // Ragged comma table (trailing cell omitted on the last row) must still parse as
+  // a table, not collapse into a single prose record.
+  const rows = buildInterviewRowsFromText("公司,岗位,base,意向\n腾讯,PM,北京,高\n字节,产品,上海");
+  eq(rows.length, 2, "ragged comma table yields 2 records");
+  eq(rows[0]["公司"], "腾讯", "ragged comma table first company");
+}
+{
+  // Colon-labeled prose (the .txt file-import shape) extracts fields, not a bogus table.
+  const rows = buildInterviewRowsFromText("面试公司：字节跳动\n岗位：产品经理\nbase：北京");
+  eq(rows.length, 1, "labeled prose yields one record");
+  eq(rows[0].面试公司, "字节跳动", "labeled prose extracts company");
+}
+{
+  // A single prose sentence with a comma must NOT be misparsed as a table.
+  const rows = buildInterviewRowsFromText("我面了字节跳动的后端岗位,base在北京,联系人是HR小王");
+  eq(rows.length, 1, "single prose sentence is not a table");
 }
 
 if (failures.length) {

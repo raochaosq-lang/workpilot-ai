@@ -5100,6 +5100,33 @@
         border-color: var(--border);
       }
 
+      /* R8 dark-mode contrast: .improvement-card.high/.mid use double-class
+         selectors with light backgrounds that out-specify the single-class dark
+         rule above, leaving (now light) title/body text unreadable. Re-tint them
+         dark. Hits the recruiter "风险与下一步行动" panel and interview improvement cards. */
+      .improvement-card.high {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(248, 113, 113, 0.32);
+      }
+      .improvement-card.mid {
+        background: rgba(245, 158, 11, 0.12);
+        border-color: rgba(251, 191, 36, 0.30);
+      }
+      .improvement-card.low {
+        border-color: var(--border);
+      }
+      /* R8 dark-mode contrast: result-area count badges + ordinal chips kept their
+         light-mode fills (near-white) under light text — re-tint to dark. */
+      .count-badge {
+        background: #1f2937;
+        color: var(--text-secondary);
+      }
+      .concern-card > span,
+      .improvement-index {
+        background: rgba(245, 158, 11, 0.18);
+        color: #fdba74;
+      }
+
       .panel-head,
       .section-head,
       .source-footer,
@@ -7344,11 +7371,11 @@
     </aside>
   </div>
 
-  <div id="modelModal" class="modal-mask" role="dialog" aria-modal="true">
+  <div id="modelModal" class="modal-mask" role="dialog" aria-modal="true" aria-labelledby="modelModalTitle">
     <aside class="drawer config-dialog">
       <div class="drawer-head">
         <div>
-          <h3 class="drawer-title">模型设置</h3>
+          <h3 class="drawer-title" id="modelModalTitle">模型设置</h3>
           <p class="panel-note">分别配置文本大模型和音频识别 ASR，职责清晰，互不混用。</p>
         </div>
         <button id="closeModelBtn" class="icon-btn" type="button" aria-label="关闭配置弹窗" title="关闭">
@@ -7471,11 +7498,11 @@
     </aside>
   </div>
 
-  <div id="historyModal" class="modal-mask" role="dialog" aria-modal="true">
+  <div id="historyModal" class="modal-mask" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
     <aside class="drawer">
       <div class="drawer-head">
         <div>
-          <h3 class="drawer-title">历史记录</h3>
+          <h3 class="drawer-title" id="historyModalTitle">历史记录</h3>
           <p class="panel-note">本地保存最近的复盘结果，便于继续编辑或快速恢复。</p>
         </div>
         <button id="closeHistoryBtn" class="btn ghost" type="button">关闭</button>
@@ -7487,11 +7514,11 @@
     </aside>
   </div>
 
-  <div id="sourceModal" class="modal-mask" role="dialog" aria-modal="true">
+  <div id="sourceModal" class="modal-mask" role="dialog" aria-modal="true" aria-labelledby="sourceModalTitle">
     <aside class="drawer">
       <div class="drawer-head">
         <div>
-          <h3 class="drawer-title">原文依据</h3>
+          <h3 class="drawer-title" id="sourceModalTitle">原文依据</h3>
           <p id="sourceDrawerMeta" class="panel-note">点击来源后查看对应转写片段。</p>
         </div>
         <button id="closeSourceBtn" class="btn ghost" type="button">关闭</button>
@@ -8778,9 +8805,19 @@
       return payload;
     }
 
-    async function cloudbaseSelect(table) {
+    async function cloudbaseSelect(table, query = "") {
       const { db } = getCloudBaseClient();
-      const result = await db.collection(table).where({ user_id: getCurrentUserId() }).limit(1000).get();
+      let ref = db.collection(table).where({ user_id: getCurrentUserId() });
+      const params = new URLSearchParams(String(query || ""));
+      const order = params.get("order");
+      if (order) {
+        const [field, direction] = order.split(".");
+        // created_at/updated_at are always written by the toCloud* mappers, so ordering is safe.
+        if (field) ref = ref.orderBy(field, direction === "asc" ? "asc" : "desc");
+      }
+      const limit = Number(params.get("limit"));
+      ref = ref.limit(Number.isFinite(limit) && limit > 0 ? Math.min(limit, 1000) : 1000);
+      const result = await ref.get();
       return result?.data || [];
     }
 
@@ -8826,12 +8863,21 @@
 
     const historyService = {
       list() {
-        return getScopedLocalList(HISTORY_KEY).map(normalizeHistoryRecord);
+        // Per-record guard: one corrupt/legacy record must not break the whole
+        // history modal or list rendering.
+        return getScopedLocalList(HISTORY_KEY)
+          .map(record => { try { return normalizeHistoryRecord(record); } catch (error) { console.warn(error); return null; } })
+          .filter(Boolean);
       },
       saveAll(list = []) {
         const normalized = list.slice(0, 50).map(item => normalizeHistoryRecord({ ...item, userId: getCurrentUserId() }));
         const ok = saveScopedLocalList(HISTORY_KEY, normalized);
-        if (ok) queueCloudSync("history", normalized);
+        if (ok) {
+          queueCloudSync("history", normalized);
+          // Records evicted past the 50-cap must also leave the cloud, or the next
+          // refreshAllCloudData would resurrect them and silently undo the local cap.
+          list.slice(50).forEach(item => { if (item && item.id) queueCloudDelete("history_records", item.id); });
+        }
         return ok;
       },
       remove(id) {
@@ -8846,8 +8892,11 @@
       save(item) {
         const list = getScopedLocalList(TRANSCRIPTS_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
-        saveScopedLocalList(TRANSCRIPTS_KEY, [next, ...list.filter(row => row.id !== next.id)].slice(0, 100));
+        const merged = [next, ...list.filter(row => row.id !== next.id)];
+        saveScopedLocalList(TRANSCRIPTS_KEY, merged.slice(0, 100));
         queueCloudSync("transcripts", [next]);
+        // Evict records past the 100-cap from cloud too, or a later refresh resurrects them.
+        merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("transcripts", row.id); });
         return next;
       },
       list() {
@@ -8859,8 +8908,10 @@
       save(item) {
         const list = getScopedLocalList(SUMMARY_REPORTS_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
-        saveScopedLocalList(SUMMARY_REPORTS_KEY, [next, ...list.filter(row => row.id !== next.id)].slice(0, 100));
+        const merged = [next, ...list.filter(row => row.id !== next.id)];
+        saveScopedLocalList(SUMMARY_REPORTS_KEY, merged.slice(0, 100));
         queueCloudSync("summaries", [next]);
+        merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("ai_summaries", row.id); });
         return next;
       },
       list() {
@@ -8872,8 +8923,10 @@
       save(item) {
         const list = getScopedLocalList(UPLOADED_FILES_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
-        saveScopedLocalList(UPLOADED_FILES_KEY, [next, ...list.filter(row => row.id !== next.id)].slice(0, 100));
+        const merged = [next, ...list.filter(row => row.id !== next.id)];
+        saveScopedLocalList(UPLOADED_FILES_KEY, merged.slice(0, 100));
         queueCloudSync("uploadedFiles", [next]);
+        merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("uploaded_files", row.id); });
         return next;
       },
       list() {
@@ -8911,22 +8964,52 @@
       return storageService.setJson(key, [...others, ...scopedItems.map(item => ({ ...item, userId }))]);
     }
 
+    // Cloud writes/deletes are serialized through a single chain so concurrent
+    // calls cannot interleave or race the sync status. Status only reports
+    // "已同步" once every queued mutation has settled with no error, so it can no
+    // longer claim success while a later-issued write actually failed.
+    let cloudSyncChain = Promise.resolve();
+    let cloudSyncPending = 0;
+    let cloudSyncError = null;
+
+    function finalizeCloudMutation(error) {
+      if (error) cloudSyncError = error;
+      cloudSyncPending = Math.max(0, cloudSyncPending - 1);
+      if (cloudSyncPending > 0) return;
+      const settledError = cloudSyncError;
+      cloudSyncError = null;
+      // If the user signed out (or cloud went inactive) while writes were in
+      // flight, leave the local status set by clearSession() untouched.
+      if (!isCloudActive()) return;
+      if (settledError) {
+        setSyncStatus("error", `云端同步失败：${humanizeCloudError(settledError)}`);
+      } else {
+        authState.lastSyncedAt = nowIso();
+        setSyncStatus("cloud", "已同步");
+      }
+    }
+
+    function enqueueCloudMutation(runner, busyMessage) {
+      if (!isCloudActive()) return Promise.resolve();
+      cloudSyncPending += 1;
+      setSyncStatus("syncing", busyMessage);
+      const run = cloudSyncChain.then(() => (isCloudActive() ? runner() : undefined));
+      // Keep the chain alive across failures so ordering is preserved.
+      cloudSyncChain = run.then(() => {}, () => {});
+      return run.then(
+        () => finalizeCloudMutation(null),
+        error => { console.warn(error); finalizeCloudMutation(error); }
+      );
+    }
+
     function queueCloudSync(kind, items = []) {
       if (!isCloudActive()) return;
-      setSyncStatus("syncing", "正在同步云端数据");
-      syncService.push(kind, items).catch(error => {
-        console.warn(error);
-        setSyncStatus("error", `云端同步失败：${humanizeCloudError(error)}`);
-      });
+      enqueueCloudMutation(() => syncService.push(kind, items), "正在同步云端数据");
     }
 
     function queueCloudDelete(table, id) {
       if (!isCloudActive() || !id) return;
-      setSyncStatus("syncing", "正在同步删除操作");
-      syncService.delete(table, id).catch(error => {
-        console.warn(error);
-        setSyncStatus("error", `云端删除失败：${humanizeCloudError(error)}`);
-      });
+      enqueueCloudMutation(() => syncService.delete(table, id), "正在同步删除操作");
     }
 
     const syncService = {
@@ -8938,14 +9021,10 @@
         if (kind === "summaries") await cloudUpsert("ai_summaries", items.map(toCloudSummary));
         if (kind === "uploadedFiles") await cloudUpsert("uploaded_files", items.map(toCloudUploadedFile));
         if (kind === "settings") await cloudUpsert("user_settings", items.map(toCloudSettings));
-        authState.lastSyncedAt = nowIso();
-        setSyncStatus("cloud", "已同步");
       },
       async delete(table, id) {
         if (!isCloudActive()) return;
         await cloudbaseDelete(table, id);
-        authState.lastSyncedAt = nowIso();
-        setSyncStatus("cloud", "已同步");
       }
     };
 
@@ -8962,6 +9041,17 @@
     async function refreshAllCloudData(options = {}) {
       const { throwOnError = false } = options || {};
       if (!isCloudActive()) return;
+      // Drain any in-flight writes BEFORE reading, so a stale cloud snapshot cannot
+      // overwrite (and silently revert) a just-saved local edit still uploading.
+      const hadPending = cloudSyncPending > 0;
+      if (hadPending) { try { await cloudSyncChain; } catch (error) { console.warn(error); } }
+      if (hadPending && authState.syncStatus === "error") {
+        // The in-flight write failed: its edit never reached cloud, so reading now
+        // would clobber the un-synced local edit. Preserve local and surface it.
+        setSyncStatus("error", "上次写入未同步成功，已保留本地数据，请重试");
+        if (throwOnError) throw new Error("pending cloud write failed");
+        return false;
+      }
       setSyncStatus("syncing", "正在加载云端数据");
       try {
         const [cloudInterviews, cloudHistory, cloudTranscripts, cloudSummaries, cloudFiles, cloudSettings] = await Promise.all([
@@ -8974,10 +9064,12 @@
         ]);
         interviewRecords = (cloudInterviews || []).map(fromCloudInterview);
         saveScopedLocalList(INTERVIEW_RECORDS_KEY, interviewRecords);
-        saveScopedLocalList(HISTORY_KEY, (cloudHistory || []).map(fromCloudHistory));
-        saveScopedLocalList(TRANSCRIPTS_KEY, (cloudTranscripts || []).map(fromCloudTranscript));
-        saveScopedLocalList(SUMMARY_REPORTS_KEY, (cloudSummaries || []).map(fromCloudSummary));
-        saveScopedLocalList(UPLOADED_FILES_KEY, (cloudFiles || []).map(fromCloudUploadedFile));
+        // Per-record guard on report-bearing collections so one corrupt cloud row
+        // cannot abort the whole refresh; caps mirror the local save caps.
+        saveScopedLocalList(HISTORY_KEY, (cloudHistory || []).map(row => { try { return fromCloudHistory(row); } catch (error) { console.warn(error); return null; } }).filter(Boolean).slice(0, 50));
+        saveScopedLocalList(TRANSCRIPTS_KEY, (cloudTranscripts || []).map(fromCloudTranscript).slice(0, 100));
+        saveScopedLocalList(SUMMARY_REPORTS_KEY, (cloudSummaries || []).map(row => { try { return fromCloudSummary(row); } catch (error) { console.warn(error); return null; } }).filter(Boolean).slice(0, 100));
+        saveScopedLocalList(UPLOADED_FILES_KEY, (cloudFiles || []).map(fromCloudUploadedFile).slice(0, 100));
         if (cloudSettings?.[0]) mergeCloudModelSettings(cloudSettings[0]);
         authState.lastSyncedAt = nowIso();
         setSyncStatus("cloud", "已同步");
@@ -9778,6 +9870,10 @@
         renderGenerateButton();
       });
       els.modelStatus.addEventListener("click", openModelModal);
+      // R8: the pill is role="button" tabindex=0 — honor keyboard activation too.
+      els.modelStatus.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openModelModal(); }
+      });
       els.localModeBtn.addEventListener("click", () => setMode("local"));
       els.apiModeBtn.addEventListener("click", () => setMode("api"));
       els.generateBtn.addEventListener("click", generate);
@@ -10728,10 +10824,22 @@
         [/(市场行情|行业趋势|职业方向|职业定位|候选人卖点|简历|项目经历|包装|面试策略|谈薪|薪资谈判|补材料|约时间|流程推进|跟进)/gi, 3],
         [/(HR|招聘|人才顾问|顾问|老师).{0,16}(说|建议|推荐|沟通|反馈|约|看)/gi, 2]
       ]);
-      const hasInterviewTranscript = /(面试官|候选人|interviewer|candidate)[：:]/i.test(value) && getTranscriptSegmentsFromText(value).length >= 3;
-      const hasStrongRecruiterSignal = /(猎头|headhunter|recruiter|招聘顾问|职业机会|内推人|薪资谈判|市场行情|职业定位|简历包装|流程推进|面试策略|面试准备|回答策略|HR.{0,16}反馈)/i.test(value);
-      const contentType = (hasStrongRecruiterSignal && !hasInterviewTranscript)
-        || (recruiterScore >= 5 && recruiterScore >= interviewScore && !hasInterviewTranscript)
+      const segments = getTranscriptSegmentsFromText(value);
+      // Count only real, labeled speakers — getTranscriptSegmentsFromText assigns a
+      // "说话人N" fallback to every unlabeled line, so unlabeled prose must not count
+      // as a multi-speaker dialog.
+      const namedSpeakers = new Set(segments.map(segment => segment.speaker).filter(speaker => speaker && !/^说话人/.test(speaker)));
+      // A multi-speaker dialog is transcript evidence even without the four canonical
+      // labels: named speakers (e.g. 张伟：/王芳：) across >=3 segments, or any canonical
+      // 面试官/候选人 label in a >=2-segment exchange.
+      const hasInterviewTranscript = (/(面试官|候选人|interviewer|candidate)[：:]/i.test(value) && segments.length >= 2)
+        || (namedSpeakers.size >= 2 && segments.length >= 3);
+      // Recruiter-only signals. Interview-internal vocabulary (职业定位/市场行情/面试策略/
+      // 简历/回答策略…) is intentionally excluded so it cannot short-circuit a genuine
+      // transcript; those terms are weighed by scoreRoutingRules instead.
+      const hasStrongRecruiterSignal = /(猎头|headhunter|recruiter|招聘顾问|内推人|帮你看机会|HR.{0,16}(推荐|约|看机会))/i.test(value);
+      const contentType = !hasInterviewTranscript
+        && (hasStrongRecruiterSignal || (recruiterScore >= 5 && recruiterScore >= interviewScore))
         ? "recruiterConversation"
         : "interview";
       if (contentType === "interview") {
@@ -10739,7 +10847,7 @@
           contentType,
           recruiterSubtype: DEFAULT_RECRUITER_SUBTYPE,
           reason: hasInterviewTranscript
-            ? "识别到面试官/候选人说话人结构，按面试复盘处理。"
+            ? "识别到多人对话/面试说话人结构，按面试复盘处理。"
             : "未发现强猎头沟通信号，按面试复盘处理；可手动切换。"
         };
       }
@@ -10921,7 +11029,10 @@
 
     function renderContentRouting() {
       if (!els.contentRoutingPanel) return;
-      if (!state.contentRoutingManual) refreshContentRoutingFromSource({ clearResultOnChange: false });
+      // Never re-detect while a generated report is on screen — re-detection would
+      // overwrite state.contentType and could hide a recruiter report behind the
+      // interview layout (the report's own contentType is the source of truth).
+      if (!state.contentRoutingManual && !shouldShowFormalResult()) refreshContentRoutingFromSource({ clearResultOnChange: false });
       const contentType = getValidContentType(state.contentType);
       const isRecruiter = isRecruiterContent(contentType);
       document.body.dataset.contentType = contentType;
@@ -10994,10 +11105,10 @@
           sourceByMode: canRestorePrivateState ? sourceByMode : normalizeSourceByMode({}, inputMode, ""),
           inputMode,
           scenario: getValidScenario(saved.scenario || DEFAULT_SCENARIO),
-          contentType: getValidContentType(saved.contentType || saved.result?.contentType || DEFAULT_CONTENT_TYPE),
-          recruiterSubtype: getValidRecruiterSubtype(saved.recruiterSubtype || saved.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE),
-          contentRoutingManual: Boolean(saved.contentRoutingManual),
-          contentRoutingReason: String(saved.contentRoutingReason || ""),
+          contentType: canRestorePrivateState ? getValidContentType(saved.contentType || saved.result?.contentType || DEFAULT_CONTENT_TYPE) : DEFAULT_CONTENT_TYPE,
+          recruiterSubtype: canRestorePrivateState ? getValidRecruiterSubtype(saved.recruiterSubtype || saved.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) : DEFAULT_RECRUITER_SUBTYPE,
+          contentRoutingManual: canRestorePrivateState ? Boolean(saved.contentRoutingManual) : false,
+          contentRoutingReason: canRestorePrivateState ? String(saved.contentRoutingReason || "") : "",
           audioFileName: canRestorePrivateState ? (saved.audioFileName || "") : "",
           outputType,
           mode: saved.mode || "local",
@@ -11013,7 +11124,7 @@
           activeResultTab: RESULT_TAB_IDS.includes(saved.activeResultTab) ? saved.activeResultTab : "summarySection",
           result: canRestorePrivateState ? normalizeResult(saved.result || EMPTY_RESULT) : cloneData(EMPTY_RESULT)
         });
-        if (!state.contentRoutingManual) refreshContentRoutingFromSource({ clearResultOnChange: false });
+        if (!state.contentRoutingManual && !shouldShowFormalResult()) refreshContentRoutingFromSource({ clearResultOnChange: false });
         state.restored = canRestorePrivateState && hasResult(saved.result);
         if (state.generatedSourceHash && !String(state.generatedSourceHash).startsWith(`${state.scenario}:`)) {
           state.generatedSourceHash = hashSource(state.source);
@@ -11385,9 +11496,9 @@
     function normalizeResult(result = {}) {
       const legacySummary = result.summary || "";
       const keyConclusions = Array.isArray(result.keyConclusions) ? result.keyConclusions : (Array.isArray(result.conclusions) ? result.conclusions : []);
-      const tasks = Array.isArray(result.tasks) ? result.tasks.map(normalizeTask) : (Array.isArray(result.todos) ? result.todos.map(normalizeTask) : []);
-      const risks = Array.isArray(result.risks) ? result.risks.map(normalizeRisk) : [];
-      const questions = Array.isArray(result.questions) ? result.questions.map(normalizeQuestion) : [];
+      const tasks = Array.isArray(result.tasks) ? result.tasks.filter(Boolean).map(normalizeTask) : (Array.isArray(result.todos) ? result.todos.filter(Boolean).map(normalizeTask) : []);
+      const risks = Array.isArray(result.risks) ? result.risks.filter(Boolean).map(normalizeRisk) : [];
+      const questions = Array.isArray(result.questions) ? result.questions.filter(Boolean).map(normalizeQuestion) : [];
       const people = Array.isArray(result.people) ? result.people : (Array.isArray(result.participants) ? result.participants : []);
       const contentType = getValidContentType(result.contentType || state.contentType || DEFAULT_CONTENT_TYPE);
       const recruiterSubtype = getValidRecruiterSubtype(result.recruiterSubtype || state.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
@@ -11492,7 +11603,7 @@
 
     function normalizeQaCards(cards = []) {
       if (!Array.isArray(cards)) return [];
-      return cards.map(normalizeQaCard).filter(card => card.question || card.answer);
+      return cards.filter(Boolean).map(normalizeQaCard).filter(card => card.question || card.answer);
     }
 
     function normalizeQaCard(card = {}) {
@@ -11509,7 +11620,7 @@
 
     function normalizeFocusItems(items = []) {
       if (!Array.isArray(items)) return [];
-      return items.map(normalizeFocusItem).filter(item => item.name);
+      return items.filter(Boolean).map(normalizeFocusItem).filter(item => item.name);
     }
 
     function normalizeFocusItem(item = {}) {
@@ -11523,7 +11634,7 @@
 
     function normalizeConcernItems(items = []) {
       if (!Array.isArray(items)) return [];
-      return items.map(item => ({
+      return items.filter(Boolean).map(item => ({
         title: item.title || item.name || String(item || "潜在顾虑"),
         detail: item.detail || item.description || item.reason || "需要用更具体证据回应。"
       })).filter(item => item.title);
@@ -11531,7 +11642,7 @@
 
     function normalizeImprovementItems(items = []) {
       if (!Array.isArray(items)) return [];
-      return items.map(normalizeImprovement).filter(item => item.issue);
+      return items.filter(Boolean).map(normalizeImprovement).filter(item => item.issue);
     }
 
     function normalizeImprovement(item = {}) {
@@ -11546,7 +11657,7 @@
 
     function normalizeNextSteps(items = []) {
       if (!Array.isArray(items)) return [];
-      return items.map(normalizeNextStep).filter(item => item.title);
+      return items.filter(Boolean).map(normalizeNextStep).filter(item => item.title);
     }
 
     function normalizeNextStep(item = {}) {
@@ -11596,22 +11707,30 @@
     function normalizeStringList(items = []) {
       const list = Array.isArray(items) ? items : String(items || "").split(/\n+/);
       return list
-        .map(item => typeof item === "string" ? item : (item.title || item.detail || item.description || item.value || ""))
+        .map(item => typeof item === "string" ? item : ((item && (item.title || item.detail || item.description || item.value)) || ""))
         .map(item => String(item || "").trim())
         .filter(Boolean);
     }
 
     function normalizeRecruiterFacts(items = []) {
-      if (!Array.isArray(items)) return [];
-      return items
+      // Tolerate model output that returns facts as a label->value object or a
+      // newline/semicolon-separated string, not just an array — otherwise real
+      // 公司/岗位 facts would be silently dropped and backfilled as "未提及".
+      let list;
+      if (Array.isArray(items)) list = items;
+      else if (items && typeof items === "object") list = Object.entries(items).map(([label, value]) => ({ label, value }));
+      else if (typeof items === "string") list = items.split(/\n+|；|;/);
+      else return [];
+      return list
+        .filter(item => item != null && item !== "")
         .map(item => {
           if (typeof item === "string") {
             const [label, ...rest] = item.split(/[：:]/);
-            return { label: label || "事实信息", value: rest.join("：") || item };
+            return { label: (label || "事实信息").trim(), value: String(rest.join("：") || item).trim() };
           }
           return {
             label: item.label || item.name || item.key || "事实信息",
-            value: item.value || item.detail || item.description || item.text || "待确认"
+            value: String(item.value || item.detail || item.description || item.text || "待确认")
           };
         })
         .filter(item => item.label || item.value);
@@ -11620,6 +11739,7 @@
     function normalizeRecruiterActions(items = []) {
       if (!Array.isArray(items)) return [];
       return items
+        .filter(item => item != null)
         .map(item => {
           const raw = typeof item === "string" ? { title: item } : item;
           return {
@@ -11862,8 +11982,14 @@
       if (name.endsWith(".xlsx")) return readXlsxRows(file);
       if (name.endsWith(".csv") || name.endsWith(".tsv") || name.endsWith(".txt")) {
         const text = await file.text();
+        // .txt is free-form: route through the same paste-text pipeline (table gate
+        // + prose/label extractor) so colon-labeled notes import like a paste.
+        if (name.endsWith(".txt")) return buildInterviewRowsFromText(text);
         const delimiter = name.endsWith(".tsv") ? "\t" : detectDelimiter(text);
-        return tableRowsToObjects(parseDelimitedText(text, delimiter));
+        const rows = tableRowsToObjects(parseDelimitedText(text, delimiter));
+        // Single-column / label:value CSV/TSV yields no table rows — fall back to the
+        // prose/label extractor instead of failing with "empty import file".
+        return rows.length ? rows : buildInterviewRowsFromText(text);
       }
       throw new Error("unsupported import file");
     }
@@ -11871,9 +11997,18 @@
     function buildInterviewRowsFromText(text = "") {
       const rawText = String(text || "").trim();
       if (!rawText) return [];
-      const tableObjects = tableRowsToObjects(parseDelimitedText(rawText, detectDelimiter(rawText)));
-      if (tableObjects.length) {
-        return tableObjects.map(row => ({ 原始文本: rawText, ...row }));
+      // Only treat pasted text as a delimited table when the structure is strong
+      // (see looksLikeDelimitedTable). Free-form prose whose first line merely
+      // contains a comma must NOT be misparsed as CSV — it should fall through to
+      // the per-field alias extractor below. Genuine .csv/.tsv/.xlsx FILE imports
+      // do not flow through here (they use readInterviewImportRows/readXlsxRows),
+      // so this gate does not affect real file import.
+      const delimiter = detectDelimiter(rawText);
+      if (looksLikeDelimitedTable(rawText, delimiter)) {
+        const tableObjects = tableRowsToObjects(parseDelimitedText(rawText, delimiter));
+        if (tableObjects.length) {
+          return tableObjects.map(row => ({ 原始文本: rawText, ...row }));
+        }
       }
       const blocks = rawText
         .split(/\n\s*\n+/)
@@ -11883,6 +12018,29 @@
         原始文本: block,
         ...extractInterviewFieldsFromText(block)
       }));
+    }
+
+    // Structural gate for the TEXT-import path only. A lone comma in a prose
+    // sentence is not enough to treat pasted text as a table; require either an
+    // explicit/deliberate delimiter (tab or semicolon) or a comma-delimited blob
+    // with at least two delimited lines that share a consistent column count.
+    function looksLikeDelimitedTable(rawText, delimiter) {
+      const rows = parseDelimitedText(rawText, delimiter);
+      if (rows.length < 2) return false; // a table needs a header plus >=1 data row
+      const multiCellRows = rows.filter(row => row.filter(cell => String(cell ?? "").trim()).length >= 2);
+      if (multiCellRows.length < 2) return false; // not a single prose sentence with a comma
+      // Tab / semicolon are deliberate, explicit delimiters — strong table signals.
+      if (delimiter === "\t" || delimiter === ";") return true;
+      // For commas (which collide with prose), require a DOMINANT column count.
+      // Real pasted tables can be ragged (a trailing empty cell omitted -> modal-1),
+      // but never gain a column, and they cluster tightly at the header width;
+      // prose has no such structure.
+      const counts = multiCellRows.map(row => row.length);
+      const modal = counts.reduce((best, count) =>
+        counts.filter(other => other === count).length > counts.filter(other => other === best).length ? count : best, counts[0]);
+      const atModal = counts.filter(count => count === modal).length;
+      const compatible = counts.filter(count => count === modal || count === modal - 1).length;
+      return modal >= 2 && atModal >= 2 && compatible >= Math.ceil(counts.length * 0.6);
     }
 
     function extractInterviewFieldsFromText(text = "") {
@@ -11947,7 +12105,10 @@
         const match = segment.match(/^(.{1,36}?)[：:\t ]+(.+)$/);
         if (!match) continue;
         const label = normalizeImportKey(match[1]);
-        if (normalizedAliases.some(alias => label === alias || label.includes(alias))) {
+        // Match exact label, or a label that ENDS WITH the alias (real labels like
+        // 面试公司 / HR微信 end with the alias; prose like "...整体印象" embedding a
+        // generic stem like 公司 must NOT match).
+        if (normalizedAliases.some(alias => label === alias || (alias.length >= 2 && label.endsWith(alias)))) {
           return cleanTextImportValue(match[2]);
         }
       }
@@ -12139,9 +12300,13 @@
     function parseWorksheetXml(xml, sharedStrings = []) {
       return Array.from(String(xml || "").matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)).map(rowMatch => {
         const row = [];
-        Array.from(rowMatch[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)).forEach(cellMatch => {
-          const attrs = cellMatch[1];
-          const body = cellMatch[2];
+        // The alternation matches BOTH self-closing empty cells (<c r="B2" s="3"/>)
+        // and paired cells (<c ...>...</c>). Without the self-closing branch, an
+        // empty styled cell would swallow the following cell as its body, shifting
+        // every subsequent column left and corrupting values.
+        Array.from(rowMatch[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)).forEach(cellMatch => {
+          const attrs = cellMatch[1] || "";
+          const body = cellMatch[2] || "";
           const ref = attrs.match(/\br="([A-Z]+)\d+"/)?.[1] || "";
           let columnIndex = ref ? columnNameToIndex(ref) : row.length;
           if (!Number.isInteger(columnIndex) || columnIndex < 0 || columnIndex > 16384) columnIndex = row.length;
@@ -14840,9 +15005,43 @@
         console.warn(error);
         state.lastApiFailed = true;
         state.error = humanizeModelError(error);
-        state.isLoading = false;
-        state.loadingText = "";
-        showToast("生成失败，输入原文已保留");
+        try {
+          // 模型调用失败时，回退到与本地路径完全一致的规则分析分发。
+          // simulateLocalGeneration 内部按 isRecruiterContent / scenario.key 路由，
+          // 沿用本次 refreshContentRoutingFromSource 已确定（可能为手动覆盖）的内容类型，
+          // 不重新检测、不覆盖 state.contentType / recruiterSubtype。
+          state.loadingText = "模型调用失败，正在使用规则快速分析...";
+          renderLoading();
+          const fallbackResult = await simulateLocalGeneration(state.source);
+          state.result = normalizeResult({
+            ...fallbackResult,
+            contentType: state.contentType,
+            recruiterSubtype: state.recruiterSubtype
+          });
+          state.generatedAt = nowIso();
+          state.generatedSourceHash = hashSource();
+          state.editedAt = "";
+          // 回退已成功产出结果：必须清除失败态 error，否则 renderError/renderTrustNote
+          // 仍把页面当成「生成失败」展示（错误横幅 + 行内重试/使用规则分析按钮），与已渲染结果自相矛盾。
+          // 保留 state.lastApiFailed=true，模型状态条仍显示「连接异常」、trust-note 走规则分析分支，
+          // 既呈现结果又如实提示模型调用失败。
+          state.error = "";
+          // 必须标注为规则/本地分析，绝不写入失败的真实模型名：lastApiFailed 为真时
+          // normalizeModelUsedLabel("") -> getAnalysisModeLabel() 返回「规则快速分析」（开发者模式「本地模拟分析」）。
+          state.modelUsed = normalizeModelUsedLabel("");
+          state.activeResultTab = "summarySection";
+          state.restored = false;
+          state.isLoading = false;
+          state.loadingText = "";
+          saveCurrentToHistory({ silent: true });
+          showToast("模型调用失败，已改用规则快速分析（结果仅供参考，可重试）");
+        } catch (fallbackError) {
+          // 连本地规则分析都失败时，保留失败态横幅，不掩盖错误。
+          console.warn(fallbackError);
+          state.isLoading = false;
+          state.loadingText = "";
+          showToast("生成失败，输入原文已保留");
+        }
       } finally {
         clearInterval(timer);
         render();
@@ -14985,7 +15184,7 @@
       const level = extractFirstMatch(value, [/(?:职级|级别|level)[：:\s]*([^\n，,。；;]{2,24})/i, /(P[5-9]|M[1-9]|L[3-9]|高级|资深|专家|总监)/i]);
       const process = extractFirstMatch(value, [/(?:流程|进度|安排)[：:\s]*([^\n。；;]{2,60})/, /((?:下周|本周|明天|后天|今天).{0,24}(?:聊|面|电话|视频|沟通|约))/]);
       const factsByLabel = [
-        ["推荐公司/团队", company],
+        ["推荐公司/团队", sanitizeCompanyName(String(company || "").replace(/^(?:猎头|HR|朋友|同事|老板|领导|对方|我|他|她)*(?:说|讲|提到|介绍|推荐|有|帮我看|这边)+/i, ""))],
         ["推荐岗位", role],
         ["薪资/职级", [salary, level].filter(Boolean).join(" / ")],
         ["base/工作方式", location],
@@ -16596,6 +16795,8 @@
         scenario: getValidScenario(item.scenario || DEFAULT_SCENARIO),
         contentType,
         recruiterSubtype,
+        contentRoutingManual: Boolean(item.contentRoutingManual),
+        contentRoutingReason: String(item.contentRoutingReason || ""),
         interviewId: String(item.interviewId || ""),
         roundIndex,
         companyName: String(item.companyName || item.company || item.result?.interviewInfo?.company || ""),
@@ -16676,6 +16877,8 @@
         scenario: scenario.key,
         contentType: state.contentType,
         recruiterSubtype: state.recruiterSubtype,
+        contentRoutingManual: state.contentRoutingManual,
+        contentRoutingReason: state.contentRoutingReason,
         interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
         roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
         companyName: isInterviewReport ? (linkedRecord?.company || state.result.interviewInfo?.company || "") : getFactValue(recruiterReport.facts, "推荐公司/团队"),
@@ -16877,10 +17080,12 @@
           state.scenario = getValidScenario(item.scenario || DEFAULT_SCENARIO);
           state.contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
           state.recruiterSubtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
-          state.contentRoutingManual = false;
-          state.contentRoutingReason = isRecruiterContent(state.contentType)
+          // Restore the saved manual override so a deliberately-classified report
+          // is not re-detected (and possibly flipped) after reopen.
+          state.contentRoutingManual = Boolean(item.contentRoutingManual);
+          state.contentRoutingReason = item.contentRoutingReason || (isRecruiterContent(state.contentType)
             ? `已从历史恢复「${getContentTypeLabel(state.contentType)} / ${getRecruiterSubtypeLabel(state.recruiterSubtype)}」。`
-            : "已从历史恢复面试复盘。";
+            : "已从历史恢复面试复盘。");
           state.sourceByMode = normalizeSourceByMode(item.sourceByMode, itemInputMode, item.source || "");
           state.inputMode = itemInputMode;
           state.source = item.source || state.sourceByMode[itemInputMode] || "";

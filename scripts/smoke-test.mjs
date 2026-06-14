@@ -201,6 +201,15 @@ function runStaticChecks() {
   assert(html.includes('classList.toggle("hidden", !isUnconfigured || !isDeveloperMode())'), "Developer config link can appear without admin mode");
   assert(html.includes("请先使用 admin / datou123 登录，进入开发者模式完成配置后再让普通用户登录"), "Unconfigured cloud login guidance is not admin-gated");
   assert(html.includes("els.accountDiagnosticPanel.innerHTML = \"\""), "Developer diagnostics are not cleared for non-admin users");
+
+  // R8 fixes: dark-mode contrast, dialog naming, keyboard activation, import matching.
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.improvement-card\.high \{\s*background:/.test(html), "Dark mode must re-tint high-priority improvement cards (contrast)");
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.count-badge \{\s*background:/.test(html), "Dark mode must re-tint result count badges (contrast)");
+  assert(html.includes('aria-labelledby="modelModalTitle"') && html.includes('aria-labelledby="historyModalTitle"') && html.includes('aria-labelledby="sourceModalTitle"'), "Model/history/source dialogs must be aria-labelledby their titles");
+  assert(html.includes('els.modelStatus.addEventListener("keydown"'), "modelStatus role=button must support Enter/Space keyboard activation");
+  assert(html.includes("label.endsWith(alias)"), "findTextImportValue must use endsWith to avoid prose substring mis-assignment");
+  assert(html.includes("function looksLikeDelimitedTable"), "Text-import table gate looksLikeDelimitedTable is missing");
+  assert(html.includes("function enqueueCloudMutation") && html.includes("function finalizeCloudMutation"), "Serialized cloud mutation chain is missing");
 }
 
 function runScriptSyntaxCheck() {
