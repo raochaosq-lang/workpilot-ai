@@ -42,6 +42,10 @@ function runStaticChecks() {
     "interviewNextActionBanner",
     "reviewContextBar",
     "sourceQualityHint",
+    "contentRoutingPanel",
+    "contentTypeSelect",
+    "recruiterSubtypeSelect",
+    "redetectContentBtn",
     "fillSampleTranscriptBtn",
     "confirmModal",
     "modelModal",
@@ -80,7 +84,7 @@ function runStaticChecks() {
   assert(html.includes("转写服务未配置") && html.includes("音频转写服务暂未接入，请先粘贴已有转写文本"), "Upload transcription controls do not explain missing ASR service");
   assert(html.includes("规则快速分析") && html.includes("不等同于真实大模型判断"), "Local analysis is not clearly labeled as rules-based");
   assert(html.includes("function normalizeModelUsedLabel") && html.includes('state.modelUsed = state.mode === "api" ? getModelName() : (isDeveloperMode() ? "本地模拟分析" : "规则快速分析")'), "History/result model labels can misrepresent local analysis");
-  assert(html.includes("## 分析模式") && html.includes("buildMinutesText(item.result, scenarioKey, item.modelUsed)"), "Markdown export does not preserve analysis mode");
+  assert(html.includes("## 分析模式") && html.includes("## 内容类型") && html.includes("buildMinutesText(item.result, scenarioKey, item.modelUsed, item.contentType, item.recruiterSubtype)"), "Markdown export does not preserve analysis mode and content type");
   assert(html.includes("当前为本地体验，云端账号尚未配置") && html.includes("等待管理员配置"), "Unconfigured account state is not productized for local experience");
   assert(/async function shouldConfirmLongSourceBeforeGenerate[\s\S]*showConfirmDialog[\s\S]*生成可能更慢/.test(html), "Long source generation should use the product confirmation dialog");
   assert(/async function confirmReportExport[\s\S]*导出数据会下载当前账号可见的面试记录[\s\S]*showConfirmDialog/.test(html), "Sensitive export should use the product confirmation dialog");
@@ -128,6 +132,36 @@ function runStaticChecks() {
   assert(html.includes('.slice(0, 48)') && html.includes('.replace(/-+$/, "")'), "buildExportFileName must trim trailing hyphens");
   assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.panel-head,\s*\.section-head \{\s*background: transparent;/.test(html), "Dark mode must flatten panel-head/section-head backgrounds");
   assert(/\.manager-filter-toolbar \{[\s\S]*?background: var\(--card-soft\);/.test(html), "Filter toolbar must use a themed (dark-aware) background");
+
+  // Guards added during the 2026-06-14 five-round test pass.
+  assert(html.includes("Array.from(row, cell => cell || \"\")"), "parseWorksheetXml must densify sparse rows via Array.from (row.map skips holes -> null cells)");
+  assert(!/return row\.map\(cell => cell \|\| ""\);/.test(html), "parseWorksheetXml must not use row.map for densification (sparse XLSX columns become null)");
+  assert(html.includes('} else if (value.trim() === "") {') && html.includes("a quote in the middle of an unquoted field is a literal"), "parseDelimitedText must treat mid-field quotes as literal so delimiters still split");
+  assert(/match\(\/\(\\d\{1,3\}\(\?:\\\.\\d\+\)\?\)\\s\*%\//.test(html), "normalizePercentValue must capture the decimal part of percent strings");
+  assert(html.includes("function mergeInterviewRecordData") && html.includes("interviewRecords[existingIndex] = mergeInterviewRecordData("), "Re-import must use field-level merge that preserves existing data");
+  assert(html.includes('.replace(/[\\s的]*(?:HR|hr)\\s*$/, "")') && html.includes('.replace(/的\\s*$/, "")'), "sanitizeCompanyName must strip trailing HR/的 noise from inferred company names");
+  assert(!/\.file-input\s*\{\s*width:\s*100%;/.test(html), "Hidden .file-input must not be forced to width:100% (caused mobile horizontal overflow)");
+
+  // Content-type routing and recruiter conversation guards.
+  assert(html.includes("const CONTENT_TYPES") && html.includes("recruiterConversation") && html.includes("猎头沟通整理"), "Content type model is missing recruiterConversation");
+  [
+    "opportunityRecommendation",
+    "careerAnalysis",
+    "profilePositioning",
+    "interviewStrategy",
+    "compensationNegotiation",
+    "followUpCoordination",
+    "mixed"
+  ].forEach(subtype => assert(html.includes(subtype), `Recruiter subtype missing: ${subtype}`));
+  assert(html.includes("function detectContentRouting") && html.includes("function detectRecruiterSubtype"), "Content routing classifier is missing");
+  assert(html.includes("function refreshContentRoutingFromSource") && html.includes("contentRoutingManual"), "Manual content routing correction is missing");
+  assert(html.includes("function simulateRecruiterGeneration") && html.includes("function buildRecruiterModelPrompt"), "Recruiter-specific generation path is missing");
+  assert(html.includes("function renderRecruiterOverview") && html.includes("function renderRecruiterConclusions") && html.includes("function renderRecruiterRisks"), "Recruiter-specific report rendering is missing");
+  assert(html.includes("本次没有明确推荐职位") && html.includes("不生成空的推荐职位卡"), "Recruiter report must avoid empty opportunity cards");
+  assert(/function saveCurrentToHistory[\s\S]*const isInterviewReport = !isRecruiterContent\(\)[\s\S]*if \(isInterviewReport && item\.interviewId\)/.test(html), "Recruiter history must not default-link interview rounds");
+  assert(/function unlinkHistoryFromInterviewRound[\s\S]*recruiterConversation[\s\S]*return false/.test(html), "Deleting recruiter history must not unlink interview round markers");
+  assert(html.includes("buildRecruiterMinutesText") && html.includes("recruiterConversation / ${subtype}") && html.includes("可复制回复"), "Recruiter Markdown export is missing subtype-specific structure");
+  assert(html.includes("已复制历史职业机会报告") && html.includes("已复制事实和分析观点"), "Recruiter copy paths are missing type-specific feedback");
 
   const domReadyIndex = html.indexOf('document.addEventListener("DOMContentLoaded"');
   const bindingStart = domReadyIndex >= 0 ? html.indexOf("[", domReadyIndex) : -1;
@@ -177,6 +211,39 @@ function runScriptSyntaxCheck() {
       failures.push(`Inline script ${index + 1} syntax error: ${error.message}`);
     }
   });
+}
+
+function runContentRoutingFixtureChecks() {
+  const script = getInlineScripts()[0] || "";
+  const sandbox = `
+    const window = { SpeechRecognition: null, webkitSpeechRecognition: null, crypto: { randomUUID: () => "fixture-id" }, location: { hostname: "127.0.0.1", protocol: "file:", search: "" }, SENLO_CONFIG: {} };
+    const document = { addEventListener() {}, getElementById() { return null; }, querySelectorAll() { return []; }, querySelector() { return null; }, body: { dataset: {} } };
+    const localStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
+    const navigator = { clipboard: { writeText: async () => {} } };
+  `;
+  let detectContentRouting;
+  try {
+    ({ detectContentRouting } = new Function(`${sandbox}\n${script}\nreturn { detectContentRouting };`)());
+  } catch (error) {
+    failures.push(`Content routing fixture bootstrap failed: ${error.message}`);
+    return;
+  }
+  const cases = [
+    ["面试转写", "00:00 面试官：你为什么想做 AI 产品？\n00:35 候选人：我做过一个 AI 面试复盘工具。", "interview", "opportunityRecommendation"],
+    ["职位推荐", "猎头说有个腾讯 AI 产品经理岗位，base 深圳，年包 80 万，问我是否推进。", "recruiterConversation", "opportunityRecommendation"],
+    ["职业分析", "招聘顾问主要分析市场行情、行业趋势和我的职业定位，没有具体公司岗位。", "recruiterConversation", "careerAnalysis"],
+    ["简历定位", "猎头建议我优化简历，突出项目经历、候选人卖点和对外包装话术。", "recruiterConversation", "profilePositioning"],
+    ["面试策略", "HR 反馈下一轮面试可能会追问增长案例，需要准备回答策略和面试后跟进。", "recruiterConversation", "interviewStrategy"],
+    ["薪资谈判", "猎头说 offer 职级和年包还有谈判空间，让我明确期望薪资和底线。", "recruiterConversation", "compensationNegotiation"],
+    ["流程跟进", "招聘顾问约我下周补材料并确认面试时间，后续由 HR 推进流程。", "recruiterConversation", "followUpCoordination"],
+    ["混合目的", "猎头推荐一个 AI 产品经理岗位，同时分析市场行情和我的职业方向是否适合。", "recruiterConversation", "mixed"]
+  ];
+  cases.forEach(([name, text, expectedContentType, expectedSubtype]) => {
+    const actual = detectContentRouting(text);
+    assert(actual.contentType === expectedContentType, `${name} content type expected ${expectedContentType}, got ${actual.contentType}`);
+    assert(actual.recruiterSubtype === expectedSubtype, `${name} subtype expected ${expectedSubtype}, got ${actual.recruiterSubtype}`);
+  });
+  notes.push(`routing-fixtures=${cases.length}`);
 }
 
 function createMockInterviews() {
@@ -290,6 +357,7 @@ function runAssetChecks() {
 
 runStaticChecks();
 runScriptSyntaxCheck();
+runContentRoutingFixtureChecks();
 runMockDataChecks();
 runAssetChecks();
 

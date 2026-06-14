@@ -1374,6 +1374,74 @@
       font-size: 13px;
     }
 
+    .content-routing-panel {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #f8fbff, #f1f7ff);
+    }
+
+    .routing-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .routing-summary span,
+    .routing-controls label > span {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .routing-summary strong {
+      color: #1d4ed8;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .routing-summary small {
+      color: #0f766e;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .routing-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .routing-controls label {
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .routing-controls .select {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+
+    .content-routing-panel p {
+      margin: 0;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .content-routing-panel.is-manual {
+      border-color: #fed7aa;
+      background: linear-gradient(180deg, #fffaf2, #fff7ed);
+    }
+
     .speaker-preview {
       display: grid;
       gap: 9px;
@@ -2478,6 +2546,104 @@
       margin-bottom: 5px;
       font-size: 11px;
       font-weight: 900;
+    }
+
+    .recruiter-card-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .recruiter-section-card {
+      padding: 15px;
+      border: 1px solid #dbeafe;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fff, #f8fbff);
+    }
+
+    .recruiter-section-card.warning {
+      border-color: #fed7aa;
+      background: #fff7ed;
+    }
+
+    .recruiter-section-card h4 {
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .recruiter-section-card p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .recruiter-fact-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .recruiter-fact {
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .recruiter-fact span {
+      display: block;
+      margin-bottom: 4px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .recruiter-fact strong {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .recruiter-bullet-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .recruiter-bullet-list li {
+      position: relative;
+      padding-left: 16px;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .recruiter-bullet-list li::before {
+      content: "";
+      position: absolute;
+      top: 0.72em;
+      left: 2px;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #14b8a6;
+    }
+
+    .reply-suggestion {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 13px;
+      line-height: 1.65;
+      white-space: pre-wrap;
     }
 
     .focus-chip-list {
@@ -4958,11 +5124,14 @@
       .capture-card,
       .capture-panel,
       .source-wrap,
+      .content-routing-panel,
       .input-controls,
       .speaker-preview,
       .meeting-input,
       .dossier-item,
       .coach-card,
+      .recruiter-section-card,
+      .recruiter-fact,
       .focus-chip,
       .record-meta-item,
       .spotlight-fact,
@@ -4980,6 +5149,7 @@
       .empty,
       .card-detail,
       .qa-score,
+      .reply-suggestion,
       .coach-takeaway,
       .record-next,
       .record-meta-item,
@@ -5014,6 +5184,9 @@
 	      .overview-desc,
 	      .qa-answer p,
       .qa-review p,
+      .content-routing-panel p,
+      .recruiter-section-card p,
+      .recruiter-bullet-list li,
       .concern-card p,
       .next-step-card p,
       .improvement-card dd,
@@ -5035,6 +5208,25 @@
       .record-next.overdue {
         background: rgba(245, 158, 11, 0.14);
         border-color: rgba(251, 191, 36, 0.28);
+      }
+
+      .routing-summary strong {
+        color: #93c5fd;
+      }
+
+      .routing-summary small {
+        color: #5eead4;
+      }
+
+      .content-routing-panel.is-manual,
+      .recruiter-section-card.warning {
+        border-color: rgba(251, 146, 60, 0.45);
+        background: rgba(67, 43, 24, 0.38);
+      }
+
+      .reply-suggestion {
+        border-color: #334155;
+        color: #dbeafe;
       }
 
       .record-company,
@@ -5665,7 +5857,11 @@
       }
 
       .file-input {
-        width: 100%;
+        /* Stay visually hidden (matches the base rule); the visible trigger is
+           the "导入文件" / file-picker button. Forcing width:100% on this
+           absolutely-positioned input pushed it past the viewport and caused
+           horizontal overflow on mobile. */
+        width: 1px;
         max-width: none;
         min-width: 0;
       }
@@ -5684,6 +5880,22 @@
       .text-empty-hint {
         padding: 10px;
         border-radius: 12px;
+      }
+
+      .content-routing-panel {
+        gap: 9px;
+        padding: 10px;
+        border-radius: 12px;
+      }
+
+      .routing-controls,
+      .recruiter-fact-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .routing-controls .mini-btn,
+      .routing-controls .select {
+        width: 100%;
       }
 
       .speaker-preview {
@@ -6745,6 +6957,36 @@
               <button id="clearSourceBtn" class="btn ghost" type="button">清空输入</button>
             </div>
           </div>
+          <div id="contentRoutingPanel" class="content-routing-panel" aria-live="polite">
+            <div class="routing-summary">
+              <span>当前识别</span>
+              <strong id="contentTypeSummary">面试复盘</strong>
+              <small id="contentSubtypeSummary"></small>
+            </div>
+            <div class="routing-controls">
+              <label for="contentTypeSelect">
+                <span>内容类型</span>
+                <select id="contentTypeSelect" class="select">
+                  <option value="interview">面试复盘</option>
+                  <option value="recruiterConversation">猎头沟通整理</option>
+                </select>
+              </label>
+              <label id="recruiterSubtypeField" for="recruiterSubtypeSelect">
+                <span>沟通目的</span>
+                <select id="recruiterSubtypeSelect" class="select">
+                  <option value="opportunityRecommendation">职位推荐</option>
+                  <option value="careerAnalysis">职业分析</option>
+                  <option value="profilePositioning">简历定位</option>
+                  <option value="interviewStrategy">面试策略</option>
+                  <option value="compensationNegotiation">薪资谈判</option>
+                  <option value="followUpCoordination">流程跟进</option>
+                  <option value="mixed">混合目的</option>
+                </select>
+              </label>
+              <button id="redetectContentBtn" class="mini-btn" type="button">重新识别</button>
+            </div>
+            <p id="contentRoutingReason">等待输入后识别内容类型。</p>
+          </div>
           <div id="inputControls" class="input-controls">
             <div class="control-row hidden">
               <label class="control-label" for="outputType">输出类型</label>
@@ -7464,6 +7706,8 @@
     };
 
     const EMPTY_RESULT = {
+      contentType: "interview",
+      recruiterSubtype: "opportunityRecommendation",
       summary: "",
       keyConclusions: [],
       tasks: [],
@@ -7493,7 +7737,25 @@
       interviewerFocus: [],
       interviewerConcerns: [],
       improvements: [],
-      nextSteps: []
+      nextSteps: [],
+      recruiterReport: {
+        counterpart: "未识别",
+        purpose: "职位推荐",
+        coreConclusion: "",
+        usefulJudgement: "",
+        facts: [],
+        analysis: [],
+        questions: [],
+        risks: [],
+        nextActions: [],
+        replySuggestion: "",
+        opportunity: {},
+        career: {},
+        profile: {},
+        interviewStrategy: {},
+        compensation: {},
+        followUp: {}
+      }
     };
 
     const RESULT_TAB_IDS = [
@@ -7504,6 +7766,59 @@
       "transcriptSection"
     ];
     const INPUT_MODES = ["upload", "record", "text"];
+    const CONTENT_TYPES = {
+      interview: {
+        key: "interview",
+        label: "面试复盘",
+        reportName: "AI 面试复盘报告",
+        badge: "面试复盘"
+      },
+      recruiterConversation: {
+        key: "recruiterConversation",
+        label: "猎头沟通整理",
+        reportName: "职业机会情报卡",
+        badge: "猎头沟通"
+      }
+    };
+    const RECRUITER_SUBTYPES = {
+      opportunityRecommendation: {
+        key: "opportunityRecommendation",
+        label: "职位推荐",
+        reportName: "职业机会情报卡"
+      },
+      careerAnalysis: {
+        key: "careerAnalysis",
+        label: "职业分析",
+        reportName: "职业方向分析"
+      },
+      profilePositioning: {
+        key: "profilePositioning",
+        label: "简历定位",
+        reportName: "候选人定位建议"
+      },
+      interviewStrategy: {
+        key: "interviewStrategy",
+        label: "面试策略",
+        reportName: "面试策略台"
+      },
+      compensationNegotiation: {
+        key: "compensationNegotiation",
+        label: "薪资谈判",
+        reportName: "薪资谈判准备"
+      },
+      followUpCoordination: {
+        key: "followUpCoordination",
+        label: "流程跟进",
+        reportName: "流程跟进行动台"
+      },
+      mixed: {
+        key: "mixed",
+        label: "混合目的",
+        reportName: "职业机会综合分析"
+      }
+    };
+    const DEFAULT_CONTENT_TYPE = "interview";
+    const DEFAULT_RECRUITER_SUBTYPE = "opportunityRecommendation";
 
     const STATE_SCHEMA_VERSION = 4;
     const DEFAULT_OUTPUT_TYPE = "interviewRecord";
@@ -7634,6 +7949,10 @@
       },
       inputMode: "text",
       scenario: DEFAULT_SCENARIO,
+      contentType: DEFAULT_CONTENT_TYPE,
+      recruiterSubtype: DEFAULT_RECRUITER_SUBTYPE,
+      contentRoutingManual: false,
+      contentRoutingReason: "等待输入后识别内容类型。",
       audioFileName: "",
       outputType: DEFAULT_OUTPUT_TYPE,
       mode: "local",
@@ -8800,6 +9119,8 @@
         source_by_mode_json: record.sourceByMode,
         input_mode: record.inputMode,
         output_type: record.outputType,
+        content_type: record.contentType,
+        recruiter_subtype: record.recruiterSubtype,
         mode: record.mode,
         model_used: record.modelUsed,
         report_json: record.result,
@@ -8826,6 +9147,8 @@
         sourceByMode: row.source_by_mode_json,
         inputMode: row.input_mode,
         outputType: row.output_type,
+        contentType: row.content_type,
+        recruiterSubtype: row.recruiter_subtype,
         mode: row.mode,
         modelUsed: row.model_used,
         result: row.report_json,
@@ -9193,6 +9516,7 @@
         "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
         "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn", "fillSampleTranscriptBtn",
         "sourceWrap", "textEmptyHint", "speakerPreview", "sourceText", "inputMeta", "charCount", "sourceQualityHint",
+        "contentRoutingPanel", "contentTypeSummary", "contentSubtypeSummary", "contentTypeSelect", "recruiterSubtypeField", "recruiterSubtypeSelect", "redetectContentBtn", "contentRoutingReason",
         "clearSourceBtn", "outputType", "localModeBtn", "apiModeBtn", "generateBtn",
         "clearAllBtn", "emptyHeroKicker", "emptyHeroTitle", "emptyHeroDesc", "emptyHeroStatus", "emptyPreviewOneTitle", "emptyPreviewOneDesc", "emptyPreviewTwoTitle", "emptyPreviewTwoDesc", "emptyPreviewThreeTitle", "emptyPreviewThreeDesc", "emptyPreviewFourTitle", "emptyPreviewFourDesc",
         "trustNote", "resultMeta", "loadingPanel", "loadingText", "errorPanel", "errorText", "retryBtn", "fallbackBtn",
@@ -9410,6 +9734,21 @@
         saveState();
         renderInputDependentState();
       });
+      els.contentTypeSelect.addEventListener("change", () => {
+        const nextType = getValidContentType(els.contentTypeSelect.value);
+        setContentRouting(nextType, state.recruiterSubtype, { manual: true });
+      });
+      els.recruiterSubtypeSelect.addEventListener("change", () => {
+        setContentRouting("recruiterConversation", getValidRecruiterSubtype(els.recruiterSubtypeSelect.value), { manual: true });
+      });
+      els.redetectContentBtn.addEventListener("click", () => {
+        const before = `${state.contentType}:${state.recruiterSubtype}`;
+        const detection = refreshContentRoutingFromSource({ force: true, clearResultOnChange: true });
+        saveState();
+        render();
+        const after = `${state.contentType}:${state.recruiterSubtype}`;
+        showToast(before === after ? "已重新识别，内容类型保持不变" : `已重新识别为${getContentTypeLabel()}${isRecruiterContent() ? ` / ${getRecruiterSubtypeLabel()}` : ""}`);
+      });
       els.clearSourceBtn.addEventListener("click", async () => {
         if (hasRealInput() || hasResult()) {
           const ok = await showConfirmDialog({
@@ -9445,10 +9784,10 @@
       els.regenerateBtn.addEventListener("click", regenerate);
       els.saveHistoryBtn.addEventListener("click", () => saveCurrentToHistory());
       els.exportMarkdownBtn.addEventListener("click", exportCurrentReportMarkdown);
-      els.copyFullBtn.addEventListener("click", () => copyText(buildMinutesText(), getScenario().copyReportToast));
-      els.copyTodoListBtn.addEventListener("click", () => copyText(buildTodoListText(), getScenario().copyNextToast));
-      els.copySummaryBtn.addEventListener("click", () => copyText(buildCoachSummaryText(), `已复制${getScenario().summaryTitle}`));
-      els.copyConclusionsBtn.addEventListener("click", () => copyText(buildQaText(), `已复制${getScenario().qaTitle}`));
+      els.copyFullBtn.addEventListener("click", () => copyText(buildMinutesText(), isRecruiterContent() ? "已复制职业机会报告" : getScenario().copyReportToast));
+      els.copyTodoListBtn.addEventListener("click", () => copyText(buildTodoListText(), isRecruiterContent() ? "已复制下一步行动" : getScenario().copyNextToast));
+      els.copySummaryBtn.addEventListener("click", () => copyText(buildCoachSummaryText(), isRecruiterContent() ? "已复制职业机会判断" : `已复制${getScenario().summaryTitle}`));
+      els.copyConclusionsBtn.addEventListener("click", () => copyText(buildQaText(), isRecruiterContent() ? "已复制事实和分析观点" : `已复制${getScenario().qaTitle}`));
       window.addEventListener("resize", () => {
         renderMobilePageTabs();
       });
@@ -9457,9 +9796,15 @@
         openHistoryModal();
       });
       els.summaryBlock.addEventListener("input", () => {
-        state.result.coachSummary = normalizeCoachSummary(state.result.coachSummary, state.result);
-        state.result.coachSummary.coachTakeaway = els.summaryBlock.innerText.trim();
-        state.result.summary = state.result.coachSummary.coachTakeaway;
+        if (isRecruiterContent()) {
+          state.result.recruiterReport = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+          state.result.recruiterReport.replySuggestion = els.summaryBlock.innerText.trim();
+          state.result.summary = state.result.recruiterReport.coreConclusion || state.result.recruiterReport.replySuggestion;
+        } else {
+          state.result.coachSummary = normalizeCoachSummary(state.result.coachSummary, state.result);
+          state.result.coachSummary.coachTakeaway = els.summaryBlock.innerText.trim();
+          state.result.summary = state.result.coachSummary.coachTakeaway;
+        }
         markEdited();
         saveState();
       });
@@ -10330,6 +10675,168 @@
       return SCENARIOS[getValidScenario(state.scenario)];
     }
 
+    function getValidContentType(value) {
+      return Object.prototype.hasOwnProperty.call(CONTENT_TYPES, value) ? value : DEFAULT_CONTENT_TYPE;
+    }
+
+    function getValidRecruiterSubtype(value) {
+      return Object.prototype.hasOwnProperty.call(RECRUITER_SUBTYPES, value) ? value : DEFAULT_RECRUITER_SUBTYPE;
+    }
+
+    function isRecruiterContent(contentType = state.contentType) {
+      return getValidContentType(contentType) === "recruiterConversation";
+    }
+
+    function getContentTypeLabel(contentType = state.contentType) {
+      return CONTENT_TYPES[getValidContentType(contentType)].label;
+    }
+
+    function getRecruiterSubtypeLabel(subtype = state.recruiterSubtype) {
+      return RECRUITER_SUBTYPES[getValidRecruiterSubtype(subtype)].label;
+    }
+
+    function getActiveReportName(contentType = state.contentType, subtype = state.recruiterSubtype, scenarioKey = state.scenario) {
+      if (isRecruiterContent(contentType)) return RECRUITER_SUBTYPES[getValidRecruiterSubtype(subtype)].reportName;
+      return getScenarioByKey(scenarioKey).reportName;
+    }
+
+    function scoreRoutingRules(text, rules) {
+      return rules.reduce((score, [pattern, weight]) => {
+        const matches = String(text || "").match(pattern);
+        return score + (matches ? matches.length * weight : 0);
+      }, 0);
+    }
+
+    function detectContentRouting(text = getEffectiveInput()) {
+      const value = String(text || "").trim();
+      if (!value) {
+        return {
+          contentType: DEFAULT_CONTENT_TYPE,
+          recruiterSubtype: DEFAULT_RECRUITER_SUBTYPE,
+          reason: "等待输入后识别内容类型。"
+        };
+      }
+      const interviewScore = scoreRoutingRules(value, [
+        [/(面试官|候选人|interviewer|candidate)[：:]/gi, 4],
+        [/(一面|二面|三面|四面|终面|HR面|技术面|业务面|第[一二三四五六七八九十\d]+轮)/gi, 3],
+        [/(自我介绍|面试问题|回答质量|面试反馈|追问|下一轮面试|通过率|复盘)/gi, 2],
+        [/(为什么|如何|怎么|你觉得|你认为|讲一下|介绍一下|有没有|是否).{0,18}(项目|产品|经历|能力|AI|数据|增长|协同)/gi, 1]
+      ]);
+      const recruiterScore = scoreRoutingRules(value, [
+        [/(猎头|headhunter|recruiter|招聘顾问|职业机会|机会沟通|内推人|内推|帮你看机会)/gi, 5],
+        [/(推荐|岗位|职位|JD|HC|headcount|base|汇报线|职级|薪资|年包|offer|期权|股票)/gi, 2],
+        [/(市场行情|行业趋势|职业方向|职业定位|候选人卖点|简历|项目经历|包装|面试策略|谈薪|薪资谈判|补材料|约时间|流程推进|跟进)/gi, 3],
+        [/(HR|招聘|人才顾问|顾问|老师).{0,16}(说|建议|推荐|沟通|反馈|约|看)/gi, 2]
+      ]);
+      const hasInterviewTranscript = /(面试官|候选人|interviewer|candidate)[：:]/i.test(value) && getTranscriptSegmentsFromText(value).length >= 3;
+      const hasStrongRecruiterSignal = /(猎头|headhunter|recruiter|招聘顾问|职业机会|内推人|薪资谈判|市场行情|职业定位|简历包装|流程推进|面试策略|面试准备|回答策略|HR.{0,16}反馈)/i.test(value);
+      const contentType = (hasStrongRecruiterSignal && !hasInterviewTranscript)
+        || (recruiterScore >= 5 && recruiterScore >= interviewScore && !hasInterviewTranscript)
+        ? "recruiterConversation"
+        : "interview";
+      if (contentType === "interview") {
+        return {
+          contentType,
+          recruiterSubtype: DEFAULT_RECRUITER_SUBTYPE,
+          reason: hasInterviewTranscript
+            ? "识别到面试官/候选人说话人结构，按面试复盘处理。"
+            : "未发现强猎头沟通信号，按面试复盘处理；可手动切换。"
+        };
+      }
+      const subtype = detectRecruiterSubtype(value);
+      return {
+        contentType,
+        recruiterSubtype: subtype,
+        reason: `识别到猎头/职业机会沟通信号，当前按「${getRecruiterSubtypeLabel(subtype)}」整理。`
+      };
+    }
+
+    function detectRecruiterSubtype(text) {
+      const value = String(text || "");
+      const scoreMap = {
+        opportunityRecommendation: scoreRoutingRules(value, [
+          [/(推荐|岗位|职位|JD|HC|headcount|公司|团队|base|汇报线|工作方式|岗位职责|任职要求)/gi, 2],
+          [/(这个机会|这家公司|这边岗位|职位匹配|是否推进|值得聊)/gi, 3]
+        ]),
+        careerAnalysis: scoreRoutingRules(value, [
+          [/(市场|行情|趋势|行业|方向|职业定位|职业规划|赛道|机会多|供需|候选人市场)/gi, 3],
+          [/(适合|不建议|优先探索|转型|长期|短板|优势)/gi, 1]
+        ]),
+        profilePositioning: scoreRoutingRules(value, [
+          [/(简历|履历|项目经历|候选人卖点|包装|亮点|背书|表达|话术|改简历|优化简历)/gi, 3],
+          [/(删减|弱化|强化|证明材料|证据|故事线)/gi, 2]
+        ]),
+        interviewStrategy: scoreRoutingRules(value, [
+          [/(面试准备|面试策略|面试反馈|可能问|会问|追问|案例|回答策略|面试后|复盘反馈)/gi, 3],
+          [/(一面|二面|终面|业务面|技术面|HR面)/gi, 1]
+        ]),
+        compensationNegotiation: scoreRoutingRules(value, [
+          [/(薪资|年包|月薪|base薪|bonus|奖金|股票|期权|职级|offer|涨幅|谈判|谈薪|期望薪资)/gi, 4],
+          [/(底线|筹码|counter offer|package|总包)/gi, 3]
+        ]),
+        followUpCoordination: scoreRoutingRules(value, [
+          [/(约时间|安排|补材料|发简历|作品集|流程|推进|跟进|确认时间|下周|今天|明天|后天|邮件|微信|电话)/gi, 3],
+          [/(负责人|下一步|等反馈|卡流程|催|婉拒|暂缓)/gi, 2]
+        ])
+      };
+      if (/(没有|未|无|不清楚|不明确).{0,8}(具体)?(公司|岗位|职位|JD)/.test(value)) {
+        scoreMap.opportunityRecommendation = Math.max(0, scoreMap.opportunityRecommendation - 5);
+      }
+      const ranked = Object.entries(scoreMap)
+        .map(([key, score]) => ({ key, score }))
+        .sort((a, b) => b.score - a.score);
+      const active = ranked.filter(item => item.score >= 3);
+      const top = ranked[0];
+      const second = ranked[1];
+      const hasExplicitMixedSignal = /(同时|也|还有|既.{0,12}又|一边.{0,12}一边|不仅.{0,12}还)/.test(value);
+      if (hasExplicitMixedSignal && active.length >= 2) return "mixed";
+      if (active.length >= 3 && second.score >= top.score - 2) return "mixed";
+      if (active.length >= 2 && second.score >= top.score - 1 && top.score <= 6) return "mixed";
+      return top.score > 0 ? top.key : DEFAULT_RECRUITER_SUBTYPE;
+    }
+
+    function refreshContentRoutingFromSource(options = {}) {
+      const { force = false, clearResultOnChange = false } = options;
+      const detection = detectContentRouting();
+      if (!hasRealInput()) {
+        state.contentType = DEFAULT_CONTENT_TYPE;
+        state.recruiterSubtype = DEFAULT_RECRUITER_SUBTYPE;
+        state.contentRoutingManual = false;
+        state.contentRoutingReason = detection.reason;
+        return detection;
+      }
+      if (!force && state.contentRoutingManual) return detection;
+      const previous = `${state.contentType}:${state.recruiterSubtype}`;
+      state.contentType = getValidContentType(detection.contentType);
+      state.recruiterSubtype = getValidRecruiterSubtype(detection.recruiterSubtype);
+      state.contentRoutingManual = false;
+      state.contentRoutingReason = detection.reason;
+      const next = `${state.contentType}:${state.recruiterSubtype}`;
+      if (clearResultOnChange && previous !== next) clearGeneratedResultState();
+      return detection;
+    }
+
+    function setContentRouting(contentType, recruiterSubtype = state.recruiterSubtype, options = {}) {
+      const nextType = getValidContentType(contentType);
+      const nextSubtype = getValidRecruiterSubtype(recruiterSubtype);
+      const previous = `${state.contentType}:${state.recruiterSubtype}`;
+      state.contentType = nextType;
+      state.recruiterSubtype = nextType === "recruiterConversation" ? nextSubtype : DEFAULT_RECRUITER_SUBTYPE;
+      state.contentRoutingManual = Boolean(options.manual);
+      state.contentRoutingReason = state.contentRoutingManual
+        ? `已手动设为「${getContentTypeLabel()}${isRecruiterContent() ? ` / ${getRecruiterSubtypeLabel()}` : ""}」，输入内容和面试关联已保留。`
+        : detectContentRouting().reason;
+      const next = `${state.contentType}:${state.recruiterSubtype}`;
+      if (previous !== next) {
+        clearGeneratedResultState();
+        state.error = "";
+        state.lastApiFailed = false;
+      }
+      saveState();
+      render();
+      if (!options.silent) showToast("已更新内容类型，输入内容已保留");
+    }
+
     function setScenario(value, options = {}) {
       const next = getValidScenario(value);
       if (next === state.scenario) return true;
@@ -10360,6 +10867,7 @@
     function renderScenario() {
       const scenario = getScenario();
       document.body.dataset.scenario = scenario.key;
+      document.body.dataset.contentType = getValidContentType(state.contentType);
       els.brandTitleExtra.textContent = scenario.titleExtra;
       els.brandSubtitle.textContent = scenario.brandSubtitle;
       els.inputPanelTitle.textContent = scenario.inputTitle;
@@ -10411,6 +10919,42 @@
       els.nextStepTitle.textContent = scenario.nextStepTitle;
     }
 
+    function renderContentRouting() {
+      if (!els.contentRoutingPanel) return;
+      if (!state.contentRoutingManual) refreshContentRoutingFromSource({ clearResultOnChange: false });
+      const contentType = getValidContentType(state.contentType);
+      const isRecruiter = isRecruiterContent(contentType);
+      document.body.dataset.contentType = contentType;
+      els.contentRoutingPanel.classList.toggle("is-manual", state.contentRoutingManual);
+      els.contentTypeSelect.value = contentType;
+      els.recruiterSubtypeSelect.value = getValidRecruiterSubtype(state.recruiterSubtype);
+      els.recruiterSubtypeField.classList.toggle("hidden", !isRecruiter);
+      els.contentTypeSummary.textContent = getContentTypeLabel(contentType);
+      els.contentSubtypeSummary.textContent = isRecruiter ? ` / ${getRecruiterSubtypeLabel()}` : "";
+      els.contentRoutingReason.textContent = state.contentRoutingManual
+        ? state.contentRoutingReason
+        : (state.contentRoutingReason || detectContentRouting().reason);
+      if (isRecruiter) {
+        els.outputPanelTitle.textContent = getActiveReportName();
+        els.outputPanelNote.textContent = "区分事实、观点、风险和下一步动作，不把猎头建议直接当成确定结论。";
+        els.generateBtn.textContent = hasRealInput() ? "生成职业机会分析" : "先添加沟通内容";
+        els.copyFullBtn.textContent = "复制职业机会报告";
+        els.copyTodoListBtn.textContent = "复制下一步行动";
+        els.emptyPreviewOneTitle.textContent = "职业机会情报";
+        els.emptyPreviewOneDesc.textContent = "沟通对象、目的、事实信息和缺口。";
+        els.emptyPreviewTwoTitle.textContent = "判断与风险";
+        els.emptyPreviewTwoDesc.textContent = "区分对方观点、可采纳建议和不确定性。";
+        els.emptyPreviewThreeTitle.textContent = "专项分析";
+        els.emptyPreviewThreeDesc.textContent = "按职位推荐、职业分析、简历定位等目的展开。";
+        els.emptyPreviewFourTitle.textContent = "下一步行动";
+        els.emptyPreviewFourDesc.textContent = "追问、补材料、约沟通、婉拒或暂缓。";
+        els.loadingStepOne.textContent = "识别类型";
+        els.loadingStepTwo.textContent = "拆分事实";
+        els.loadingStepThree.textContent = "评估风险";
+        els.loadingStepFour.textContent = "生成行动";
+      }
+    }
+
     function renderMobilePageTabs() {
       if (!els.mobilePageTabs) return;
       document.body.dataset.mobilePage = activeMobilePage;
@@ -10450,6 +10994,10 @@
           sourceByMode: canRestorePrivateState ? sourceByMode : normalizeSourceByMode({}, inputMode, ""),
           inputMode,
           scenario: getValidScenario(saved.scenario || DEFAULT_SCENARIO),
+          contentType: getValidContentType(saved.contentType || saved.result?.contentType || DEFAULT_CONTENT_TYPE),
+          recruiterSubtype: getValidRecruiterSubtype(saved.recruiterSubtype || saved.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE),
+          contentRoutingManual: Boolean(saved.contentRoutingManual),
+          contentRoutingReason: String(saved.contentRoutingReason || ""),
           audioFileName: canRestorePrivateState ? (saved.audioFileName || "") : "",
           outputType,
           mode: saved.mode || "local",
@@ -10465,6 +11013,7 @@
           activeResultTab: RESULT_TAB_IDS.includes(saved.activeResultTab) ? saved.activeResultTab : "summarySection",
           result: canRestorePrivateState ? normalizeResult(saved.result || EMPTY_RESULT) : cloneData(EMPTY_RESULT)
         });
+        if (!state.contentRoutingManual) refreshContentRoutingFromSource({ clearResultOnChange: false });
         state.restored = canRestorePrivateState && hasResult(saved.result);
         if (state.generatedSourceHash && !String(state.generatedSourceHash).startsWith(`${state.scenario}:`)) {
           state.generatedSourceHash = hashSource(state.source);
@@ -10500,6 +11049,10 @@
         sourceByMode: state.sourceByMode,
         inputMode: state.inputMode,
         scenario: state.scenario,
+        contentType: state.contentType,
+        recruiterSubtype: state.recruiterSubtype,
+        contentRoutingManual: state.contentRoutingManual,
+        contentRoutingReason: state.contentRoutingReason,
         audioFileName: state.audioFileName,
         outputType: state.outputType,
         mode: state.mode,
@@ -10613,6 +11166,7 @@
       state.sourceByMode = normalizeSourceByMode(state.sourceByMode, state.inputMode, "");
       state.sourceByMode[state.inputMode] = nextValue;
       if (els.sourceText && els.sourceText.value !== nextValue) els.sourceText.value = nextValue;
+      if (!options.skipRouting) refreshContentRoutingFromSource({ clearResultOnChange: false });
     }
 
     function persistVisibleSource(options = {}) {
@@ -10630,6 +11184,8 @@
 
     function clearGeneratedResultState() {
       state.result = cloneData(EMPTY_RESULT);
+      state.result.contentType = state.contentType;
+      state.result.recruiterSubtype = state.recruiterSubtype;
       state.generatedAt = "";
       state.generatedSourceHash = "";
       state.editedAt = "";
@@ -10668,6 +11224,7 @@
 
     function hasResult(result = state.result) {
       return Boolean(result && (
+        hasRecruiterReport(result) ||
         result.summary ||
         result.coachSummary?.coreDiscussion ||
         result.coachSummary?.coachTakeaway ||
@@ -10686,6 +11243,7 @@
 
     function hasDisplayableResult(result = state.result) {
       return Boolean(result && (
+        hasRecruiterReport(result) ||
         result.summary ||
         result.coachSummary?.coreDiscussion ||
         result.coachSummary?.coachTakeaway ||
@@ -10698,6 +11256,20 @@
         result.tasks?.length ||
         result.risks?.length ||
         result.questions?.length
+      ));
+    }
+
+    function hasRecruiterReport(result = state.result) {
+      const report = result?.recruiterReport;
+      return Boolean(report && (
+        report.coreConclusion ||
+        report.usefulJudgement ||
+        report.replySuggestion ||
+        report.facts?.length ||
+        report.analysis?.length ||
+        report.questions?.length ||
+        report.risks?.length ||
+        report.nextActions?.length
       ));
     }
 
@@ -10817,7 +11389,11 @@
       const risks = Array.isArray(result.risks) ? result.risks.map(normalizeRisk) : [];
       const questions = Array.isArray(result.questions) ? result.questions.map(normalizeQuestion) : [];
       const people = Array.isArray(result.people) ? result.people : (Array.isArray(result.participants) ? result.participants : []);
+      const contentType = getValidContentType(result.contentType || state.contentType || DEFAULT_CONTENT_TYPE);
+      const recruiterSubtype = getValidRecruiterSubtype(result.recruiterSubtype || state.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
       const normalized = {
+        contentType,
+        recruiterSubtype,
         summary: legacySummary,
         keyConclusions,
         tasks,
@@ -10830,8 +11406,12 @@
         interviewerFocus: normalizeFocusItems(result.interviewerFocus || result.focus || result.focusPoints || []),
         interviewerConcerns: normalizeConcernItems(result.interviewerConcerns || result.concerns || result.potentialConcerns || []),
         improvements: normalizeImprovementItems(result.improvements || result.weaknesses || result.risks || []),
-        nextSteps: normalizeNextSteps(result.nextSteps || result.nextRoundSuggestions || result.suggestions || [])
+        nextSteps: normalizeNextSteps(result.nextSteps || result.nextRoundSuggestions || result.suggestions || []),
+        recruiterReport: normalizeRecruiterReport(result.recruiterReport || result.recruiterConversation || result.opportunityReport || {}, recruiterSubtype)
       };
+      if (normalized.contentType === "recruiterConversation" && !normalized.summary) {
+        normalized.summary = normalized.recruiterReport.coreConclusion || normalized.recruiterReport.usefulJudgement || "";
+      }
       if (!normalized.summary) normalized.summary = normalized.coachSummary.coachTakeaway || normalized.coachSummary.coreDiscussion || "";
       if (!normalized.qaCards.length && questions.length) {
         normalized.qaCards = questions.slice(0, 5).map((question, index) => normalizeQaCard({
@@ -10893,7 +11473,7 @@
       const direct = Number(value);
       if (Number.isFinite(direct)) return clampPercent(direct);
       const text = String(value || "").trim();
-      const percentMatch = text.match(/(\d{1,3})(?:\.\d+)?\s*%/);
+      const percentMatch = text.match(/(\d{1,3}(?:\.\d+)?)\s*%/);
       if (percentMatch) return clampPercent(Number(percentMatch[1]));
       if (/偏低|较低|不稳|风险高|低/.test(text)) return 35;
       if (/中高|较高|比较高|高/.test(text)) return 76;
@@ -10976,6 +11556,84 @@
         detail: raw.detail || raw.description || raw.note || "围绕目标补充一个更完整的证据或表达版本。",
         type: raw.type || raw.category || "下一步准备"
       };
+    }
+
+    function normalizeRecruiterReport(report = {}, subtype = state.recruiterSubtype) {
+      const raw = report || {};
+      const normalizedSubtype = getValidRecruiterSubtype(raw.subtype || subtype);
+      const facts = mergeRecruiterCoreFacts(normalizeRecruiterFacts(raw.facts || raw.factInfo || []));
+      return {
+        counterpart: String(raw.counterpart || raw.contactType || raw.contact || "未识别"),
+        purpose: String(raw.purpose || getRecruiterSubtypeLabel(normalizedSubtype)),
+        coreConclusion: String(raw.coreConclusion || raw.conclusion || raw.summary || ""),
+        usefulJudgement: String(raw.usefulJudgement || raw.judgement || raw.usefulAssessment || ""),
+        facts,
+        analysis: normalizeStringList(raw.analysis || raw.analysisPoints || raw.views || []),
+        questions: normalizeStringList(raw.questions || raw.pendingQuestions || raw.toConfirm || []),
+        risks: normalizeStringList(raw.risks || raw.uncertainties || []),
+        nextActions: normalizeRecruiterActions(raw.nextActions || raw.actions || raw.todos || []),
+        replySuggestion: String(raw.replySuggestion || raw.reply || raw.copyableReply || ""),
+        opportunity: normalizeKeyValueMap(raw.opportunity || raw.opportunityRecommendation || {}),
+        career: normalizeKeyValueMap(raw.career || raw.careerAnalysis || {}),
+        profile: normalizeKeyValueMap(raw.profile || raw.profilePositioning || {}),
+        interviewStrategy: normalizeKeyValueMap(raw.interviewStrategy || raw.strategy || {}),
+        compensation: normalizeKeyValueMap(raw.compensation || raw.compensationNegotiation || {}),
+        followUp: normalizeKeyValueMap(raw.followUp || raw.followUpCoordination || {})
+      };
+    }
+
+    function mergeRecruiterCoreFacts(facts = []) {
+      const coreLabels = ["推荐公司/团队", "推荐岗位", "薪资/职级", "base/工作方式", "流程/时间点"];
+      const map = new Map(facts.map(item => [item.label, item]));
+      coreLabels.forEach(label => {
+        if (!map.has(label)) map.set(label, { label, value: "未提及" });
+      });
+      const ordered = coreLabels.map(label => map.get(label));
+      const extra = facts.filter(item => !coreLabels.includes(item.label));
+      return [...ordered, ...extra];
+    }
+
+    function normalizeStringList(items = []) {
+      const list = Array.isArray(items) ? items : String(items || "").split(/\n+/);
+      return list
+        .map(item => typeof item === "string" ? item : (item.title || item.detail || item.description || item.value || ""))
+        .map(item => String(item || "").trim())
+        .filter(Boolean);
+    }
+
+    function normalizeRecruiterFacts(items = []) {
+      if (!Array.isArray(items)) return [];
+      return items
+        .map(item => {
+          if (typeof item === "string") {
+            const [label, ...rest] = item.split(/[：:]/);
+            return { label: label || "事实信息", value: rest.join("：") || item };
+          }
+          return {
+            label: item.label || item.name || item.key || "事实信息",
+            value: item.value || item.detail || item.description || item.text || "待确认"
+          };
+        })
+        .filter(item => item.label || item.value);
+    }
+
+    function normalizeRecruiterActions(items = []) {
+      if (!Array.isArray(items)) return [];
+      return items
+        .map(item => {
+          const raw = typeof item === "string" ? { title: item } : item;
+          return {
+            title: raw.title || raw.name || "确认下一步",
+            detail: raw.detail || raw.description || raw.note || "补齐关键信息后再决定是否推进。",
+            priority: ["高", "中", "低"].includes(raw.priority) ? raw.priority : "中"
+          };
+        })
+        .filter(item => item.title);
+    }
+
+    function normalizeKeyValueMap(value = {}) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item || "")]));
     }
 
     function normalizeTask(task = {}) {
@@ -11329,11 +11987,20 @@
         const char = input[i];
         const next = input[i + 1];
         if (char === '"') {
-          if (quoted && next === '"') {
-            value += '"';
-            i += 1;
+          if (quoted) {
+            if (next === '"') {
+              value += '"';
+              i += 1;
+            } else {
+              quoted = false;
+            }
+          } else if (value.trim() === "") {
+            // Opening quote only counts at the (whitespace-only) start of a field;
+            // a quote in the middle of an unquoted field is a literal character so
+            // following delimiters still split the row (RFC 4180 lenient parsing).
+            quoted = true;
           } else {
-            quoted = !quoted;
+            value += '"';
           }
         } else if (char === delimiter && !quoted) {
           row.push(value.trim());
@@ -11491,7 +12158,9 @@
           }
           row[columnIndex] = String(value ?? "").trim();
         });
-        return row.map(cell => cell || "");
+        // Array.from (not row.map) densifies sparse holes from omitted/empty
+        // columns; map() skips holes, leaving undefined that serialize to null.
+        return Array.from(row, cell => cell || "");
       }).filter(row => row.some(Boolean));
     }
 
@@ -11724,6 +12393,8 @@
         .replace(/[，,。；;\n\r].*$/, "")
         .replace(/^(在|去|到|跟|和|与|给|由|被|对接|目标|意向|公司)/, "")
         .replace(/(?:面试|一面|二面|三面|四面|终面|HR面|hr面|招聘|岗位|职位|公司|流程).*$/, "")
+        .replace(/[\s的]*(?:HR|hr)\s*$/, "")
+        .replace(/的\s*$/, "")
         .trim();
       if (!cleaned || cleaned.length < 2 || cleaned.length > 40 || blocked.test(cleaned)) return "";
       return cleaned;
@@ -11736,12 +12407,7 @@
         const key = getInterviewRecordMergeKey(record);
         const existingIndex = key ? interviewRecords.findIndex(item => getInterviewRecordMergeKey(item) === key) : -1;
         if (existingIndex >= 0) {
-          interviewRecords[existingIndex] = normalizeInterviewRecord({
-            ...record,
-            id: interviewRecords[existingIndex].id,
-            createdAt: interviewRecords[existingIndex].createdAt,
-            updatedAt: nowIso()
-          });
+          interviewRecords[existingIndex] = mergeInterviewRecordData(interviewRecords[existingIndex], record);
           updated += 1;
         } else {
           interviewRecords.unshift(normalizeInterviewRecord({
@@ -11762,6 +12428,44 @@
       const company = normalizeImportKey(record.company);
       const role = normalizeImportKey(record.role);
       return company || role ? `${company}|${role}` : "";
+    }
+
+    // Re-importing a spreadsheet that matches an existing record must not wipe
+    // data the import omits. Merge field-by-field, preferring the incoming
+    // non-empty value but falling back to what is already stored (including
+    // review artifacts: uploaded files, transcripts, summaries).
+    function mergeInterviewRecordData(existing = {}, incoming = {}) {
+      const pick = (next, prev) => (String(next ?? "").trim() ? next : prev);
+      const existingRounds = Array.isArray(existing.rounds) ? existing.rounds : [];
+      const incomingRounds = Array.isArray(incoming.rounds) ? incoming.rounds : [];
+      const rounds = Array.from({ length: 4 }, (_, index) => {
+        const ex = existingRounds[index] || {};
+        const inc = incomingRounds[index] || {};
+        return {
+          roundIndex: index + 1,
+          time: pick(inc.time, ex.time),
+          location: pick(inc.location, ex.location),
+          result: inc.result && inc.result !== "pending" ? inc.result : ex.result,
+          note: pick(inc.note, ex.note),
+          uploadedFileId: ex.uploadedFileId || inc.uploadedFileId || "",
+          transcriptId: ex.transcriptId || inc.transcriptId || "",
+          summaryId: ex.summaryId || inc.summaryId || ""
+        };
+      });
+      return normalizeInterviewRecord({
+        ...existing,
+        company: pick(incoming.company, existing.company),
+        role: pick(incoming.role, existing.role),
+        baseLocation: pick(incoming.baseLocation, existing.baseLocation),
+        intention: pick(incoming.intention, existing.intention),
+        contactWechat: pick(incoming.contactWechat, existing.contactWechat),
+        overallProgress: pick(incoming.overallProgress, existing.overallProgress),
+        jd: pick(incoming.jd, existing.jd),
+        rounds,
+        id: existing.id,
+        createdAt: existing.createdAt,
+        updatedAt: nowIso()
+      });
     }
 
     function humanizeImportError(error) {
@@ -12490,6 +13194,10 @@
         return;
       }
       state.scenario = "interview";
+      state.contentType = "interview";
+      state.recruiterSubtype = DEFAULT_RECRUITER_SUBTYPE;
+      state.contentRoutingManual = false;
+      state.contentRoutingReason = "从面试队列进入，按面试复盘处理。";
       state.error = "";
       state.lastApiFailed = false;
       const roundIndex = getPreferredReviewRoundIndex(record);
@@ -12569,6 +13277,7 @@
       renderInterviewManager();
       els.sourceText.value = state.source;
       els.outputType.value = state.outputType;
+      renderContentRouting();
       renderReviewContextBar();
       renderInputMode();
       renderInputMeta();
@@ -12597,6 +13306,7 @@
     function renderInputDependentState() {
       renderScenario();
       renderAppPage();
+      renderContentRouting();
       renderReviewContextBar();
       renderInputMode();
       renderInputMeta();
@@ -12629,7 +13339,9 @@
       const roundTime = round?.time ? formatInterviewDate(round.time, { relative: true }) : "时间待补充";
       const roundLocation = round?.location || "地址待补充";
       els.reviewContextTitle.textContent = `${record.company || "待识别公司"} · ${record.role || "未填写岗位"}`;
-      els.reviewContextMeta.textContent = `${roundLabel} · ${roundTime} · ${roundLocation}`;
+      els.reviewContextMeta.textContent = isRecruiterContent()
+        ? `关联上下文已保留；本次猎头沟通保存时不会写入${roundLabel}复盘标记。`
+        : `${roundLabel} · ${roundTime} · ${roundLocation}`;
       if (els.reviewContextEditBtn) els.reviewContextEditBtn.disabled = false;
     }
 
@@ -12638,6 +13350,11 @@
       const length = getEffectiveInput().length;
       const segments = getTranscriptSegments();
       if (length > LONG_SOURCE_WARNING_LIMIT) return "内容较长，建议先删减无关片段或分段复盘";
+      if (isRecruiterContent()) {
+        if (length < 50) return "内容偏短，建议补充对方原话、事实信息或下一步安排";
+        const route = state.recruiterSubtype === "mixed" ? "混合目的" : getRecruiterSubtypeLabel();
+        return `已识别为猎头沟通 / ${route}，可生成职业机会分析`;
+      }
       if (length < 80) return "内容偏短，建议补充至少一段完整问答";
       if (segments.length >= 3) return `已识别 ${segments.length} 段说话人片段，适合生成`;
       if (segments.length > 0) return `已识别 ${segments.length} 段片段，可继续补充`;
@@ -12814,7 +13531,7 @@
       els.sourceDrawerText.textContent = evidence ? evidence.text : "原文片段暂不可用，仅保留时间范围。";
       els.sourceDrawerReason.textContent = reason
         ? `这条复盘引用了与“${summarizeLine(reason, 36)}”相关的片段。`
-        : (scenario.key === "culture" ? "这段原文与当前沟通节点、语气判断或表达建议相关。" : "这段原文与当前面试问题、回答点评或改进建议相关。");
+        : (isRecruiterContent() ? "这段原文与当前事实信息、分析观点或下一步行动相关。" : (scenario.key === "culture" ? "这段原文与当前沟通节点、语气判断或表达建议相关。" : "这段原文与当前面试问题、回答点评或改进建议相关。"));
       els.jumpTranscriptBtn.disabled = !evidence;
       els.copySourceBtn.disabled = !evidence;
       els.sourceModal.classList.add("show");
@@ -12918,13 +13635,14 @@
 
     function renderGenerateButton() {
       const scenario = getScenario();
+      const generateLabel = isRecruiterContent() ? "生成职业机会分析" : scenario.generateLabel;
       const disabled = state.isLoading || !hasRealInput();
-      els.generateBtn.textContent = state.isLoading ? "正在分析中..." : (hasRealInput() ? scenario.generateLabel : "先添加面试内容");
+      els.generateBtn.textContent = state.isLoading ? "正在分析中..." : (hasRealInput() ? generateLabel : (isRecruiterContent() ? "先添加沟通内容" : "先添加面试内容"));
       els.generateBtn.title = state.isLoading
         ? "正在生成，请稍候"
         : hasRealInput()
-          ? "生成结构化面试复盘"
-          : "请先上传音频、录音转写或粘贴面试内容";
+          ? (isRecruiterContent() ? "生成职业机会情报卡和下一步行动台" : "生成结构化面试复盘")
+          : "请先上传音频、录音转写或粘贴内容";
       els.generateBtn.disabled = disabled;
       els.regenerateBtn.disabled = disabled;
       const needsGeneration = hasRealInput() && (!hasResult() || isResultStale() || isLegacyOrRestoredResult() || isRestoredResult());
@@ -12970,18 +13688,21 @@
 
     function renderTrustNote() {
       const scenario = getScenario();
+      const reportName = getActiveReportName();
       if (state.error) {
         els.trustNote.textContent = "生成失败，输入原文已保留。请查看失败原因后重试。";
         els.trustNote.className = "trust-note error";
         return;
       }
       if (!hasRealInput()) {
-        els.trustNote.textContent = scenario.emptyDesc;
+        els.trustNote.textContent = isRecruiterContent()
+          ? "粘贴猎头、HR、招聘顾问或内推沟通内容后，会先识别沟通目的，再生成职业机会分析。"
+          : scenario.emptyDesc;
         els.trustNote.className = "trust-note local";
         return;
       }
       if (isResultStale()) {
-        els.trustNote.textContent = `输入内容已更新，当前${scenario.reportName}可能不是最新。建议重新生成。`;
+        els.trustNote.textContent = `输入内容已更新，当前${reportName}可能不是最新。建议重新生成。`;
         els.trustNote.className = "trust-note";
         return;
       }
@@ -12999,15 +13720,15 @@
       if (!hasResult() && hasRealInput() && !modelConfig.apiKey) {
         els.trustNote.textContent = isDeveloperMode()
           ? "开发者可在模型设置中接入真实模型；普通用户路径不会显示这一步。"
-          : "内容已准备好，将使用规则快速分析生成；接入真实模型后可获得更贴近原文的复盘。";
+          : `内容已准备好，将使用规则快速分析生成${isRecruiterContent() ? "职业机会报告" : "复盘"}；接入真实模型后可获得更贴近原文的判断。`;
         els.trustNote.classList.add("local");
         return;
       }
       if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed) {
-        els.trustNote.textContent = `${getReviewLinkLabel()}当前由 ${getModelName()} 生成，已按「${scenario.reportName}」结构完成拆解。`;
+        els.trustNote.textContent = `${getReviewLinkLabel()}当前由 ${getModelName()} 生成，已按「${reportName}」结构完成拆解。`;
       } else {
         els.trustNote.textContent = isDeveloperMode()
-          ? `${getReviewLinkLabel()}当前为本地模拟分析。接入模型服务后，${scenario.reportName}会更细、更贴近原文。`
+          ? `${getReviewLinkLabel()}当前为本地模拟分析。接入模型服务后，${reportName}会更细、更贴近原文。`
           : `${getReviewLinkLabel()}当前为规则快速分析，不等同于真实大模型判断；可继续编辑、复制或保存。`;
         els.trustNote.classList.add("local");
       }
@@ -13016,6 +13737,7 @@
     function getReviewLinkLabel() {
       const record = getLinkedInterviewRecord();
       if (!record) return "";
+      if (isRecruiterContent()) return "已保留面试关联上下文，但本次猎头沟通不会写入面试轮次。";
       const round = state.linkedRoundIndex == null ? "" : `第${Number(state.linkedRoundIndex) + 1}轮`;
       return `已关联：${record.company || "待识别公司"} / ${record.role || "未填写岗位"}${round ? ` / ${round}` : ""}。`;
     }
@@ -13038,6 +13760,7 @@
       if (isLegacyOrRestoredResult() || isRestoredResult()) chunks.push("上次生成结果");
       const linkLabel = getReviewLinkLabel().replace(/。$/, "");
       if (linkLabel) chunks.push(linkLabel);
+      chunks.push(`内容类型：${getContentTypeLabel()}${isRecruiterContent() ? ` / ${getRecruiterSubtypeLabel()}` : ""}`);
       chunks.push(`由 ${normalizeModelUsedLabel(state.modelUsed)} 生成`);
       if (state.generatedAt) chunks.push(`生成于 ${formatTime(state.generatedAt)}`);
       if (state.editedAt) chunks.push(`已编辑 ${formatTime(state.editedAt)}`);
@@ -13046,7 +13769,7 @@
     }
 
     function renderLoading() {
-      const stages = getScenario().loadingStages;
+      const stages = getActiveLoadingStages();
       els.loadingPanel.classList.toggle("hidden", !state.isLoading);
       els.loadingText.textContent = state.loadingText || stages[0];
       const activeIndex = Math.max(0, stages.indexOf(state.loadingText || stages[0]));
@@ -13074,9 +13797,12 @@
       const shouldShowEmpty = !state.isLoading && !hasCurrentResult;
       let emptyState = "empty";
       let emptyLabel = "待输入";
+      const activeGenerateLabel = isRecruiterContent() ? "生成职业机会分析" : scenario.generateLabel;
       if (noInput) {
         els.emptyHeroTitle.textContent = "";
-        els.emptyHeroDesc.textContent = scenario.emptyDesc;
+        els.emptyHeroDesc.textContent = isRecruiterContent()
+          ? "粘贴猎头、HR、招聘顾问、内推人或职业机会沟通内容，系统会先识别目的，再生成职业机会分析。"
+          : scenario.emptyDesc;
       } else if (state.error && !hasCurrentResult) {
         emptyState = "error";
         emptyLabel = "生成失败";
@@ -13088,7 +13814,9 @@
         emptyState = "ready";
         emptyLabel = "可生成";
         els.emptyHeroTitle.textContent = "内容已准备好";
-        els.emptyHeroDesc.textContent = `${scenario.readyDesc} 点击“${scenario.generateLabel}”后，会自动写入历史记录。`;
+        els.emptyHeroDesc.textContent = isRecruiterContent()
+          ? `点击“${activeGenerateLabel}”后，会按事实、观点、风险和下一步行动生成职业机会报告，并自动写入历史记录。`
+          : `${scenario.readyDesc} 点击“${activeGenerateLabel}”后，会自动写入历史记录。`;
       }
       els.emptyHero.dataset.state = emptyState;
       els.emptyHeroKicker.textContent = emptyLabel;
@@ -13098,6 +13826,17 @@
     }
 
     function renderStats() {
+      if (isRecruiterContent()) {
+        const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+        els.taskCount.textContent = report.facts.filter(item => item.value && item.value !== "未提及").length;
+        els.passRateStat.textContent = report.questions.length;
+        els.riskCount.textContent = report.nextActions.length;
+        els.statsGrid.classList.toggle("hidden", !shouldShowFormalResult());
+        els.conclusionCount.textContent = report.facts.length;
+        els.taskModuleCount.textContent = report.analysis.length + report.questions.length;
+        els.riskModuleCount.textContent = report.risks.length + report.nextActions.length;
+        return;
+      }
       const qaCount = state.result.qaCards.length;
       const improvementCount = state.result.improvements.length;
       const coach = normalizeCoachSummary(state.result.coachSummary, state.result);
@@ -13111,6 +13850,10 @@
     }
 
     function renderOverview() {
+      if (isRecruiterContent()) {
+        renderRecruiterOverview();
+        return;
+      }
       const scenario = getScenario();
       const info = normalizeInterviewInfo(state.result.interviewInfo || {});
       const coach = normalizeCoachSummary(state.result.coachSummary, state.result);
@@ -13125,7 +13868,40 @@
       `).join("");
     }
 
+    function renderRecruiterOverview() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      const facts = report.facts;
+      els.overviewKicker.textContent = `${getContentTypeLabel()} / ${getRecruiterSubtypeLabel()}`;
+      els.overviewTitle.textContent = summarizeLine(report.coreConclusion || "这次职业沟通真正有价值的信息", 52);
+      els.overviewDesc.textContent = summarizeLine(report.usefulJudgement || "分析会区分对方明确说过的事实、职业判断、风险和下一步动作。", 132);
+      els.qaStatLabel.textContent = "事实信息";
+      els.passRateStatLabel.textContent = "待确认";
+      els.riskStatLabel.textContent = "下一步";
+      const dossierItems = [
+        ["沟通对象", report.counterpart],
+        ["沟通目的", report.purpose],
+        ["当前识别", `${getContentTypeLabel()} / ${getRecruiterSubtypeLabel()}`],
+        ["推荐公司/团队", getFactValue(facts, "推荐公司/团队") || "未提及"],
+        ["推荐岗位", getFactValue(facts, "推荐岗位") || "未提及"],
+        ["薪资/职级", getFactValue(facts, "薪资/职级") || "未提及"],
+        ["base/工作方式", getFactValue(facts, "base/工作方式") || "未提及"],
+        ["流程/时间点", getFactValue(facts, "流程/时间点") || "未提及"]
+      ];
+      els.interviewDossier.innerHTML = dossierItems.map(([label, value]) => `
+        <div class="dossier-item">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value || "待确认")}</strong>
+        </div>
+      `).join("");
+      els.copyFullBtn.textContent = "复制职业机会报告";
+      els.copyTodoListBtn.textContent = "复制下一步行动";
+    }
+
     function renderSummary() {
+      if (isRecruiterContent()) {
+        renderRecruiterSummary();
+        return;
+      }
       const scenario = getScenario();
       const coach = normalizeCoachSummary(state.result.coachSummary, state.result);
       els.coreDiscussion.textContent = coach.coreDiscussion || "等待生成";
@@ -13139,9 +13915,42 @@
       }
     }
 
+    function renderRecruiterSummary() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      els.summarySectionTitle.innerHTML = `职业机会情报卡 <span class="count-badge">核心</span>`;
+      els.summarySectionTag.textContent = "事实、观点、风险分开看";
+      els.coreDiscussionLabel.textContent = "核心结论";
+      els.atmosphereLabel.textContent = "对我有用的判断";
+      els.probabilityLabel.textContent = "信息完整度";
+      els.strengthLabel.textContent = "值得采纳";
+      els.riskLabel.textContent = "最大不确定性";
+      els.coreDiscussion.textContent = report.coreConclusion || "等待生成";
+      els.interviewAtmosphere.textContent = report.usefulJudgement || "等待判断";
+      els.passProbability.textContent = getRecruiterCompletenessLabel(report);
+      els.biggestStrength.textContent = report.analysis[0] || "待提炼";
+      els.biggestRisk.textContent = report.risks[0] || "待提炼";
+      if (document.activeElement !== els.summaryBlock) {
+        els.summaryBlock.textContent = report.replySuggestion || "生成后会给出一段可以直接复制给猎头/HR 的自然回复。";
+        els.summaryBlock.style.color = report.replySuggestion ? "var(--text)" : "var(--text-secondary)";
+      }
+    }
+
+    function getRecruiterCompletenessLabel(report) {
+      const knownFacts = report.facts.filter(item => item.value && item.value !== "未提及").length;
+      if (knownFacts >= 4) return "事实较完整";
+      if (knownFacts >= 2) return "部分明确";
+      return "信息待补齐";
+    }
+
     function renderConclusions() {
+      if (isRecruiterContent()) {
+        renderRecruiterConclusions();
+        return;
+      }
       const scenario = getScenario();
       els.conclusionList.innerHTML = "";
+      els.conclusionList.className = "qa-card-list";
+      els.copyConclusionsBtn.textContent = "复制 Q&A";
       if (!state.result.qaCards.length) {
         els.conclusionList.innerHTML = `<div class="empty">生成后，这里会按“${escapeHtml(scenario.qaLabels.question)} - ${escapeHtml(scenario.qaLabels.answer)} - ${escapeHtml(scenario.qaLabels.critique)} - ${escapeHtml(scenario.qaLabels.risk)}”展示卡片流。</div>`;
         return;
@@ -13181,7 +13990,111 @@
       });
     }
 
+    function renderRecruiterConclusions() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      els.qaSectionTitle.innerHTML = `事实信息与专项分析 <span id="conclusionCount" class="count-badge">${escapeHtml(String(report.facts.length || 0))}</span>`;
+      els.conclusionCount = document.getElementById("conclusionCount");
+      els.qaSectionTag.textContent = `当前目的：${getRecruiterSubtypeLabel()}`;
+      els.copyConclusionsBtn.textContent = "复制事实和观点";
+      els.conclusionList.className = "recruiter-card-list";
+      const factGrid = `
+        <article class="recruiter-section-card">
+          <h4>事实信息</h4>
+          <div class="recruiter-fact-grid">
+            ${report.facts.map(fact => `
+              <div class="recruiter-fact">
+                <span>${escapeHtml(fact.label)}</span>
+                <strong>${escapeHtml(fact.value || "待确认")}</strong>
+              </div>
+            `).join("")}
+          </div>
+        </article>
+      `;
+      const cards = [factGrid];
+      const hasOpportunity = hasConcreteOpportunityReport(report);
+      if ((state.recruiterSubtype === "opportunityRecommendation" || state.recruiterSubtype === "mixed") && hasOpportunity) {
+        cards.push(renderRecruiterKeyValueCard("推荐机会判断", report.opportunity));
+      } else if (state.recruiterSubtype === "opportunityRecommendation" || state.recruiterSubtype === "mixed") {
+        cards.push(`<article class="recruiter-section-card warning"><h4>本次没有明确推荐职位</h4><p>原文没有同时给出明确公司或岗位，先按职业判断和建议动作处理，不生成空的推荐职位卡。</p></article>`);
+      }
+      if (state.recruiterSubtype === "careerAnalysis" || state.recruiterSubtype === "mixed") cards.push(renderRecruiterKeyValueCard("职业方向分析", report.career));
+      if (state.recruiterSubtype === "profilePositioning" || state.recruiterSubtype === "mixed") cards.push(renderRecruiterKeyValueCard("简历与候选人定位", report.profile));
+      if (state.recruiterSubtype === "interviewStrategy" || state.recruiterSubtype === "mixed") cards.push(renderRecruiterKeyValueCard("面试策略建议", report.interviewStrategy));
+      if (state.recruiterSubtype === "compensationNegotiation" || state.recruiterSubtype === "mixed") cards.push(renderRecruiterKeyValueCard("薪资谈判准备", report.compensation));
+      if (state.recruiterSubtype === "followUpCoordination" || state.recruiterSubtype === "mixed") cards.push(renderRecruiterKeyValueCard("流程跟进行动", report.followUp));
+      els.conclusionList.innerHTML = cards.join("");
+    }
+
+    function hasConcreteOpportunityReport(report) {
+      const company = report.opportunity?.company || getFactValue(report.facts, "推荐公司/团队");
+      const role = report.opportunity?.role || getFactValue(report.facts, "推荐岗位");
+      return Boolean(company && company !== "未提及" && role && role !== "未提及");
+    }
+
+    function renderRecruiterKeyValueCard(title, values = {}) {
+      const entries = Object.entries(values || {}).filter(([, value]) => String(value || "").trim());
+      if (!entries.length) return "";
+      return `
+        <article class="recruiter-section-card">
+          <h4>${escapeHtml(title)}</h4>
+          <div class="recruiter-fact-grid">
+            ${entries.map(([key, value]) => `
+              <div class="recruiter-fact">
+                <span>${escapeHtml(formatRecruiterFieldLabel(key))}</span>
+                <strong>${escapeHtml(value || "待确认")}</strong>
+              </div>
+            `).join("")}
+          </div>
+        </article>
+      `;
+    }
+
+    function formatRecruiterFieldLabel(key) {
+      return {
+        company: "推荐公司/团队",
+        role: "推荐岗位",
+        jdPoints: "JD 要点",
+        matchPoints: "匹配点",
+        mismatchPoints: "不匹配点",
+        base: "base/工作方式",
+        compensation: "薪资/职级",
+        reportLine: "汇报线",
+        recommendationReason: "推荐理由",
+        worthProceeding: "是否值得推进",
+        marketSignals: "市场信号",
+        strengths: "优势",
+        gaps: "短板",
+        priorityDirections: "优先探索方向",
+        lowPriorityDirections: "暂不重投方向",
+        evidenceNeeded: "需验证判断",
+        sellingPoints: "候选人卖点",
+        resumeAdvice: "简历建议",
+        evidenceToAdd: "需补强证据",
+        weakenInfo: "可弱化信息",
+        externalPitch: "对外话术",
+        likelyFocus: "可能关注点",
+        casesToPrepare: "准备案例",
+        challengeQuestions: "可能挑战",
+        answerStrategy: "回答策略",
+        followUp: "跟进建议",
+        packageInfo: "薪资/offer 信息",
+        leverage: "谈判筹码",
+        questions: "可追问问题",
+        riskBoundary: "风险边界",
+        expression: "建议表达",
+        status: "流程状态",
+        requiredMaterials: "需补材料",
+        scheduledTime: "约定时间",
+        owner: "负责人",
+        reminder: "提醒"
+      }[key] || key;
+    }
+
     function renderTaskFilters() {
+      if (isRecruiterContent()) {
+        renderRecruiterTaskFilters();
+        return;
+      }
       const scenario = getScenario();
       els.taskFilters.innerHTML = "";
       if (!state.result.interviewerFocus.length) {
@@ -13200,7 +14113,27 @@
       });
     }
 
+    function renderRecruiterTaskFilters() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      els.focusSectionTitle.innerHTML = `分析观点与待确认 <span id="taskModuleCount" class="count-badge">${escapeHtml(String(report.analysis.length + report.questions.length))}</span>`;
+      els.taskModuleCount = document.getElementById("taskModuleCount");
+      els.focusSectionTag.textContent = "观点需要验证，问题要能追问";
+      els.taskFilters.innerHTML = report.analysis.length
+        ? report.analysis.map((item, index) => `
+          <article class="focus-chip">
+            <span>分析观点 ${index + 1}</span>
+            <strong>${escapeHtml(summarizeLine(item, 24))}</strong>
+            <small>${escapeHtml(item)}</small>
+          </article>
+        `).join("")
+        : `<div class="empty">暂未识别到明确分析观点，可以补充更多上下文后重新生成。</div>`;
+    }
+
     function renderTasks() {
+      if (isRecruiterContent()) {
+        renderRecruiterTasks();
+        return;
+      }
       const scenario = getScenario();
       els.taskBody.innerHTML = "";
       if (!state.result.interviewerConcerns.length) {
@@ -13221,7 +14154,27 @@
       });
     }
 
+    function renderRecruiterTasks() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      els.concernTitle.textContent = "待确认问题";
+      els.taskBody.innerHTML = report.questions.length
+        ? report.questions.map((question, index) => `
+          <article class="concern-card">
+            <span>${String(index + 1).padStart(2, "0")}</span>
+            <div>
+              <strong>${escapeHtml(question)}</strong>
+              <p>下一次沟通建议直接追问，避免基于不完整信息做决定。</p>
+            </div>
+          </article>
+        `).join("")
+        : `<div class="empty">暂未识别到待确认问题。若是职业分析型沟通，建议补充对方观点依据后重新生成。</div>`;
+    }
+
     function renderRisks() {
+      if (isRecruiterContent()) {
+        renderRecruiterRisks();
+        return;
+      }
       const scenario = getScenario();
       els.riskList.innerHTML = "";
       if (!state.result.improvements.length) {
@@ -13267,6 +14220,43 @@
       renderTranscriptSection();
     }
 
+    function renderRecruiterRisks() {
+      const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      els.improvementSectionTitle.innerHTML = `风险与下一步行动 <span id="riskModuleCount" class="count-badge">${escapeHtml(String(report.risks.length + report.nextActions.length))}</span>`;
+      els.riskModuleCount = document.getElementById("riskModuleCount");
+      els.improvementSectionTag.textContent = "先控风险，再低成本推进";
+      els.nextStepTitle.textContent = "下一步行动";
+      els.riskList.innerHTML = report.risks.length
+        ? report.risks.map((risk, index) => `
+          <article class="improvement-card ${index === 0 ? "high" : "mid"}">
+            <div class="improvement-index">${index + 1}</div>
+            <div class="improvement-body">
+              <div class="improvement-title">
+                <strong>${escapeHtml(summarizeLine(risk, 32))}</strong>
+                <span class="priority-label priority-${index === 0 ? "high" : "mid"}">${index === 0 ? "高" : "中"}优先</span>
+              </div>
+              <dl>
+                <div><dt>风险</dt><dd>${escapeHtml(risk)}</dd></div>
+                <div><dt>处理</dt><dd>用追问补齐事实，不把对方观点直接当结论。</dd></div>
+              </dl>
+            </div>
+          </article>
+        `).join("")
+        : `<div class="empty">暂未识别到明显风险。职业机会沟通仍建议保留事实验证步骤。</div>`;
+      const reply = report.replySuggestion ? `<article class="next-step-card"><span>可复制回复</span><strong>给对方的自然回复</strong><p class="reply-suggestion">${escapeHtml(report.replySuggestion)}</p></article>` : "";
+      els.nextStepList.innerHTML = [
+        ...report.nextActions.map(action => `
+          <article class="next-step-card">
+            <span>${escapeHtml(action.priority)}优先</span>
+            <strong>${escapeHtml(action.title)}</strong>
+            <p>${escapeHtml(action.detail)}</p>
+          </article>
+        `),
+        reply
+      ].join("") || `<div class="empty">生成后会展示补材料、追问、约沟通、婉拒、推进或暂缓等下一步动作。</div>`;
+      renderTranscriptSection();
+    }
+
     function getScoreQuality(score) {
       const value = Number(score || 0);
       const culture = getScenario().key === "culture";
@@ -13278,7 +14268,7 @@
     function renderTranscriptSection() {
       const scenario = getScenario();
       const transcriptTitle = document.querySelector("#transcriptSection summary span");
-      if (transcriptTitle) transcriptTitle.textContent = scenario.transcriptTitle;
+      if (transcriptTitle) transcriptTitle.textContent = isRecruiterContent() ? "原始沟通内容" : scenario.transcriptTitle;
       const segments = getTranscriptSegments();
       const raw = getEffectiveInput();
       els.transcriptMeta.textContent = segments.length ? `${segments.length} 段 · 默认折叠` : `${raw.length} 字 · 默认折叠`;
@@ -13812,6 +14802,7 @@
         showToast("已取消生成，输入内容已保留");
         return;
       }
+      refreshContentRoutingFromSource({ clearResultOnChange: false });
       if (state.mode === "api" && !modelConfig.apiKey) state.mode = "local";
       state.isLoading = true;
       state.error = "";
@@ -13828,7 +14819,11 @@
         } else {
           result = await simulateLocalGeneration(state.source);
         }
-        state.result = normalizeResult(result);
+        state.result = normalizeResult({
+          ...result,
+          contentType: state.contentType,
+          recruiterSubtype: state.recruiterSubtype
+        });
         state.generatedAt = nowIso();
         state.generatedSourceHash = hashSource();
         state.editedAt = "";
@@ -13880,7 +14875,7 @@
 
     function startLoadingTicker() {
       let index = 0;
-      const stages = getScenario().loadingStages;
+      const stages = getActiveLoadingStages();
       state.loadingText = state.mode === "api" && modelConfig.apiKey ? `正在使用 ${getModelName()} 分析内容...` : stages[0];
       renderLoading();
       return setInterval(() => {
@@ -13890,10 +14885,284 @@
       }, 650);
     }
 
+    function getActiveLoadingStages() {
+      if (isRecruiterContent()) return ["正在识别沟通类型...", "正在拆分事实和观点...", "正在评估机会风险...", "正在生成下一步行动..."];
+      return getScenario().loadingStages;
+    }
+
     async function simulateLocalGeneration(text) {
       await new Promise(resolve => setTimeout(resolve, 450));
+      if (isRecruiterContent()) return simulateRecruiterGeneration(text);
       if (getScenario().key === "culture") return simulateCultureGeneration(text);
       return simulateInterviewGeneration(text);
+    }
+
+    function simulateRecruiterGeneration(text) {
+      const subtype = getValidRecruiterSubtype(state.recruiterSubtype || detectRecruiterSubtype(text));
+      const facts = inferRecruiterFacts(text);
+      const counterpart = inferRecruiterCounterpart(text);
+      const hasConcreteOpportunity = Boolean(getFactValue(facts, "推荐公司/团队") || getFactValue(facts, "推荐岗位"));
+      const report = {
+        counterpart,
+        purpose: getRecruiterSubtypeLabel(subtype),
+        coreConclusion: buildRecruiterCoreConclusion(text, subtype, facts, hasConcreteOpportunity),
+        usefulJudgement: buildRecruiterUsefulJudgement(text, subtype, hasConcreteOpportunity),
+        facts,
+        analysis: inferRecruiterAnalysis(text, subtype, hasConcreteOpportunity),
+        questions: inferRecruiterQuestions(text, subtype, hasConcreteOpportunity),
+        risks: inferRecruiterRisks(text, subtype, hasConcreteOpportunity),
+        nextActions: inferRecruiterActions(text, subtype, hasConcreteOpportunity),
+        replySuggestion: buildRecruiterReplySuggestion(text, subtype, hasConcreteOpportunity),
+        opportunity: subtype === "opportunityRecommendation" || subtype === "mixed" ? buildOpportunitySection(facts, hasConcreteOpportunity) : {},
+        career: subtype === "careerAnalysis" || subtype === "mixed" ? buildCareerSection(text) : {},
+        profile: subtype === "profilePositioning" || subtype === "mixed" ? buildProfileSection(text) : {},
+        interviewStrategy: subtype === "interviewStrategy" || subtype === "mixed" ? buildInterviewStrategySection(text) : {},
+        compensation: subtype === "compensationNegotiation" || subtype === "mixed" ? buildCompensationSection(text, facts) : {},
+        followUp: subtype === "followUpCoordination" || subtype === "mixed" ? buildFollowUpSection(text, facts) : {}
+      };
+      const normalizedReport = normalizeRecruiterReport(report, subtype);
+      const keyConclusions = [
+        normalizedReport.coreConclusion,
+        normalizedReport.usefulJudgement,
+        normalizedReport.questions[0] ? `优先追问：${normalizedReport.questions[0]}` : "",
+        normalizedReport.nextActions[0] ? `下一步：${normalizedReport.nextActions[0].title}` : ""
+      ].filter(Boolean);
+      const tasks = normalizedReport.nextActions.map(action => normalizeTask({
+        title: action.title,
+        owner: "我",
+        deadline: action.priority === "高" ? "本次沟通后优先处理" : "下一次沟通前",
+        priority: action.priority,
+        status: "未开始",
+        note: action.detail,
+        source: normalizedReport.purpose
+      }));
+      const risks = normalizedReport.risks.map((risk, index) => normalizeRisk({
+        title: summarizeLine(risk, 24),
+        level: index === 0 ? "高" : "中",
+        description: risk,
+        suggestion: "用追问补齐事实，不把对方观点直接当作确定结论。"
+      }));
+      return {
+        contentType: "recruiterConversation",
+        recruiterSubtype: subtype,
+        summary: normalizedReport.coreConclusion,
+        keyConclusions,
+        tasks,
+        risks,
+        questions: normalizedReport.questions.map(question => normalizeQuestion({ question, note: "猎头沟通里仍需确认的信息。" })),
+        people: [],
+        recruiterReport: normalizedReport
+      };
+    }
+
+    function inferRecruiterCounterpart(text) {
+      if (/(猎头|headhunter|recruiter)/i.test(text)) return "猎头";
+      if (/(招聘顾问|人才顾问|顾问)/i.test(text)) return "招聘顾问";
+      if (/(内推人|内推|朋友推荐)/i.test(text)) return "内推人";
+      if (/(HR|人力|招聘)/i.test(text)) return "HR";
+      return "未识别";
+    }
+
+    function inferRecruiterFacts(text) {
+      const value = String(text || "");
+      const facts = [];
+      const company = extractFirstMatch(value, [
+        /(?:公司|团队|雇主|甲方|客户)[：:\s]*([^\n，,。；;]{2,32})/,
+        /([A-Z][A-Za-z0-9 .-]{1,24}|[\u4e00-\u9fa5A-Za-z0-9]{2,18})(?:的|这边|团队).{0,10}(?:岗位|职位|机会|HC)/
+      ]);
+      const role = extractFirstMatch(value, [
+        /(?:岗位|职位|title|role|HC)[：:\s]*([^\n，,。；;]{2,40})/i,
+        /((?:AI|人工智能|智能|商业化|策略|增长|平台|协同办公|Agent)?产品经理|产品负责人|项目经理|运营负责人|设计负责人|前端|后端|算法|数据分析师|战略|总监|负责人)/
+      ]);
+      const salary = extractFirstMatch(value, [
+        /(?:薪资|年包|月薪|package|base薪|总包|offer)[：:\s]*([^\n，,。；;]{2,40})/i,
+        /(\d{2,3}\s*[kKwW万].{0,18}(?:年包|月薪|股票|期权|bonus|奖金)?)/i
+      ]);
+      const location = extractFirstMatch(value, [
+        /(?:base|地点|城市|工作地)[：:\s]*([^\n，,。；;]{2,24})/i,
+        /(北京|上海|深圳|广州|杭州|成都|南京|苏州|Remote|远程|混合办公)/
+      ]);
+      const level = extractFirstMatch(value, [/(?:职级|级别|level)[：:\s]*([^\n，,。；;]{2,24})/i, /(P[5-9]|M[1-9]|L[3-9]|高级|资深|专家|总监)/i]);
+      const process = extractFirstMatch(value, [/(?:流程|进度|安排)[：:\s]*([^\n。；;]{2,60})/, /((?:下周|本周|明天|后天|今天).{0,24}(?:聊|面|电话|视频|沟通|约))/]);
+      const factsByLabel = [
+        ["推荐公司/团队", company],
+        ["推荐岗位", role],
+        ["薪资/职级", [salary, level].filter(Boolean).join(" / ")],
+        ["base/工作方式", location],
+        ["流程/时间点", process]
+      ];
+      factsByLabel.forEach(([label, item]) => facts.push({ label, value: item || "未提及" }));
+      return facts;
+    }
+
+    function extractFirstMatch(text, patterns = []) {
+      for (const pattern of patterns) {
+        const match = String(text || "").match(pattern);
+        const value = (match?.[1] || "").trim();
+        if (value) return summarizeLine(value.replace(/[“”"'<>]/g, ""), 40);
+      }
+      return "";
+    }
+
+    function getFactValue(facts, label) {
+      const item = facts.find(fact => fact.label === label);
+      const value = String(item?.value || "");
+      return value && value !== "未提及" ? value : "";
+    }
+
+    function buildRecruiterCoreConclusion(text, subtype, facts, hasConcreteOpportunity) {
+      if (subtype === "opportunityRecommendation") {
+        return hasConcreteOpportunity
+          ? "这次沟通包含具体机会信息，值得先补齐公司、岗位、薪资和流程细节后再判断是否推进。"
+          : "这次更像机会方向沟通，但具体公司或岗位信息不足，暂不应当按正式职位推荐决策。";
+      }
+      if (subtype === "careerAnalysis") return "这次对话的价值在职业方向和市场信号，需要把对方观点当作样本，而不是直接当结论。";
+      if (subtype === "profilePositioning") return "这次重点是候选人定位和简历表达，应先提炼可验证卖点，再调整对外话术。";
+      if (subtype === "interviewStrategy") return "这次重点是面试准备和反馈策略，下一步要把可能追问转换成可复用案例。";
+      if (subtype === "compensationNegotiation") return "这次重点是薪资、职级和 offer 边界，先确认事实再设计谈判表达。";
+      if (subtype === "followUpCoordination") return "这次重点是流程推进和关系维护，优先确认材料、时间点和下一步负责人。";
+      return hasConcreteOpportunity
+        ? "这次同时包含机会信息和职业判断，应分开记录事实与观点，再决定是否推进。"
+        : "这次是混合型职业沟通，重点不在单一岗位，而在判断、风险和下一步动作。";
+    }
+
+    function buildRecruiterUsefulJudgement(text, subtype, hasConcreteOpportunity) {
+      const useful = [];
+      if (hasConcreteOpportunity) useful.push("具体岗位信息可作为初筛材料，但需要确认 JD、汇报线、薪资和流程。");
+      if (/(市场|行情|趋势|行业|方向|职业定位)/.test(text)) useful.push("市场判断可以保留，但需要用更多样本验证。");
+      if (/(简历|卖点|包装|项目经历)/.test(text)) useful.push("简历建议要落到证据，而不是只改措辞。");
+      if (/(薪资|offer|职级|谈判)/i.test(text)) useful.push("薪资建议应先确认上下限、现金股票比例和职级定义。");
+      if (!useful.length) useful.push(subtype === "followUpCoordination" ? "最有价值的信息是下一步动作和时间点。" : "最有价值的信息是对方提供的判断线索，但需要补齐事实。");
+      return uniqueList(useful).slice(0, 3).join(" ");
+    }
+
+    function inferRecruiterAnalysis(text, subtype, hasConcreteOpportunity) {
+      const items = [];
+      if (hasConcreteOpportunity) items.push("如果公司、岗位和薪资都能补齐，可以进入机会优先级评估；否则先不要投入过多准备成本。");
+      if (/(市场|行情|趋势|行业|方向|职业定位)/.test(text)) items.push("对方给出了市场或职业方向判断，但这类观点容易受样本偏差影响，需要再问 2-3 个具体例子。");
+      if (/(简历|卖点|包装|项目经历)/.test(text)) items.push("定位建议要转成可证明的项目证据，避免只做包装。");
+      if (/(面试|追问|案例|反馈|准备)/.test(text)) items.push("面试策略应围绕岗位要求准备案例，而不是泛泛背答案。");
+      if (/(薪资|offer|职级|谈判)/i.test(text)) items.push("薪资谈判前要明确自己底线、替代机会和可让步项。");
+      if (/(约|安排|补材料|跟进|流程)/.test(text)) items.push("流程沟通的关键是减少来回确认，直接给材料、时间和可选方案。");
+      if (!items.length) items.push(`本次更接近「${getRecruiterSubtypeLabel(subtype)}」，需要继续追问事实和对方判断依据。`);
+      return uniqueList(items).slice(0, 6);
+    }
+
+    function inferRecruiterQuestions(text, subtype, hasConcreteOpportunity) {
+      const questions = [];
+      if (!hasConcreteOpportunity && (subtype === "opportunityRecommendation" || subtype === "mixed")) questions.push("是否有明确公司、团队、岗位名称和 JD？");
+      if (!/(薪资|年包|月薪|package|offer|职级|股票|期权)/i.test(text)) questions.push("薪资、职级、现金/股票结构和涨幅空间是否明确？");
+      if (!/(base|地点|城市|远程|混合办公|北京|上海|深圳|杭州)/i.test(text)) questions.push("base 地点和工作方式是什么？是否支持远程或混合办公？");
+      if (!/(汇报|leader|老板|团队规模|组织)/i.test(text)) questions.push("汇报线、团队规模和招聘原因是什么？");
+      if (/(市场|行情|趋势|定位)/.test(text)) questions.push("对方的市场判断来自哪些公司样本或近期成功 case？");
+      if (/(约|安排|补材料|流程|跟进)/.test(text)) questions.push("下一步由谁推进，具体截止时间是什么？");
+      return uniqueList(questions).slice(0, 6);
+    }
+
+    function inferRecruiterRisks(text, subtype, hasConcreteOpportunity) {
+      const risks = [];
+      if (!hasConcreteOpportunity && (subtype === "opportunityRecommendation" || subtype === "mixed")) risks.push("没有明确公司或岗位时，不要把它当成正式推荐职位。");
+      if (!/(薪资|年包|月薪|package|offer|职级|股票|期权)/i.test(text)) risks.push("薪资/职级信息不完整，后续投入前需要确认边界。");
+      if (/(很好|非常匹配|很适合|机会难得|肯定|稳)/.test(text)) risks.push("对方可能有销售式表达，匹配度需要用 JD 和面试反馈验证。");
+      if (/(市场|行情|趋势|定位)/.test(text)) risks.push("市场判断可能来自有限样本，不能直接代表完整行情。");
+      if (/(包装|美化|润色)/.test(text)) risks.push("简历包装不能越过事实边界，否则会带来面试追问风险。");
+      if (!risks.length) risks.push("信息仍需交叉验证，尤其是事实、观点和建议动作要分开看。");
+      return uniqueList(risks).slice(0, 5);
+    }
+
+    function inferRecruiterActions(text, subtype, hasConcreteOpportunity) {
+      const actions = [];
+      if (subtype === "opportunityRecommendation" || subtype === "mixed") {
+        actions.push({
+          title: hasConcreteOpportunity ? "补齐机会四要素" : "先索取明确 JD",
+          detail: "确认公司/团队、岗位职责、薪资职级、流程时间；缺一项都先标为待确认。",
+          priority: "高"
+        });
+      }
+      if (subtype === "careerAnalysis" || subtype === "mixed") actions.push({ title: "要求对方给样本依据", detail: "追问市场判断来自哪些公司、岗位和近期成交案例，避免只听抽象趋势。", priority: "中" });
+      if (subtype === "profilePositioning" || subtype === "mixed") actions.push({ title: "整理候选人卖点证据", detail: "把简历建议改成 3 条可证明事实：项目、动作、结果。", priority: "高" });
+      if (subtype === "interviewStrategy" || subtype === "mixed") actions.push({ title: "准备 3 个面试案例", detail: "围绕岗位要求准备 STAR 案例，并预判可能被挑战的问题。", priority: "高" });
+      if (subtype === "compensationNegotiation" || subtype === "mixed") actions.push({ title: "确认谈判边界", detail: "列出期望、底线、可让步项和替代机会，再决定表达方式。", priority: "高" });
+      if (subtype === "followUpCoordination" || subtype === "mixed") actions.push({ title: "发出低摩擦跟进", detail: "一次性给出材料、可约时间和需要对方确认的事项。", priority: "中" });
+      if (!actions.length) actions.push({ title: "补齐事实后再判断", detail: "先追问缺口，不急着答应推进或拒绝。", priority: "中" });
+      return uniqueBy(actions, "title").slice(0, 6);
+    }
+
+    function buildRecruiterReplySuggestion(text, subtype, hasConcreteOpportunity) {
+      if (subtype === "followUpCoordination") return "可以的，我这边把材料先补齐给你。也麻烦同步一下下一步负责人和预计时间点，我好安排后续沟通。";
+      if (subtype === "compensationNegotiation") return "谢谢信息，我想先确认下这个机会的职级范围、薪资结构和浮动空间，再结合岗位职责判断是否继续推进。";
+      if (subtype === "careerAnalysis") return "谢谢你的判断。为了更准确评估方向，方便的话能否补充几个近期类似背景候选人的去向或岗位样本？";
+      if (subtype === "profilePositioning") return "这个定位方向我可以参考。你方便帮我看一下哪些经历最能支撑这个卖点，哪些表述建议弱化吗？";
+      if (subtype === "interviewStrategy") return "收到，我会按这个方向准备案例。也想确认一下面试官最可能关注的 2-3 个能力点，以及是否有过往反馈可参考。";
+      return hasConcreteOpportunity
+        ? "谢谢推荐，我想先看完整 JD、团队情况、薪资职级范围和流程安排，再判断是否推进。"
+        : "谢谢分享，这个方向我可以了解。方便先补充具体公司/岗位信息和你判断匹配的依据吗？";
+    }
+
+    function buildOpportunitySection(facts, hasConcreteOpportunity) {
+      return {
+        company: getFactValue(facts, "推荐公司/团队") || "未提及",
+        role: getFactValue(facts, "推荐岗位") || "未提及",
+        jdPoints: hasConcreteOpportunity ? "从原文可继续拆 JD 要点；当前先以对方描述为线索。" : "未提及",
+        matchPoints: hasConcreteOpportunity ? "需要结合用户真实背景与 JD 验证，不直接判定匹配。" : "待确认",
+        mismatchPoints: "待通过 JD、团队目标和面试反馈确认",
+        base: getFactValue(facts, "base/工作方式") || "未提及",
+        compensation: getFactValue(facts, "薪资/职级") || "未提及",
+        reportLine: "未提及",
+        recommendationReason: hasConcreteOpportunity ? "对方认为该机会可能匹配，但仍需事实验证。" : "尚未形成具体推荐理由。",
+        worthProceeding: hasConcreteOpportunity ? "可低成本了解，不建议在信息不全时重投入。" : "暂缓推进，先追问信息。"
+      };
+    }
+
+    function buildCareerSection(text) {
+      return {
+        marketSignals: /(市场|行情|趋势|行业)/.test(text) ? "对方提到市场/行业趋势，需要继续追问样本。" : "未提及明确市场信号",
+        strengths: /(优势|适合|强项|背景)/.test(text) ? "原文提到背景优势，可转成简历和面试证据。" : "待结合用户背景确认",
+        gaps: /(短板|不足|缺|弱)/.test(text) ? "对方提到短板，需要拆成可补强动作。" : "未明确提及",
+        priorityDirections: "优先探索能同时匹配经验、兴趣和岗位需求的方向。",
+        lowPriorityDirections: "信息不足或只靠热度判断的方向暂不重投入。",
+        evidenceNeeded: "需要更多岗位样本、薪资范围和成功候选人案例验证。"
+      };
+    }
+
+    function buildProfileSection(text) {
+      return {
+        sellingPoints: /(卖点|亮点|优势|项目)/.test(text) ? "把对方提到的卖点转成项目、动作、结果。" : "待确认候选人核心卖点",
+        resumeAdvice: /(简历|履历|表述|包装)/.test(text) ? "简历表述可以优化，但必须贴合真实经历。" : "未提及明确简历建议",
+        evidenceToAdd: "补强可量化结果、职责边界和关键决策证据。",
+        weakenInfo: "弱化无法支撑目标岗位的流水账经历。",
+        externalPitch: "用一句定位 + 两个项目证据 + 一个求职方向表达。"
+      };
+    }
+
+    function buildInterviewStrategySection(text) {
+      return {
+        likelyFocus: /(关注|可能问|追问|挑战)/.test(text) ? "对方提到可能关注点，需要按岗位拆案例。" : "待确认面试关注点",
+        casesToPrepare: "准备 3 个案例：业务判断、跨团队推进、AI/工具落地。",
+        challengeQuestions: "可能被追问结果真实性、个人贡献、AI 理解深度和职业动机。",
+        answerStrategy: "先结论，再背景和行动，最后落到结果与反思。",
+        followUp: "面试后用一条消息补充关键信息和感谢。"
+      };
+    }
+
+    function buildCompensationSection(text, facts) {
+      return {
+        packageInfo: getFactValue(facts, "薪资/职级") || "未提及",
+        leverage: "替代机会、稀缺经验、过往结果和当前薪资结构。",
+        questions: "薪资上下限、现金股票比例、职级定义、试用期和涨薪节奏。",
+        riskBoundary: "不要在事实不全时先报死底线；也不要过早承诺接受。",
+        expression: "先表达兴趣，再确认范围，最后给出可协商区间。"
+      };
+    }
+
+    function buildFollowUpSection(text, facts) {
+      return {
+        status: getFactValue(facts, "流程/时间点") || "待确认",
+        requiredMaterials: /(简历|作品集|材料|补充)/.test(text) ? "原文提到需要补材料，请一次性整理发送。" : "未提及",
+        scheduledTime: getFactValue(facts, "流程/时间点") || "待确认",
+        owner: inferRecruiterCounterpart(text),
+        reminder: "如果 2-3 个工作日无反馈，可发一条轻量跟进。"
+      };
     }
 
     function simulateInterviewGeneration(text) {
@@ -14630,16 +15899,25 @@
 
     async function callConfiguredModel(text) {
       const scenario = getScenario();
-      const defaultSystemPrompt = scenario.key === "culture"
+      const defaultSystemPrompt = isRecruiterContent()
+        ? "你是一个谨慎的职业机会与猎头沟通分析助手。你的目标是帮助用户区分事实、对方观点、风险和下一步动作。不要把猎头建议当成确定事实，不要编造公司、岗位、薪资或流程。请输出严格JSON，不要输出Markdown，不要输出多余解释。"
+        : scenario.key === "culture"
         ? "你是一个资深跨文化沟通教练，熟悉中英双语沟通、海外团队协作、远程会议、邮件和聊天语境。你的目标不是翻译文本，而是帮助用户理解对方真实诉求、语气强度、潜在误读和下一步表达策略。请输出严格JSON，不要输出Markdown，不要输出多余解释。"
         : "你是一个资深 AI 面试教练，擅长从面试录音转写中复盘问题、回答质量、面试官关注点、候选人风险和下一轮准备。你的目标不是写会议纪要，而是帮助候选人理解这场面试。请输出严格JSON，不要输出Markdown，不要输出多余解释。";
       const systemPrompt = modelConfig.systemPrompt?.trim() || defaultSystemPrompt;
       const outputName = getOutputTypeLabel(state.outputType);
-      const userPrompt = scenario.key === "culture"
+      const userPrompt = isRecruiterContent()
+        ? buildRecruiterModelPrompt(text)
+        : scenario.key === "culture"
         ? buildCultureModelPrompt(text, outputName)
         : buildInterviewModelPrompt(text, outputName);
       const content = await requestModel(systemPrompt, userPrompt);
       return parseModelJson(content);
+    }
+
+    function buildRecruiterModelPrompt(text) {
+      const subtype = getValidRecruiterSubtype(state.recruiterSubtype || detectRecruiterSubtype(text));
+      return `请基于以下猎头 / HR / 招聘顾问 / 内推人 / 职业机会沟通内容，生成“职业机会情报卡 + 下一步行动台”的结构化JSON。\n\n当前识别大类：recruiterConversation\n当前沟通目的 subtype：${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n产品定位：\n不要写面试复盘，不要输出 Q&A 卡、通过率、面试官关注点。你要帮助用户判断这次职业沟通里哪些是事实、哪些只是对方观点、哪些建议值得采纳、哪些需要继续追问。\n\n必须输出以下 JSON 字段：\n{\n  "contentType": "recruiterConversation",\n  "recruiterSubtype": "${subtype}",\n  "recruiterReport": {\n    "counterpart": "猎头/HR/招聘顾问/内推人/未识别",\n    "purpose": "职位推荐/职业分析/简历定位/面试策略/薪资谈判/流程跟进/混合",\n    "coreConclusion": "这次对话真正有价值的信息，80字以内",\n    "usefulJudgement": "哪些建议值得采纳，哪些需要验证",\n    "facts": [\n      {"label": "推荐公司/团队", "value": "明确提到则填写；没有就填未提及"},\n      {"label": "推荐岗位", "value": "明确提到则填写；没有就填未提及"},\n      {"label": "薪资/职级", "value": "明确提到则填写；没有就填未提及"},\n      {"label": "base/工作方式", "value": "明确提到则填写；没有就填未提及"},\n      {"label": "流程/时间点", "value": "明确提到则填写；没有就填未提及"}\n    ],\n    "analysis": ["对方关于市场、行业、岗位、用户背景或求职策略的判断"],\n    "questions": ["待确认问题，必须是用户下一步可以追问的问题"],\n    "risks": ["风险和不确定性，例如信息不完整、岗位不匹配、夸大表达、薪资职级不清"],\n    "nextActions": [\n      {"title": "下一步动作", "detail": "用户要做什么，如何做", "priority": "高/中/低"}\n    ],\n    "replySuggestion": "一段自然可复制回复",\n    "opportunity": {\n      "company": "推荐公司/团队或未提及",\n      "role": "推荐岗位或未提及",\n      "jdPoints": "JD要点或未提及",\n      "matchPoints": "匹配点或待确认",\n      "mismatchPoints": "不匹配点或待确认",\n      "base": "base/工作方式或未提及",\n      "compensation": "薪资/职级或未提及",\n      "reportLine": "汇报线或未提及",\n      "recommendationReason": "推荐理由或未提及",\n      "worthProceeding": "是否值得推进，说明原因"\n    },\n    "career": {\n      "marketSignals": "市场信号",\n      "strengths": "用户背景优势",\n      "gaps": "短板",\n      "priorityDirections": "适合优先探索方向",\n      "lowPriorityDirections": "不建议投入太多精力方向",\n      "evidenceNeeded": "需要更多样本验证的判断"\n    },\n    "profile": {\n      "sellingPoints": "候选人卖点",\n      "resumeAdvice": "简历/项目表述建议",\n      "evidenceToAdd": "需要补强证据",\n      "weakenInfo": "可删减或弱化信息",\n      "externalPitch": "对外沟通话术"\n    },\n    "interviewStrategy": {\n      "likelyFocus": "面试可能关注点",\n      "casesToPrepare": "需要准备的案例",\n      "challengeQuestions": "可能被挑战的问题",\n      "answerStrategy": "回答策略",\n      "followUp": "面试后跟进建议"\n    },\n    "compensation": {\n      "packageInfo": "薪资/职级/offer信息",\n      "leverage": "谈判筹码",\n      "questions": "可追问问题",\n      "riskBoundary": "风险边界",\n      "expression": "建议表达方式"\n    },\n    "followUp": {\n      "status": "当前流程状态",\n      "requiredMaterials": "需要补充材料",\n      "scheduledTime": "约定时间",\n      "owner": "下一步负责人",\n      "reminder": "跟进提醒"\n    }\n  },\n  "summary": "同 coreConclusion",\n  "keyConclusions": ["3-5条关键判断"],\n  "tasks": [],\n  "risks": []\n}\n\n硬性要求：\n1. 如果没有明确公司或岗位，不要生成空的推荐职位卡；opportunity.company / opportunity.role 填“未提及”，页面会展示职业判断和建议动作。\n2. 必须区分事实信息与分析观点，不要编造公司、岗位、薪资、职级、流程、时间点。\n3. 如果同时包含职位推荐和职业分析，recruiterSubtype 使用 mixed。\n4. 可复制回复要自然、克制、适合直接发给猎头/HR。\n5. 输出必须是合法JSON。\n\n沟通内容：\n${text}`;
     }
 
     function buildInterviewModelPrompt(text, outputName) {
@@ -14788,6 +16066,35 @@
           } catch (innerError) {
             /* fall through to structured fallback below */
           }
+        }
+        if (isRecruiterContent()) {
+          const subtype = getValidRecruiterSubtype(state.recruiterSubtype);
+          return {
+            contentType: "recruiterConversation",
+            recruiterSubtype: subtype,
+            summary: text.slice(0, 180) || "模型返回格式异常，已保留原始内容并可切换规则分析。",
+            keyConclusions: ["模型返回格式不符合结构化JSON，建议重新生成或使用规则分析。"],
+            tasks: [],
+            risks: [],
+            recruiterReport: normalizeRecruiterReport({
+              counterpart: "未识别",
+              purpose: getRecruiterSubtypeLabel(subtype),
+              coreConclusion: text.slice(0, 180) || "模型没有返回可解析的职业机会情报卡。",
+              usefulJudgement: "当前只能保留原始返回，不能把它当成完整分析结论。",
+              facts: [
+                { label: "推荐公司/团队", value: "未提及" },
+                { label: "推荐岗位", value: "未提及" },
+                { label: "薪资/职级", value: "未提及" },
+                { label: "base/工作方式", value: "未提及" },
+                { label: "流程/时间点", value: "未提及" }
+              ],
+              analysis: ["模型返回格式异常，暂无法稳定拆分事实和观点。"],
+              questions: ["是否重新生成，或切换规则分析先得到可用结构？"],
+              risks: ["结构化字段缺失，不能直接作为职业判断依据。"],
+              nextActions: [{ title: "改用规则分析", detail: "先保留原文并用本地规则生成结构化报告。", priority: "高" }],
+              replySuggestion: "我先整理一下这次信息，再补充确认关键事实后回复你。"
+            }, subtype)
+          };
         }
         return {
           summary: text.slice(0, 800) || "模型返回为空，已保留原始结果以便人工复核。",
@@ -15186,6 +16493,10 @@
       state.source = "";
       state.sourceByMode = createEmptySourceByMode();
       state.inputMode = "text";
+      state.contentType = DEFAULT_CONTENT_TYPE;
+      state.recruiterSubtype = DEFAULT_RECRUITER_SUBTYPE;
+      state.contentRoutingManual = false;
+      state.contentRoutingReason = "等待输入后识别内容类型。";
       state.audioFileName = "";
       state.result = cloneData(EMPTY_RESULT);
       state.error = "";
@@ -15276,11 +16587,15 @@
         ? NaN
         : (Number.isInteger(item.roundIndex) ? item.roundIndex : Number(item.roundIndex));
       const roundIndex = Number.isFinite(rawRoundIndex) ? Math.max(0, Math.min(3, rawRoundIndex)) : null;
+      const contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
+      const recruiterSubtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
       return {
         id: item.id || createId(),
         userId: item.userId || getCurrentUserId(),
         title: String(item.title || "未命名复盘"),
         scenario: getValidScenario(item.scenario || DEFAULT_SCENARIO),
+        contentType,
+        recruiterSubtype,
         interviewId: String(item.interviewId || ""),
         roundIndex,
         companyName: String(item.companyName || item.company || item.result?.interviewInfo?.company || ""),
@@ -15299,7 +16614,11 @@
         editedAt: item.editedAt || "",
         createdAt,
         updatedAt: item.updatedAt || item.editedAt || createdAt,
-        result: normalizeResult(item.result || EMPTY_RESULT)
+        result: normalizeResult({
+          ...(item.result || EMPTY_RESULT),
+          contentType,
+          recruiterSubtype
+        })
       };
     }
 
@@ -15320,18 +16639,23 @@
         return false;
       }
       const scenario = getScenario();
-      ensureReviewLinkFromResult();
+      const isInterviewReport = !isRecruiterContent();
+      if (isInterviewReport) ensureReviewLinkFromResult();
       const linkedRecord = getLinkedInterviewRecord();
       const linkedRound = getLinkedInterviewRound();
       const transcriptId = state.currentTranscriptId || createId();
       const summaryReportId = state.currentSummaryId || createId();
-      const title = (state.result.summary || state.result.coachSummary?.coreDiscussion || state.source || "未命名记录").replace(/\s+/g, " ").slice(0, 28);
+      const recruiterReport = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      const titleSource = isRecruiterContent()
+        ? (recruiterReport.coreConclusion || `${getRecruiterSubtypeLabel()}沟通整理`)
+        : (state.result.summary || state.result.coachSummary?.coreDiscussion || state.source || "未命名记录");
+      const title = titleSource.replace(/\s+/g, " ").slice(0, 28);
       state.currentTranscriptId = transcriptId;
       state.currentSummaryId = summaryReportId;
       transcriptService.save({
         id: transcriptId,
-        interviewId: state.linkedInterviewId || "",
-        roundIndex: state.linkedRoundIndex,
+        interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
+        roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
         source: state.source,
         inputMode: state.inputMode,
         audioFileId: state.currentUploadedFileId || "",
@@ -15339,8 +16663,8 @@
       });
       summaryService.save({
         id: summaryReportId,
-        interviewId: state.linkedInterviewId || "",
-        roundIndex: state.linkedRoundIndex,
+        interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
+        roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
         report: state.result,
         modelUsed: state.modelUsed || getModelName(),
         createdAt: state.generatedAt || nowIso()
@@ -15350,11 +16674,13 @@
         userId: getCurrentUserId(),
         title,
         scenario: scenario.key,
-        interviewId: state.linkedInterviewId || "",
-        roundIndex: state.linkedRoundIndex,
-        companyName: linkedRecord?.company || state.result.interviewInfo?.company || "",
-        positionName: linkedRecord?.role || state.result.interviewInfo?.role || "",
-        audioFileId: state.currentUploadedFileId || linkedRound?.uploadedFileId || "",
+        contentType: state.contentType,
+        recruiterSubtype: state.recruiterSubtype,
+        interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
+        roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
+        companyName: isInterviewReport ? (linkedRecord?.company || state.result.interviewInfo?.company || "") : getFactValue(recruiterReport.facts, "推荐公司/团队"),
+        positionName: isInterviewReport ? (linkedRecord?.role || state.result.interviewInfo?.role || "") : getFactValue(recruiterReport.facts, "推荐岗位"),
+        audioFileId: state.currentUploadedFileId || (isInterviewReport ? linkedRound?.uploadedFileId : "") || "",
         transcriptId,
         summaryReportId,
         source: state.source,
@@ -15368,7 +16694,7 @@
         editedAt: state.editedAt,
         result: state.result
       });
-      if (item.interviewId) {
+      if (isInterviewReport && item.interviewId) {
         interviewService.linkSummary({
           interviewId: item.interviewId,
           roundIndex: item.roundIndex,
@@ -15377,15 +16703,19 @@
           uploadedFileId: item.audioFileId
         });
       }
-      const list = getHistory().filter(history => !(history.generatedSourceHash === item.generatedSourceHash && history.outputType === item.outputType && getValidScenario(history.scenario || DEFAULT_SCENARIO) === scenario.key));
+      const list = getHistory().filter(history => !(history.generatedSourceHash === item.generatedSourceHash
+        && history.outputType === item.outputType
+        && getValidScenario(history.scenario || DEFAULT_SCENARIO) === scenario.key
+        && getValidContentType(history.contentType || DEFAULT_CONTENT_TYPE) === item.contentType
+        && getValidRecruiterSubtype(history.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) === item.recruiterSubtype));
       saveHistory([item, ...list]);
-      if (!silent) showToast(item.interviewId ? "已保存到历史，并关联回面试记录" : "已写入历史记录");
+      if (!silent) showToast(isInterviewReport && item.interviewId ? "已保存到历史，并关联回面试记录" : "已写入历史记录");
       saveState();
       return true;
     }
 
     function ensureReviewLinkFromResult() {
-      if (state.linkedInterviewId || state.scenario !== "interview") return;
+      if (isRecruiterContent() || state.linkedInterviewId || state.scenario !== "interview") return;
       const info = normalizeInterviewInfo(state.result.interviewInfo || {});
       const company = String(info.company || "").trim().toLowerCase();
       const role = String(info.role || "").trim().toLowerCase();
@@ -15418,7 +16748,15 @@
       showToast("已清空历史搜索");
     }
 
+    function getHistoryReportName(item = {}, scenarioKey = DEFAULT_SCENARIO) {
+      const contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
+      const subtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
+      if (contentType === "recruiterConversation") return `${CONTENT_TYPES.recruiterConversation.reportName} · ${getRecruiterSubtypeLabel(subtype)}`;
+      return getScenarioByKey(scenarioKey).reportName;
+    }
+
     function buildDeleteHistoryConfirmMessage(item = {}) {
+      const isRecruiterHistory = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE) === "recruiterConversation";
       const parts = [
         item.title || "未命名复盘",
         item.companyName || "",
@@ -15429,12 +16767,13 @@
         "",
         "删除后：",
         "1. 历史列表中不再显示这份复盘。",
-        "2. 如果它关联了面试轮次，会同步取消该轮次的复盘标记。",
+        isRecruiterHistory ? "2. 这条猎头沟通不会改动面试轮次复盘标记。" : "2. 如果它关联了面试轮次，会同步取消该轮次的复盘标记。",
         "3. 面试队列记录和当前输入内容不会被删除。"
       ].join("\n");
     }
 
     function unlinkHistoryFromInterviewRound(item = {}) {
+      if (getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE) === "recruiterConversation") return false;
       if (!item.interviewId || item.roundIndex == null) return false;
       const recordIndex = interviewRecords.findIndex(record => record.id === item.interviewId);
       if (recordIndex < 0) return false;
@@ -15475,8 +16814,12 @@
           item.companyName,
           item.positionName,
           item.modelUsed,
+          getContentTypeLabel(item.contentType),
+          isRecruiterContent(item.contentType) ? getRecruiterSubtypeLabel(item.recruiterSubtype) : "",
           item.result?.summary,
-          item.result?.coachSummary?.coreDiscussion
+          item.result?.coachSummary?.coreDiscussion,
+          item.result?.recruiterReport?.coreConclusion,
+          item.result?.recruiterReport?.usefulJudgement
         ].join(" ").toLowerCase().includes(query))
         : list;
       els.historyList.innerHTML = "";
@@ -15510,15 +16853,18 @@
       }
       visibleList.forEach(item => {
         const itemScenario = SCENARIOS[getValidScenario(item.scenario || DEFAULT_SCENARIO)];
+        const itemContentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
+        const itemSubtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
+        const itemReportName = getHistoryReportName(item, itemScenario.key);
         const card = document.createElement("div");
         card.className = "history-card";
         const relation = item.companyName || item.positionName
-          ? ` · ${[item.companyName, item.positionName, item.roundIndex == null ? "" : `第${Number(item.roundIndex) + 1}轮`].filter(Boolean).join(" / ")}`
+          ? ` · ${[item.companyName, item.positionName, itemContentType === "interview" && item.roundIndex == null ? "" : itemContentType === "interview" ? `第${Number(item.roundIndex) + 1}轮` : ""].filter(Boolean).join(" / ")}`
           : "";
         const modelUsedLabel = normalizeModelUsedLabel(item.modelUsed);
         card.innerHTML = `
           <div class="history-title">${escapeHtml(item.title)}</div>
-          <div class="history-meta">${escapeHtml(itemScenario.reportName)}${escapeHtml(relation)} · ${escapeHtml(modelUsedLabel)} · 生成于 ${escapeHtml(formatTime(item.generatedAt))}${item.editedAt ? " · 已编辑" : ""}</div>
+          <div class="history-meta">${escapeHtml(itemReportName)}${escapeHtml(relation)} · ${escapeHtml(modelUsedLabel)} · 生成于 ${escapeHtml(formatTime(item.generatedAt))}${item.editedAt ? " · 已编辑" : ""}</div>
           <div class="actions">
             <button class="mini-btn primary" data-action="open" type="button">打开</button>
             <button class="mini-btn" data-action="copy" type="button">复制</button>
@@ -15529,13 +16875,23 @@
         card.querySelector("[data-action='open']").addEventListener("click", () => {
           const itemInputMode = getValidInputMode(item.inputMode || state.inputMode || "text");
           state.scenario = getValidScenario(item.scenario || DEFAULT_SCENARIO);
+          state.contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
+          state.recruiterSubtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
+          state.contentRoutingManual = false;
+          state.contentRoutingReason = isRecruiterContent(state.contentType)
+            ? `已从历史恢复「${getContentTypeLabel(state.contentType)} / ${getRecruiterSubtypeLabel(state.recruiterSubtype)}」。`
+            : "已从历史恢复面试复盘。";
           state.sourceByMode = normalizeSourceByMode(item.sourceByMode, itemInputMode, item.source || "");
           state.inputMode = itemInputMode;
           state.source = item.source || state.sourceByMode[itemInputMode] || "";
           state.sourceByMode[itemInputMode] = state.source;
           state.outputType = getValidOutputType(item.outputType);
           state.mode = item.mode === "api" && modelConfig.apiKey ? "api" : "local";
-          state.result = normalizeResult(item.result || EMPTY_RESULT);
+          state.result = normalizeResult({
+            ...(item.result || EMPTY_RESULT),
+            contentType: state.contentType,
+            recruiterSubtype: state.recruiterSubtype
+          });
           state.generatedAt = item.generatedAt || "";
           state.generatedSourceHash = String(item.generatedSourceHash || "").startsWith(`${state.scenario}:`)
             ? item.generatedSourceHash
@@ -15552,7 +16908,10 @@
           render();
           showToast("已打开历史记录");
         });
-        card.querySelector("[data-action='copy']").addEventListener("click", () => copyText(buildMinutesText(item.result, itemScenario.key, item.modelUsed), itemScenario.historyCopyToast));
+        card.querySelector("[data-action='copy']").addEventListener("click", () => copyText(
+          buildMinutesText(item.result, itemScenario.key, item.modelUsed, itemContentType, itemSubtype),
+          itemContentType === "recruiterConversation" ? "已复制历史职业机会报告" : itemScenario.historyCopyToast
+        ));
         card.querySelector("[data-action='export']").addEventListener("click", () => exportHistoryMarkdown(item));
         card.querySelector("[data-action='delete']").addEventListener("click", async () => {
           const ok = await showConfirmDialog({
@@ -15588,6 +16947,16 @@
     }
 
     function buildCoachSummaryText(result = state.result, scenarioKey = state.scenario) {
+      if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
+        const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
+        return [
+          `核心结论：${report.coreConclusion || "暂无"}`,
+          `对我有用的判断：${report.usefulJudgement || "暂无"}`,
+          `信息完整度：${getRecruiterCompletenessLabel(report)}`,
+          `最大不确定性：${report.risks[0] || "暂无"}`,
+          `可复制回复：${report.replySuggestion || "暂无"}`
+        ].join("\n");
+      }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       const coach = r.coachSummary;
@@ -15603,6 +16972,12 @@
     }
 
     function buildQaText(result = state.result, scenarioKey = state.scenario) {
+      if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
+        const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
+        const facts = report.facts.length ? report.facts.map((fact, index) => `${index + 1}. ${fact.label}：${fact.value || "待确认"}`).join("\n") : "暂无事实信息";
+        const analysis = report.analysis.length ? report.analysis.map((item, index) => `${index + 1}. ${item}`).join("\n") : "暂无分析观点";
+        return `事实信息：\n${facts}\n\n分析观点：\n${analysis}`;
+      }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       if (!r.qaCards.length) return `暂无${scenario.qaTitle}`;
@@ -15615,17 +16990,43 @@
       ].filter(Boolean).join("\n")).join("\n\n");
     }
 
-    function buildMinutesText(result = state.result, scenarioKey = state.scenario, modelUsed = state.modelUsed) {
+    function buildMinutesText(result = state.result, scenarioKey = state.scenario, modelUsed = state.modelUsed, contentType = result.contentType || state.contentType, recruiterSubtype = result.recruiterSubtype || state.recruiterSubtype) {
+      if (getValidContentType(contentType) === "recruiterConversation") {
+        return buildRecruiterMinutesText(result, modelUsed, recruiterSubtype);
+      }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       const info = r.interviewInfo;
       const dossierText = scenario.dossier.map(([label, key]) => `${label}：${info[key] || "待识别"}`).join("\n");
       const modeText = normalizeModelUsedLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
-      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+    }
+
+    function buildRecruiterMinutesText(result = state.result, modelUsed = state.modelUsed, recruiterSubtype = state.recruiterSubtype) {
+      const subtype = getValidRecruiterSubtype(recruiterSubtype || result.recruiterSubtype);
+      const r = normalizeResult({ ...result, contentType: "recruiterConversation", recruiterSubtype: subtype });
+      const report = normalizeRecruiterReport(r.recruiterReport || {}, subtype);
+      const modeText = normalizeModelUsedLabel(modelUsed);
+      const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
+      const facts = report.facts.length ? report.facts.map((fact, i) => `${i + 1}. ${fact.label}：${fact.value || "待确认"}`).join("\n") : "暂无";
+      const opportunityText = hasConcreteOpportunityReport(report)
+        ? formatKeyValueMarkdown(report.opportunity)
+        : "本次未明确公司和岗位，不生成空的推荐职位卡。";
+      return `# ${getActiveReportName("recruiterConversation", subtype)}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\nrecruiterConversation / ${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n## 沟通概览\n沟通对象：${report.counterpart || "未识别"}\n沟通目的：${report.purpose || getRecruiterSubtypeLabel(subtype)}\n核心结论：${report.coreConclusion || "暂无"}\n对我有用的判断：${report.usefulJudgement || "暂无"}\n\n## 事实信息\n${facts}\n\n## 分析观点\n${report.analysis.length ? report.analysis.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 专项分析\n${opportunityText}\n${subtype === "careerAnalysis" || subtype === "mixed" ? `\n\n### 职业方向分析\n${formatKeyValueMarkdown(report.career)}` : ""}${subtype === "profilePositioning" || subtype === "mixed" ? `\n\n### 简历与候选人定位\n${formatKeyValueMarkdown(report.profile)}` : ""}${subtype === "interviewStrategy" || subtype === "mixed" ? `\n\n### 面试策略建议\n${formatKeyValueMarkdown(report.interviewStrategy)}` : ""}${subtype === "compensationNegotiation" || subtype === "mixed" ? `\n\n### 薪资谈判准备\n${formatKeyValueMarkdown(report.compensation)}` : ""}${subtype === "followUpCoordination" || subtype === "mixed" ? `\n\n### 流程跟进行动\n${formatKeyValueMarkdown(report.followUp)}` : ""}\n\n## 待确认问题\n${report.questions.length ? report.questions.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 风险和不确定性\n${report.risks.length ? report.risks.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 下一步行动\n${buildTodoListText(r, "interview")}\n\n## 可复制回复\n${report.replySuggestion || "暂无"}`;
+    }
+
+    function formatKeyValueMarkdown(values = {}) {
+      const entries = Object.entries(values || {}).filter(([, value]) => String(value || "").trim());
+      return entries.length ? entries.map(([key, value]) => `- ${formatRecruiterFieldLabel(key)}：${value}`).join("\n") : "暂无";
     }
 
     function buildTodoListText(result = state.result, scenarioKey = state.scenario) {
+      if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
+        const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
+        if (!report.nextActions.length) return "暂无下一步行动";
+        return report.nextActions.map((action, index) => `${index + 1}. 【${action.priority}优先】${action.title}：${action.detail}`).join("\n");
+      }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       if (!r.nextSteps.length) return `暂无${scenario.nextStepTitle}`;
@@ -15642,9 +17043,13 @@
         return;
       }
       const linked = getLinkedInterviewRecord();
-      const filename = buildExportFileName(linked?.company || state.result.interviewInfo?.company || "面试复盘", "md");
-      downloadTextFile(filename, buildMinutesText(state.result, state.scenario), "text/markdown;charset=utf-8");
-      showToast("已导出 Markdown 复盘报告");
+      const recruiterReport = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
+      const filenameBase = isRecruiterContent()
+        ? (getFactValue(recruiterReport.facts, "推荐公司/团队") || `${getRecruiterSubtypeLabel()}沟通`)
+        : (linked?.company || state.result.interviewInfo?.company || "面试复盘");
+      const filename = buildExportFileName(filenameBase, "md");
+      downloadTextFile(filename, buildMinutesText(state.result, state.scenario, state.modelUsed, state.contentType, state.recruiterSubtype), "text/markdown;charset=utf-8");
+      showToast(isRecruiterContent() ? "已导出 Markdown 职业机会报告" : "已导出 Markdown 复盘报告");
     }
 
     async function exportHistoryMarkdown(item) {
@@ -15654,8 +17059,8 @@
       }
       const scenarioKey = getValidScenario(item.scenario || DEFAULT_SCENARIO);
       const filename = buildExportFileName(item.companyName || item.title || "历史复盘", "md");
-      downloadTextFile(filename, buildMinutesText(item.result, scenarioKey, item.modelUsed), "text/markdown;charset=utf-8");
-      showToast("已导出历史复盘 Markdown");
+      downloadTextFile(filename, buildMinutesText(item.result, scenarioKey, item.modelUsed, item.contentType, item.recruiterSubtype), "text/markdown;charset=utf-8");
+      showToast(getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE) === "recruiterConversation" ? "已导出历史职业机会报告 Markdown" : "已导出历史复盘 Markdown");
     }
 
     async function exportAllUserData() {

@@ -1,5 +1,110 @@
 # Changelog
 
+## 2026-06-14 — Five-round verification pass (deep logic + adversarial bug hunt)
+
+Added a second, executable test layer (`scripts/logic-test.mjs`, 126 assertions) that bootstraps the real inline app script in a Node sandbox and exercises pure helpers with adversarial inputs. Wired it into `npm run check` (`smoke-test.mjs && logic-test.mjs`). Ran a 6-dimension adversarial bug hunt (each candidate double-verified) plus interactive browser verification of every core flow.
+
+Defects found and fixed (each with a regression guard):
+
+- **`parseWorksheetXml` sparse-column corruption** — `row.map(cell => cell || "")` skips sparse-array holes from omitted/empty XLSX columns, leaving `undefined` cells that serialize to `null`. Switched to `Array.from(row, …)` which densifies holes to `""`.
+- **CSV mid-field quote breaks columns** — `parseDelimitedText` toggled quoted-mode on any `"`, so a stray quote in an unquoted field swallowed the next delimiter and merged columns. Opening quotes now only count at a (whitespace-only) field start; mid-field quotes are literal.
+- **Re-import wiped existing data** — a re-imported spreadsheet row that matched an existing record replaced its rounds/fields wholesale, so empty imported cells erased saved results, notes, and JD (and dropped review artifacts). Added `mergeInterviewRecordData` for a field-level merge that prefers incoming non-empty values and preserves existing data, file/transcript/summary links included.
+- **`normalizePercentValue` truncated decimals** — the percent regex captured only the integer part, so `85.5%` became `85` instead of `86`. Capture group now includes the decimal so it rounds correctly.
+- **`sanitizeCompanyName` left trailing noise** — inferred names like `Google HR` / `字节跳动的` kept the trailing `HR`/`的`. Added trailing-noise strips.
+- **Mobile horizontal overflow** — a `@media (max-width: 768px)` rule forced the visually-hidden `.file-input` to `width: 100%`, pushing the absolutely-positioned input ~31px past the viewport. Kept it hidden (`width: 1px`).
+
+Verified at runtime (browser): interview create/edit/delete + required-field validation + unsaved-close guard + search/filter/empty-state recovery; content-type routing (interview vs recruiter); rules-fallback generation with honest "规则快速分析" labeling; recruiter report structure and non-linking history; text/TSV/free-text import; JSON export (confirm dialog + valid payload); persistence across reloads; XSS escaping of injected record fields; keyboard shortcuts with editable-target guard; nav `aria-current`; dark-mode contrast; responsive 375/560/768/1280; and a 313-record stress pass (search ~15ms, no overflow, no crash).
+
+## 2026-06-14
+
+### Phase 0 — `senlo-comm-type-00-baseline`
+
+- Completed baseline discovery for the content-type routing work: this is still a static `index.html` app with `npm run check` as the primary no-dependency smoke gate.
+- Confirmed the protected paths that must keep working: interview management, AI interview review, history saving, JSON/Markdown export, local persistence, model settings, and CloudBase sync boundaries.
+- Verified baseline commands:
+  - `npm run check` → passed (`Senlo smoke check passed.`)
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+- Git checkpoint commit/tag was blocked by `.git/index.lock Operation not permitted`; saved fallback checkpoint artifacts under `/private/tmp/selon-checkpoints/`:
+  - `senlo-comm-type-00-baseline.head`
+  - `senlo-comm-type-00-baseline.patch`
+  - `senlo-comm-type-00-baseline.tar.gz`
+
+### Phase 1 — `senlo-comm-type-01-discovery`
+
+- Kept the existing interview-first product structure and added a minimal separate routing model instead of repurposing the old `scenario` path.
+- Designed two top-level content types: `interview` and `recruiterConversation`, plus recruiter subtypes for opportunity recommendation, career analysis, profile positioning, interview strategy, compensation negotiation, follow-up coordination, and mixed conversations.
+- Preserved CloudBase collection and security-rule boundaries; the new fields are stored in existing report/history JSON documents for backward-compatible local/cloud persistence.
+- Verification after this phase:
+  - `npm run check` → passed
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+- Git checkpoint commit/tag remained blocked by `.git/index.lock Operation not permitted`; fallback patches are saved under `/private/tmp/selon-checkpoints/`.
+
+### Phase 2 — `senlo-comm-type-02-classifier`
+
+- Added local rules-based content routing for pasted text, uploaded/recorded transcripts, and sample/manual input paths.
+- Added visible “当前识别” UI with content type, recruiter subtype, manual correction selects, and a “重新识别” action.
+- Manual correction preserves source/sourceByMode, existing history, and any retained interview context; switching type invalidates only the current generated result so the UI does not show a stale report.
+- Verification after this phase:
+  - `npm run check` → passed
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+
+### Phase 3 — `senlo-comm-type-03-recruiter-report`
+
+- Added a recruiter-specific `recruiterReport` structure with counterpart, purpose, facts, analysis, questions, risks, next actions, copyable reply, and subtype-specific sections.
+- Added local rules analysis for recruiter conversations and a model prompt that asks configured LLMs for the same recruiter-specific JSON structure.
+- Reworked result rendering for recruiter content into a “职业机会情报卡 + 下一步行动台” view and removed interview-only semantics such as Q&A, pass rate, and interviewer focus from that route.
+- If no concrete company or role is present, the UI shows a career judgement/action card instead of an empty opportunity card.
+- Verification after this phase:
+  - `npm run check` → passed
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+
+### Phase 4 — `senlo-comm-type-04-history-export`
+
+- History records now store and restore `contentType` and `recruiterSubtype`.
+- Markdown export and copy paths now branch by content type; recruiter reports include analysis mode, content type, subtype, facts, analysis, questions, risks, actions, and copyable reply.
+- Recruiter history is not default-linked to interview rounds, and deleting recruiter history cannot clear interview round review markers.
+- Updated README and CloudBase documentation to describe the content-type routing behavior and sync boundary without changing collections or security rules.
+- Extended `scripts/smoke-test.mjs` with static guards for routing controls, classifier functions, recruiter subtype coverage, recruiter report rendering, history unlink safety, and recruiter Markdown/copy paths.
+- Verification after this phase:
+  - `npm run check` → passed
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+
+### Phase 5 — `senlo-comm-type-05-final-regression`
+
+- Added executable routing fixtures to `scripts/smoke-test.mjs` covering:
+  - interview transcript → `interview`
+  - concrete opportunity recommendation → `recruiterConversation / opportunityRecommendation`
+  - no-specific-job career analysis → `recruiterConversation / careerAnalysis`
+  - profile positioning → `profilePositioning`
+  - interview strategy → `interviewStrategy`
+  - compensation negotiation → `compensationNegotiation`
+  - follow-up coordination → `followUpCoordination`
+  - opportunity + market analysis → `mixed`
+- Tightened classifier edge cases found during code-level fixture testing:
+  - Salary facts in a concrete opportunity no longer force `mixed`.
+  - “没有具体公司/岗位” no longer creates an empty opportunity recommendation.
+  - HR interview-strategy feedback is routed to recruiter conversation instead of interview review when there is no interview transcript speaker structure.
+- Code-level recruiter generation verification passed for no-specific-job career analysis: generated a recruiter report, avoided a concrete opportunity card, and exported Markdown with `recruiterConversation / careerAnalysis` plus a copyable reply section.
+- Final standard verification:
+  - `npm run check` → passed (`routing-fixtures=8`, `mock-records=200`)
+  - `git diff --check` → passed
+  - `node --check scripts/smoke-test.mjs` → passed
+  - `node --check scripts/serve.mjs` → passed
+- Local browser verification was not executable in this environment:
+  - `npm run dev` returned `EPERM` for local port binding and printed `file:///Users/raochaodembpm2max/Documents/selon/index.html` as fallback.
+  - The in-app Browser rejected the fallback `file://` URL due to Browser URL policy, so no click-through or screenshot verification was performed.
+- Git checkpoint commit/tag remained blocked by `.git/index.lock Operation not permitted`; final fallback patch is saved under `/private/tmp/selon-checkpoints/`.
+
 ## 2026-06-13
 
 Five-round full-coverage test pass (real browser-driven verification via local dev server + an adversarial multi-agent code audit). Each round seeds its own normal / edge / malformed / bulk data, fixes defects in place, and is verified before tagging.
