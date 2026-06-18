@@ -60,12 +60,15 @@ const exposed = [
   "formatFileSize", "buildExportFileName", "sanitizeCompanyName", "normalizeSensitiveName",
   "inferCompanyLocally", "isGenericMeetingLocation",
   "buildInterviewRowsFromText", "extractInterviewFieldsFromText",
-  "uniqueList", "uniqueBy"
+  "uniqueList", "uniqueBy",
+  "getScopedLocalList", "saveScopedLocalList", "getCurrentUserId"
 ];
+// Sandbox internals the storage-integrity tests need to seed/read raw storage.
+const sandboxExtras = ["localStorage"];
 
 let fns;
 try {
-  fns = new Function(`${sandbox}\n${script}\nreturn { ${exposed.join(", ")} };`)();
+  fns = new Function(`${sandbox}\n${script}\nreturn { ${[...exposed, ...sandboxExtras].join(", ")} };`)();
 } catch (error) {
   console.error("Logic test bootstrap failed:", error.message);
   process.exit(1);
@@ -86,7 +89,9 @@ const {
   formatFileSize, buildExportFileName, sanitizeCompanyName, normalizeSensitiveName,
   inferCompanyLocally, isGenericMeetingLocation,
   buildInterviewRowsFromText, extractInterviewFieldsFromText,
-  uniqueList, uniqueBy
+  uniqueList, uniqueBy,
+  getScopedLocalList, saveScopedLocalList, getCurrentUserId,
+  localStorage
 } = fns;
 
 // ---- CSV / delimited parsing ----
@@ -334,6 +339,46 @@ eq(detectContentRouting("猎头老师好\n这边有个腾讯的AI产品经理岗
   // A single prose sentence with a comma must NOT be misparsed as a table.
   const rows = buildInterviewRowsFromText("我面了字节跳动的后端岗位,base在北京,联系人是HR小王");
   eq(rows.length, 1, "single prose sentence is not a table");
+}
+{
+  // Pipe-delimited single line with SPACE-FREE company/role (the common Chinese
+  // case, and exactly the documented paste format). The mid-line "base 城市" keyword
+  // must not let the label swallow the whole prefix and capture the entire tail as
+  // the base value. Each field must extract cleanly to its own cell.
+  const fields = extractInterviewFieldsFromText("字节跳动｜后端工程师｜base 北京｜HR 小张｜一面 5月20日 14:00 飞书｜已约面");
+  eq(fields.面试公司, "字节跳动", "pipe line company");
+  eq(fields.面试岗位, "后端工程师", "pipe line role");
+  eq(fields.base地点, "北京", "pipe line base is just the city, not the polluted tail");
+  eq(fields.联系人微信名, "小张", "pipe line contact");
+  ok(!/｜|HR|飞书/.test(String(fields.base地点 || "")), "base must not retain pipe-delimited tail");
+}
+{
+  // The half-width keyword variant must behave the same.
+  const fields = extractInterviewFieldsFromText("美团|数据分析师|base 上海|联系人 李雷|二面 待定");
+  eq(fields.base地点, "上海", "half-width pipe base is clean");
+}
+
+// ---- storage scope integrity (R10): a record id must never duplicate ----
+{
+  // Repro of the observed corruption: storage held a record id under a stale
+  // userId while the active identity differed; re-saving the current user's copy
+  // of the same id used to append a second row (same id, two userIds).
+  const KEY = "__logic_scope_dup_test__";
+  localStorage.setItem(KEY, JSON.stringify([{ id: "DUP_X", company: "旧", userId: "local_stale_other_user" }]));
+  saveScopedLocalList(KEY, [{ id: "DUP_X", company: "新" }]);
+  const stored = JSON.parse(localStorage.getItem(KEY) || "[]");
+  eq(stored.filter(r => r.id === "DUP_X").length, 1, "saveScopedLocalList must not leave a same-id duplicate across userId scopes");
+  const scoped = getScopedLocalList(KEY);
+  eq(scoped.length, 1, "getScopedLocalList returns one row for the current user after rescope");
+  eq(scoped[0].company, "新", "the current scoped copy supersedes the stale one");
+}
+{
+  // getScopedLocalList must self-heal storage already corrupted with the same id
+  // twice under the CURRENT user.
+  const KEY2 = "__logic_scope_dup_test2__";
+  const uid = getCurrentUserId();
+  localStorage.setItem(KEY2, JSON.stringify([{ id: "Y", company: "a", userId: uid }, { id: "Y", company: "b", userId: uid }]));
+  eq(getScopedLocalList(KEY2).filter(r => r.id === "Y").length, 1, "getScopedLocalList dedupes same-id rows for the current user");
 }
 
 if (failures.length) {

@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.1.1 — 2026-06-18 — Three-round test & UX-hardening pass (R10)
+
+Tag: `v0.1.1` (SemVer patch — fixes + hardening only, no new features, no breaking changes). Unlike prior sandboxed rounds, this environment allowed real local-port binding, so the dev server (`npm run dev` on `http://127.0.0.1:8001/`) and full browser journey verification (manager + AI-review flows, light/dark/mobile) were exercised end-to-end, and the git tag was created normally.
+
+Three full rounds were run from clean state (Round 1 baseline + journey, Round 2 error/edge/a11y audit, Round 3 regression + gates + closure). Every round ran the complete suite (`npm run check` = `smoke-test.mjs` + `logic-test.mjs`) to 0 failures and walked the key user journeys as a real user. All findings were root-caused, fixed in place, and locked with regression guards. Final suite: smoke green (`routing-fixtures=8`, `mock-records=200`, 138 static assertions) + logic green (assertions 145 → **149**).
+
+### 修复 (Fixed)
+
+- **结果统计卡片标签被裁切**：复盘/猎头报告右上角的统计卡用 `flex-direction: row-reverse` 横向排「数值 + 标签」，在 180–240px 的窄侧栏里 3 张卡放不下，`overflow:hidden` 把较宽数值（如 `86%`/`100%`）旁的标签（`通过率`、4 字的 `事实信息`）截断，用户只看到半个标签。改为纵向堆叠（数值在上、标签在下），任意数值宽度都不再裁切。
+- **重新生成确认弹窗误称报告类型**：猎头「职业方向分析」报告点「重新生成」时，确认弹窗用 `getScenario().reportName` 硬编码成「AI 面试复盘报告」。改用内容感知的 `getActiveReportName()`，标题随内容类型切换为「覆盖当前整理结果？/复盘结果？」。
+- **暗色模式：面试作战台标题栏不可读**：`.manager-headerline` 硬编码近白底 `rgba(255,255,255,0.82)`，暗色下文字转浅，浅字叠浅底几乎看不清。已加入暗色再着色清单。
+- **暗色模式：残留亮白控件**：未选中的输入方式标签（`.capture-tab`）、粘贴示例提示卡（`.text-empty-hint`，浅字叠浅底对比度不达标）、`trust-note` 提示条、面板「重置」按钮在暗色下仍是亮白底。逐一补暗色再着色（选中标签仍保留主色渐变）。
+- **数据完整性：本地面试记录重复**：身份发生切换（匿名→账号、账号→账号）后，内存中仍带旧 `userId` 的记录被重新保存时，`saveScopedLocalList` 的 `[...others, ...scoped]` 会让同一条记录 id 同时以旧、新两个 userId 留存，产生「同 id 重复行」。已修复为：记录 id 全局唯一，当前作用域副本覆盖任何残留的同 id 旧副本。
+
+### 改动 (Changed)
+
+- `getScopedLocalList` 读取时按 id 去重，已损坏的存储在下次读取/保存时自愈，UI 与持久层都不再出现同 id 重复。
+- `.stat-card` 内边距与最小高度随纵向布局微调（`padding: 7px 9px 7px 12px`、`min-height: 48px`），最宽数值（`100%`）叠最长 4 字标签经压力测试 0 溢出。
+- `package.json` 版本 `0.1.0` → `0.1.1`。
+
+### 新增 (Added)
+
+- 静态回归守卫（`scripts/smoke-test.mjs`）：统计卡纵向布局、重新生成文案内容感知、暗色再着色（hero/标签/示例提示/trust-note）、存储层同 id 去重，共新增 8 条断言。
+- 可执行回归（`scripts/logic-test.mjs`）：新增「存储作用域去重 / 跨 userId 不产生同 id 重复 / 读取去重自愈」断言，并暴露 `getScopedLocalList`、`saveScopedLocalList`、`getCurrentUserId` 供测试驱动（断言 145 → 149）。
+
+### 移除 (Removed)
+
+- 无。
+
+## 2026-06-15 — Three-round confirmation UX regression pass (R9)
+
+Target tag: `senlo-test-20260615-r9-confirmation-polish`. Git tag creation is blocked in the current sandbox because `.git`, `.git/index`, and `.git/refs/tags` are not writable; final fallback artifacts are saved under `/private/tmp/selon-checkpoints/`.
+
+### Round 1 — baseline correctness
+
+- Verified the project shape and guardrails: static `index.html` app, no production dependency changes, CloudBase/account boundaries unchanged.
+- `npm run check` passed (`smoke-test.mjs` + `logic-test.mjs`, `routing-fixtures=8`, `mock-records=200`, logic assertions=139).
+- `git diff --check` and syntax checks for `scripts/smoke-test.mjs`, `scripts/logic-test.mjs`, and `scripts/serve.mjs` passed.
+- `npm run dev` is still blocked by the current environment with `EPERM` local port binding and prints `file:///Users/raochaodembpm2max/Documents/selon/index.html` as fallback.
+
+### Round 2 — UX / interaction audit
+
+- Found remaining browser-native `confirm()` usage in risk-sensitive flows: cleaning legacy auth state, clearing CloudBase config, switching scenarios while recording/transcribing, and switching input mode while recording/transcribing.
+- Replaced those flows with the product confirmation dialog, including consequence copy, safe cancel labels, and recoverability wording.
+- Added shared helpers for interrupting recording/audio transcription so scenario switching and input-mode switching behave consistently.
+- Updated async callers so a canceled confirmation keeps the current recording/transcription and does not continue with focus, sample-fill, or navigation side effects.
+
+### Round 3 — regression and artifact closure
+
+- Added smoke guards that fail if any direct native `confirm()` remains outside the `showConfirmDialog` fallback.
+- Added guards for the legacy-account cleanup dialog, CloudBase config clear dialog, recording interruption dialog, and audio-transcription interruption dialog.
+- Final checks passed: `npm run check`, `git diff --check`, and script syntax checks.
+- Playwright visual automation could not run in this environment because the wrapper needed to fetch `@playwright/cli` and npm registry access failed with `ENOTFOUND registry.npmjs.org`; no browser screenshot verification is claimed for this pass.
+
 ## 2026-06-14 — Two-round bug-fix & hardening pass (R7 + R8)
 
 Two further full test rounds over the recruiter-routing build, each a multi-agent adversarial bug hunt with every candidate independently verified before fixing. Fixes applied in place and locked with executable regression assertions; `npm run check` (smoke + logic) and interactive browser verification both green. The logic harness grew from 126 → 139 assertions.

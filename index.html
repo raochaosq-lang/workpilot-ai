@@ -2887,17 +2887,17 @@
       position: relative;
       overflow: hidden;
       display: flex;
-      flex-direction: row-reverse;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 8px 11px 8px 13px;
+      flex-direction: column-reverse;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 2px;
+      padding: 7px 9px 7px 12px;
       border-radius: 12px;
       border: 1px solid var(--border);
       background: linear-gradient(180deg, #fff, #fbfdff);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
       cursor: pointer;
-      min-height: 42px;
+      min-height: 48px;
     }
 
     .stat-card::before {
@@ -5088,6 +5088,7 @@
       .transcript-details,
       .drawer,
       .history-card,
+      .manager-headerline,
       .manager-stat,
       .import-status,
       .next-interview-spotlight,
@@ -5167,6 +5168,50 @@
         background: #111827;
         border-color: var(--border);
         color: var(--text);
+      }
+
+      /* R10 dark-mode contrast: inactive input-mode tabs hardcode a pure-white
+         fill (#fff) and stayed bright-white in dark mode — glaring against the
+         dark panel. Re-tint inactive tabs; the .active tab keeps its themed
+         gradient via higher specificity. */
+      .capture-tab:not(.active) {
+        background: var(--card-soft);
+        border-color: var(--border);
+        color: var(--text-secondary);
+      }
+
+      /* R10 dark-mode contrast: the paste-text example hint hardcodes a near-white
+         (#f8fafc) fill while its body text is var(--text-secondary) (light in dark
+         mode) — light-on-light, unreadable. Re-tint the card and darken-aware its
+         heading. */
+      .text-empty-hint {
+        background: var(--card-soft);
+        border-color: var(--border);
+      }
+      .text-empty-hint strong {
+        color: var(--text);
+      }
+
+      /* R10 dark-mode contrast: trust-note callouts hardcode light fills + dark
+         text for light mode; in dark mode the .local variant sat bright-white and
+         the base/error variants would render dark-on-dark. Re-tint per variant. */
+      .trust-note {
+        color: #bfdbfe;
+      }
+      .trust-note.local {
+        background: var(--card-soft);
+        color: var(--text-secondary);
+      }
+      .trust-note.error {
+        color: #fca5a5;
+      }
+
+      /* R10 dark-mode contrast: the panel reset button is a white danger-ghost in
+         light mode; re-tint to a dark danger fill so it is not a bright-white block. */
+      #clearAllBtn.panel-clear-btn {
+        background: rgba(239, 68, 68, 0.12);
+        color: #fca5a5;
+        border-color: rgba(248, 113, 113, 0.32);
       }
 
       .result-overview,
@@ -8948,16 +8993,33 @@
     function getScopedLocalList(key) {
       const userId = getCurrentUserId();
       const all = storageService.getJson(key, []);
-      return all.filter(item => {
+      const scoped = all.filter(item => {
         if (item.userId) return item.userId === userId;
         return !isCloudActive();
+      });
+      // A record id is unique; if corrupted storage holds the same id more than
+      // once for this user, return only the first so the UI never shows or saves
+      // a duplicate. Items without an id (legacy) are passed through untouched.
+      const seen = new Set();
+      return scoped.filter(item => {
+        const id = item && item.id;
+        if (!id) return true;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
       });
     }
 
     function saveScopedLocalList(key, scopedItems = []) {
       const userId = getCurrentUserId();
       const all = storageService.getJson(key, []);
+      const scopedIds = new Set(scopedItems.map(item => item && item.id).filter(Boolean));
       const others = all.filter(item => {
+        // A record id is globally unique. A scoped (current-user) copy supersedes
+        // any stale same-id copy left under a different userId after an identity
+        // switch (anonymous -> account, account -> account), so never retain a
+        // colliding id in `others` — otherwise the list grows a same-id duplicate.
+        if (item && item.id && scopedIds.has(item.id)) return false;
         if (item.userId) return item.userId !== userId;
         return isCloudActive();
       });
@@ -9635,10 +9697,10 @@
     });
 
     function bindEvents() {
-      els.appNav.addEventListener("click", event => {
+      els.appNav.addEventListener("click", async event => {
         const button = event.target.closest("[data-app-page]");
         if (!button) return;
-        if (button.dataset.appPage === "review" && !setScenario("interview", { silent: true })) return;
+        if (button.dataset.appPage === "review" && !(await setScenario("interview", { silent: true }))) return;
         setAppPage(button.dataset.appPage);
       });
       els.openAccountBtn.addEventListener("click", () => {
@@ -9712,10 +9774,16 @@
       if (els.testCloudDbBtn) els.testCloudDbBtn.addEventListener("click", () => runCloudDiagnostic("db"));
       els.clearCloudConfigBtn.addEventListener("click", clearCloudConfigFromForm);
       if (els.refreshAccountDiagnosticBtn) els.refreshAccountDiagnosticBtn.addEventListener("click", renderAccountDiagnosticPanel);
-      if (els.clearLegacyAuthStateBtn) els.clearLegacyAuthStateBtn.addEventListener("click", () => {
-        if (confirm("清理旧账号状态会退出当前登录，但不会删除面试记录、转写和复盘历史。继续吗？")) {
-          clearLegacyAccountState();
-        }
+      if (els.clearLegacyAuthStateBtn) els.clearLegacyAuthStateBtn.addEventListener("click", async () => {
+        const ok = await showConfirmDialog({
+          kicker: "账号状态",
+          title: "清理旧账号状态？",
+          message: "会退出当前登录并清理旧版账号缓存，但不会删除面试记录、转写文本和复盘历史。适合排查旧登录态污染。",
+          confirmText: "清理旧状态",
+          cancelText: "先保留",
+          tone: "danger"
+        });
+        if (ok) clearLegacyAccountState();
       });
       els.copyCloudCollectionsBtn.addEventListener("click", () => copyText(CLOUDBASE_COLLECTIONS.join("\n"), "已复制 CloudBase 集合列表"));
       els.copyCloudRulesBtn.addEventListener("click", () => copyText(CLOUDBASE_RULE_GUIDE, "已复制 CloudBase 安全规则要点"));
@@ -9780,14 +9848,14 @@
       els.audioFileInput.addEventListener("change", handleAudioFile);
       els.audioPreview.addEventListener("loadedmetadata", renderAudioMeta);
       els.transcribeAudioBtn.addEventListener("click", transcribeSelectedAudio);
-      els.focusTextBtn.addEventListener("click", () => {
-        setInputMode("text");
+      els.focusTextBtn.addEventListener("click", async () => {
+        if (!(await setInputMode("text"))) return;
         els.sourceText.focus();
         showToast("可以直接粘贴转写稿或聊天记录");
       });
       if (els.fillSampleTranscriptBtn) {
-        els.fillSampleTranscriptBtn.addEventListener("click", () => {
-          setInputMode("text");
+        els.fillSampleTranscriptBtn.addEventListener("click", async () => {
+          if (!(await setInputMode("text"))) return;
           setActiveSource(getSampleTranscriptText(), { trim: true });
           state.error = "";
           state.lastApiFailed = false;
@@ -10007,7 +10075,7 @@
       confirmDialogLastFocus = null;
     }
 
-    function handleGlobalKeydown(event) {
+    async function handleGlobalKeydown(event) {
       const key = String(event.key || "");
       if (key === "Escape") {
         if (isModalShown(els.confirmModal)) {
@@ -10066,7 +10134,7 @@
           els.interviewSearchInput.select();
           showToast("已定位到面试搜索");
         } else {
-          setInputMode("text");
+          if (!(await setInputMode("text"))) return;
           revealSourceInput();
           showToast("已定位到复盘输入框");
         }
@@ -10248,8 +10316,16 @@
       return true;
     }
 
-    function clearCloudConfigFromForm() {
-      if (!confirm("确定清除腾讯云开发配置并退出当前云端登录吗？")) return;
+    async function clearCloudConfigFromForm() {
+      const ok = await showConfirmDialog({
+        kicker: "云端配置",
+        title: "清除腾讯云开发配置？",
+        message: "会删除当前浏览器保存的 CloudBase 环境 ID 和 Web 安全客户端 key，并退出当前云端登录。面试记录、转写文本和复盘历史会保留在本地，不会被删除。",
+        confirmText: "清除并回到本地",
+        cancelText: "继续保留配置",
+        tone: "danger"
+      });
+      if (!ok) return;
       authService.clearCloudConfig();
       fillCloudConfigForm();
       showDevCloudMessage("云端配置已清除，当前回到本地模式。");
@@ -10945,7 +11021,35 @@
       if (!options.silent) showToast("已更新内容类型，输入内容已保留");
     }
 
-    function setScenario(value, options = {}) {
+    async function confirmStopRecordingForSwitch(targetAction) {
+      const ok = await showConfirmDialog({
+        kicker: "转写进行中",
+        title: "停止当前录音转写？",
+        message: `当前正在录音转写。继续${targetAction}会停止本次录音，已写入输入框的转写内容会保留，未完成的实时识别可能无法继续补全。`,
+        confirmText: "停止并切换",
+        cancelText: "继续录音",
+        tone: "danger"
+      });
+      if (!ok) return false;
+      stopRecording(false);
+      return true;
+    }
+
+    async function confirmAbortAudioTranscriptionForSwitch(targetAction) {
+      const ok = await showConfirmDialog({
+        kicker: "转写进行中",
+        title: "终止当前音频转写？",
+        message: `当前音频还在转写。继续${targetAction}会终止本次转写，已写入输入框的文本会保留；如果内容不完整，可以之后重新转写。`,
+        confirmText: "终止并切换",
+        cancelText: "继续等待",
+        tone: "danger"
+      });
+      if (!ok) return false;
+      abortAudioTranscription();
+      return true;
+    }
+
+    async function setScenario(value, options = {}) {
       const next = getValidScenario(value);
       if (next === state.scenario) return true;
       if (state.isLoading) {
@@ -10953,14 +11057,12 @@
         return false;
       }
       if (isRecording) {
-        const ok = confirm("录音转写正在进行。停止录音并切换场景？");
+        const ok = await confirmStopRecordingForSwitch(`切换到${getScenarioByKey(next).reportName}`);
         if (!ok) return false;
-        stopRecording(false);
       }
       if (isAudioTranscribing) {
-        const ok = confirm("音频转写正在进行。终止转写并切换场景？");
+        const ok = await confirmAbortAudioTranscriptionForSwitch(`切换到${getScenarioByKey(next).reportName}`);
         if (!ok) return false;
-        abortAudioTranscription();
       }
       state.scenario = next;
       state.error = "";
@@ -12102,7 +12204,15 @@
         .map(segment => segment.trim())
         .filter(Boolean);
       for (const segment of segments) {
-        const match = segment.match(/^(.{1,36}?)[：:\t ]+(.+)$/);
+        // The label must not span an in-line cell delimiter (｜ | ， , 、). In a
+        // pipe-delimited single line like "字节跳动｜后端工程师｜base 北京｜HR 小张"
+        // (the documented paste format), the first SPACE falls right after a mid-line
+        // keyword ("base"), so an unrestricted `.{1,36}?` label would swallow the
+        // whole prefix ("…｜base"), endsWith("base") would match, and the entire tail
+        // ("北京｜HR 小张｜…") would be captured as the value. Anchoring the label to a
+        // single cell makes such lines fall through to the per-cell heuristics below,
+        // which extract each field cleanly. Values may still contain pipes (e.g. a JD).
+        const match = segment.match(/^([^｜|，,、\r\n]{1,36}?)[：:\t ]+(.+)$/);
         if (!match) continue;
         const label = normalizeImportKey(match[1]);
         // Match exact label, or a label that ENDS WITH the alias (real labels like
@@ -14475,34 +14585,33 @@
       return String(role || "提及对象").replace("关系密切对象", "关系待核实");
     }
 
-    function setInputMode(mode) {
+    async function setInputMode(mode) {
       const nextMode = getValidInputMode(mode);
       if (nextMode === state.inputMode) {
         renderInputMode();
-        return;
+        return true;
       }
-      if (!prepareInputModeSwitch(nextMode)) return;
+      if (!(await prepareInputModeSwitch(nextMode))) return false;
       persistVisibleSource();
       activateInputModeSource(nextMode);
       saveState();
       renderInputDependentState();
       if (nextMode === "text") els.sourceText.focus();
+      return true;
     }
 
-    function prepareInputModeSwitch(nextMode) {
+    async function prepareInputModeSwitch(nextMode) {
       if (state.isLoading) {
         showToast("正在生成结果，完成后再切换输入模式");
         return false;
       }
       if (isRecording && nextMode !== "record") {
-        const ok = confirm(`录音转写正在进行。停止录音并切换到${getInputModeLabel(nextMode)}？`);
+        const ok = await confirmStopRecordingForSwitch(`切换到${getInputModeLabel(nextMode)}`);
         if (!ok) return false;
-        stopRecording(false);
       }
       if (isAudioTranscribing && nextMode !== "upload") {
-        const ok = confirm(`音频转写正在进行。终止转写并切换到${getInputModeLabel(nextMode)}？`);
+        const ok = await confirmAbortAudioTranscriptionForSwitch(`切换到${getInputModeLabel(nextMode)}`);
         if (!ok) return false;
-        abortAudioTranscription();
       }
       return true;
     }
@@ -14622,7 +14731,7 @@
           openModelModal();
         } else {
           showToast("音频转写服务暂未接入，请先粘贴已有转写文本继续复盘");
-          setInputMode("text");
+          await setInputMode("text");
         }
         return;
       }
@@ -14632,7 +14741,7 @@
           openModelModal();
         } else {
           showToast("音频转写服务暂未接入，请先粘贴已有转写文本继续复盘");
-          setInputMode("text");
+          await setInputMode("text");
         }
         return;
       }
@@ -15061,8 +15170,8 @@
           : "当前页面展示的结果会被新结果替换。";
         const ok = await showConfirmDialog({
           kicker: "重新生成",
-          title: "覆盖当前复盘结果？",
-          message: `重新生成会覆盖当前页面展示的${getScenario().reportName}，${editedCopy}\n\n当前结果已自动写入历史记录，可以从历史记录中找回；输入原文会继续保留。`,
+          title: `覆盖当前${isRecruiterContent() ? "整理结果" : "复盘结果"}？`,
+          message: `重新生成会覆盖当前页面展示的${getActiveReportName()}，${editedCopy}\n\n当前结果已自动写入历史记录，可以从历史记录中找回；输入原文会继续保留。`,
           confirmText: "重新生成",
           cancelText: "先不覆盖",
           tone: "danger"

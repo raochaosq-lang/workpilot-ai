@@ -89,7 +89,19 @@ function runStaticChecks() {
   assert(/async function shouldConfirmLongSourceBeforeGenerate[\s\S]*showConfirmDialog[\s\S]*生成可能更慢/.test(html), "Long source generation should use the product confirmation dialog");
   assert(/async function confirmReportExport[\s\S]*导出数据会下载当前账号可见的面试记录[\s\S]*showConfirmDialog/.test(html), "Sensitive export should use the product confirmation dialog");
   assert(html.includes("清空当前转写文本？") && html.includes("已取消清空，输入内容已保留"), "Clear-source confirmation is missing");
-  assert(/async function regenerate[\s\S]*if \(hasResult\(\)\)[\s\S]*showConfirmDialog[\s\S]*覆盖当前复盘结果/.test(html), "Regeneration should confirm before overwriting any existing result");
+  assert(/async function regenerate[\s\S]*if \(hasResult\(\)\)[\s\S]*showConfirmDialog[\s\S]*覆盖当前\$\{isRecruiterContent\(\) \? "整理结果" : "复盘结果"\}/.test(html), "Regeneration should confirm before overwriting any existing result");
+  // R10: the regenerate confirm must name the *active* report (content-aware), not
+  // the hardcoded interview report — a recruiter "职业方向分析" must not be called
+  // "AI 面试复盘报告" in its own overwrite dialog.
+  assert(/async function regenerate[\s\S]*重新生成会覆盖当前页面展示的\$\{getActiveReportName\(\)\}/.test(html), "Regenerate confirm must use getActiveReportName() so recruiter reports are not mislabeled as 面试复盘报告");
+  const directNativeConfirmLines = html.split("\n")
+    .map((line, index) => ({ index: index + 1, line }))
+    .filter(({ line }) => line.includes("confirm(") && !line.includes("window.confirm"));
+  assert(directNativeConfirmLines.length === 0, `Native confirm() remains outside showConfirmDialog fallback: ${directNativeConfirmLines.map(item => item.index).join(", ")}`);
+  assert(/clearLegacyAuthStateBtn[\s\S]*showConfirmDialog[\s\S]*清理旧账号状态/.test(html), "Legacy account cleanup must use the product confirmation dialog");
+  assert(/async function clearCloudConfigFromForm[\s\S]*showConfirmDialog[\s\S]*清除腾讯云开发配置/.test(html), "CloudBase config clear must use the product confirmation dialog");
+  assert(/async function confirmStopRecordingForSwitch[\s\S]*showConfirmDialog[\s\S]*停止当前录音转写/.test(html), "Recording interruption must use the product confirmation dialog");
+  assert(/async function confirmAbortAudioTranscriptionForSwitch[\s\S]*showConfirmDialog[\s\S]*终止当前音频转写/.test(html), "Audio transcription interruption must use the product confirmation dialog");
   assert(html.includes("function clearHistorySearch") && html.includes('data-action="clear-history-search"') && html.includes("已清空历史搜索"), "History filtered empty state lacks a clear-search recovery action");
   assert(html.includes("function buildDeleteHistoryConfirmMessage") && html.includes("同步取消该轮次的复盘标记"), "History delete confirmation lacks consequence copy");
   assert(html.includes("function unlinkHistoryFromInterviewRound") && html.includes("已删除历史记录，并取消面试轮次复盘标记"), "Deleting history does not unlink interview round review markers");
@@ -210,6 +222,30 @@ function runStaticChecks() {
   assert(html.includes("label.endsWith(alias)"), "findTextImportValue must use endsWith to avoid prose substring mis-assignment");
   assert(html.includes("function looksLikeDelimitedTable"), "Text-import table gate looksLikeDelimitedTable is missing");
   assert(html.includes("function enqueueCloudMutation") && html.includes("function finalizeCloudMutation"), "Serialized cloud mutation chain is missing");
+
+  // R10: result hero stat tiles must stack number-over-label vertically. The old
+  // horizontal (row-reverse) layout clipped the 3-char label (e.g. "通过率") under
+  // overflow:hidden whenever the value was wide ("86%", "100%") in the narrow
+  // 180–240px report sidebar, so part of the label was invisible to the user.
+  assert(/\.stat-card \{[^}]*flex-direction: column-reverse;[^}]*\}/.test(html), "Result stat cards must stack vertically (column-reverse) so wide values do not clip the label");
+  assert(!/\.stat-card \{[^}]*flex-direction: row-reverse;[^}]*\}/.test(html), "Result stat cards must not use the horizontal row-reverse layout that clipped the 通过率 label");
+
+  // R10: the manager hero (.manager-headerline) hardcodes a near-white background
+  // (rgba(255,255,255,0.82)); in dark mode its text turns light, so without a
+  // dark-mode re-tint the title/subtitle were light-on-light and unreadable.
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*?\.history-card,\s*\.manager-headerline,\s*\.manager-stat,/.test(html), "Manager hero (.manager-headerline) must be re-tinted dark in dark mode (was light-on-light)");
+  // R10: input-mode tabs, the paste-text example hint, trust-note callouts and the
+  // reset button all hardcoded light fills; dark mode left them bright-white (and
+  // the example hint light-on-light). Each needs a dark-mode re-tint.
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.capture-tab:not\(\.active\) \{\s*background: var\(--card-soft\)/.test(html), "Inactive capture tabs must be re-tinted dark in dark mode");
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.text-empty-hint \{\s*background: var\(--card-soft\)/.test(html), "Paste-text example hint must be re-tinted dark in dark mode (was light-on-light)");
+  assert(/@media \(prefers-color-scheme: dark\)[\s\S]*\.trust-note\.local \{\s*background: var\(--card-soft\)/.test(html), "trust-note.local must be re-tinted dark in dark mode");
+
+  // R10: a record id is globally unique. saveScopedLocalList must drop any stale
+  // same-id copy left under a different userId (identity switch) instead of
+  // appending a duplicate, and getScopedLocalList must dedupe by id on read.
+  assert(/function saveScopedLocalList[\s\S]*scopedIds\.has\(item\.id\)\) return false/.test(html), "saveScopedLocalList must drop stale same-id rows from other scopes (was producing same-id duplicates)");
+  assert(/function getScopedLocalList[\s\S]*seen\.has\(id\)\) return false/.test(html), "getScopedLocalList must dedupe records by id on read");
 }
 
 function runScriptSyntaxCheck() {
