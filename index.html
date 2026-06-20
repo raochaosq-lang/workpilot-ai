@@ -5116,6 +5116,29 @@
       .improvement-card.low {
         border-color: var(--border);
       }
+      /* Dark-mode: .stat-card.stat-* variants (report summary 问答卡/通过率/待提升)
+         set light gradients with double-class specificity that out-specify the
+         single-class dark .stat-card rule above — same pattern as .improvement-card.
+         Re-tint dark and brighten accents/labels so they read on the dark report. */
+      .stat-card.stat-question {
+        background: rgba(37, 99, 235, 0.14);
+        border-color: rgba(96, 165, 250, 0.32);
+        --stat-accent: #60a5fa;
+        --stat-label: #93c5fd;
+      }
+      .stat-card.stat-pass,
+      .stat-card.stat-task {
+        background: rgba(20, 184, 166, 0.14);
+        border-color: rgba(45, 212, 191, 0.30);
+        --stat-accent: #2dd4bf;
+        --stat-label: #5eead4;
+      }
+      .stat-card.stat-risk {
+        background: rgba(239, 68, 68, 0.14);
+        border-color: rgba(248, 113, 113, 0.32);
+        --stat-accent: #f87171;
+        --stat-label: #fca5a5;
+      }
       /* R8 dark-mode contrast: result-area count badges + ordinal chips kept their
          light-mode fills (near-white) under light text — re-tint to dark. */
       .count-badge {
@@ -13038,7 +13061,7 @@
 	          <div class="queue-empty-copy">
 	            <div class="queue-empty-kicker">待提交</div>
 	            <h3>队列还没有面试记录</h3>
-	            <p>上方已经提供新增、Excel 导入和文本识别入口；提交第一条面试信息后，这里会变成按下一场时间排序的面试列表。</p>
+	            <p>提交第一条面试后，这里会按下一场时间自动排序，越快要面试越靠前。</p>
 	          </div>
 	          <div class="queue-empty-steps" aria-hidden="true">${rows}</div>
 	        </div>
@@ -13198,16 +13221,12 @@
             { title: "补时间", description: "下一轮时间确定后会自动置顶。" },
             { title: "补地址", description: "会议链接、线下地址和联系人放一起。" },
             { title: "补结果", description: "过期安排更新后不再干扰下一场。" }
-          ] : [
-            { title: "手动记录", description: "快速填公司、岗位和第一轮时间。" },
-            { title: "Excel 导入", description: "已有表格时可以批量放进来。" },
-            { title: "文本识别", description: "聊天记录或 JD 直接粘贴识别。" }
-          ],
+          ] : [],
           actions: `
             <div class="spotlight-actions">
-              <button class="btn primary" type="button" data-action="new">新增面试记录</button>
-              <button class="btn" type="button" data-action="import-file" data-busy-label="导入中...">从 Excel 导入</button>
-              <button class="btn" type="button" data-action="import-text" data-busy-label="识别中...">粘贴文本识别</button>
+              <button class="btn primary" type="button" data-action="new">新增面试</button>
+              <button class="btn" type="button" data-action="import-file" data-busy-label="导入中...">导入文件</button>
+              <button class="btn" type="button" data-action="import-text" data-busy-label="识别中...">粘贴识别</button>
             </div>
           `
         });
