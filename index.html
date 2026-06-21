@@ -6802,8 +6802,8 @@
         <div class="manager-header-actions">
           <input id="interviewImportInput" class="file-input" type="file" accept=".xlsx,.csv,.tsv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/tab-separated-values,text/plain">
           <button id="addInterviewBtn" class="btn primary" type="button">新增面试</button>
-          <button id="importInterviewFileBtn" class="btn" type="button">导入文件</button>
-          <button id="importInterviewTextBtn" class="btn" type="button">粘贴识别</button>
+          <button id="importInterviewFileBtn" class="btn" type="button" data-busy-label="导入中...">导入文件</button>
+          <button id="importInterviewTextBtn" class="btn" type="button" data-busy-label="识别中...">粘贴识别</button>
           <button id="exportDataBtn" class="btn" type="button">导出数据</button>
         </div>
       </section>
@@ -10731,6 +10731,7 @@
 
     function openInterviewTextImportModal() {
       showInterviewTextImportMessage("");
+      renderImportStatus("");
       els.interviewTextImportModal.classList.add("show");
       setTimeout(() => els.interviewImportTextInput.focus({ preventScroll: true }), 30);
     }
@@ -11992,15 +11993,30 @@
       if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
       const excelDate = excelSerialToDateTimeLocal(raw);
       if (excelDate) return excelDate;
+      const pad = number => String(number).padStart(2, "0");
+      // Parse Y-M-D / Y-M-D H:M forms from explicit LOCAL components. `new Date("2026-05-22")`
+      // would be parsed as UTC midnight and, read back with local getters, roll to the
+      // previous day in negative-UTC zones (or show a phantom 08:00 in Asia/Shanghai).
+      const parts = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
+      if (parts) {
+        const date = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), Number(parts[4] || 0), Number(parts[5] || 0));
+        if (Number.isNaN(date.getTime())) return "";
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+      // A bare number / year that wasn't a valid Excel serial must not be coerced into a
+      // phantom date (e.g. "2024" -> year 2024 UTC, "100" -> year 100).
+      if (/^\d+(?:\.\d+)?$/.test(raw)) return "";
       const date = new Date(raw);
       if (Number.isNaN(date.getTime())) return "";
-      const pad = number => String(number).padStart(2, "0");
       return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
     function excelSerialToDateTimeLocal(value) {
       const numeric = Number(String(value || "").trim());
-      if (!Number.isFinite(numeric) || numeric <= 25000 || numeric >= 80000) return "";
+      // Accept only the realistic interview-era serial band (~2015..2036). The old
+      // 25000..80000 band admitted 1968-era and 2119-era phantom dates, and treated a
+      // 5-digit numeric room code / id as a date. 42000≈2015-01, 50000≈2036-11.
+      if (!Number.isFinite(numeric) || numeric < 42000 || numeric >= 50000) return "";
       const ms = Math.round((numeric - 25569) * 86400 * 1000);
       const date = new Date(ms);
       if (Number.isNaN(date.getTime())) return "";
@@ -12035,6 +12051,11 @@
 
     function setInterviewImportBusy(isBusy) {
       const buttons = [
+        // The always-present header buttons are the primary (and, once you have records,
+        // only) import entry points; disabling+relabeling them gives honest "识别中..."
+        // feedback and prevents a concurrent second import that would under-report counts.
+        els.importInterviewFileBtn,
+        els.importInterviewTextBtn,
         els.nextInterviewSpotlight?.querySelector("[data-action='import-file']"),
         els.nextInterviewSpotlight?.querySelector("[data-action='import-text']"),
         els.submitInterviewImportTextBtn
@@ -12098,8 +12119,10 @@
       } catch (error) {
         console.warn(error);
         const message = humanizeImportError(error);
+        // Show the error only inside the open modal where the user is looking; do NOT
+        // also paint it onto the manager-page importStatus banner (hidden behind the
+        // modal mask) where it would linger after the modal is dismissed.
         showInterviewTextImportMessage(message, "error");
-        renderImportStatus(message, "error");
       } finally {
         setInterviewImportBusy(false);
       }
@@ -12206,19 +12229,44 @@
         .split(/[｜|，,、\n；;]+/)
         .map(token => token.trim())
         .filter(Boolean);
+      // A token that is itself another field's "label：value" (a 第N轮地址 / 面试公司 / JD
+      // line, etc.) must never be grabbed by the keyword heuristics below. This gate
+      // previously protected only 整体进展; base地点 and 联系人微信名 lacked it, so a
+      // round-address line, a labeled company line, or a company name containing a city
+      // substring was swallowed whole (e.g. base地点 = "北京字节跳动科技有限公司").
+      const isLabeledOtherField = token => /^\s*(jd|岗位jd|岗位描述|职位描述|岗位要求|job\s*description|公司|面试公司|企业|投递公司|目标公司|岗位|面试岗位|职位|应聘岗位|目标岗位|意向|个人意向|求职意向|时间|面试时间|日期|备注|整体进展|进展|当前进展|流程进展|面试进展|第[一二三四1-4]轮[^：:]*|[1-4一二三四]面[^：:]*)\s*[：:]/i.test(token);
+      const stripBase = token => cleanTextImportValue(token.replace(/^(?:base\s*地点|base|工作地点|办公地点)[：:\s]*/i, ""));
+      const stripContact = token => cleanTextImportValue(token.replace(/^(?:联系人微信名|联系人微信|联系人|微信名|微信|对接人|猎头|HR)[：:\s]*/i, ""));
       tokens.forEach(token => {
-        if (!row.base地点 && /(?:^|\b)base\b|base地点|工作地点|办公地点|北京|上海|深圳|广州|杭州|成都|南京|武汉|苏州|远程/i.test(token)) {
-          row.base地点 = cleanTextImportValue(token.replace(/^(base地点|base|工作地点|办公地点)[：:\s]*/i, ""));
+        if (isLabeledOtherField(token)) return;
+        if (!row.base地点) {
+          if (/^(?:base\s*地点|base|工作地点|办公地点)[：:\s]+/i.test(token)) {
+            row.base地点 = stripBase(token);
+          } else if (token.length <= 6 && /北京|上海|深圳|广州|杭州|成都|南京|武汉|苏州|远程/.test(token)) {
+            // A SHORT token that is essentially a city — not a long line (company name
+            // or sentence) that merely contains a city substring.
+            row.base地点 = stripBase(token);
+          }
         }
-        if (!row.联系人微信名 && /HR|联系人|微信|对接人|猎头/i.test(token)) {
-          row.联系人微信名 = cleanTextImportValue(token.replace(/^(HR|联系人|联系人微信名|联系人微信|微信|对接人|猎头)[：:\s]*/i, ""));
+        if (!row.联系人微信名) {
+          if (/^(?:联系人微信名|联系人微信|联系人|微信名|微信|对接人|猎头|HR)[：:\s]+/i.test(token)) {
+            row.联系人微信名 = stripContact(token);
+          } else {
+            // A bare contact token is only accepted if short and free of sentence
+            // punctuation, so prose merely mentioning HR/猎头/微信 ("这个岗位是HR直招不走猎头")
+            // is not captured as the contact name.
+            const cleaned = stripContact(token);
+            if (/HR|联系人|微信|对接人|猎头/i.test(token) && cleaned.length <= 12 && !/[。！？!?]/.test(cleaned)) {
+              row.联系人微信名 = cleaned;
+            }
+          }
         }
-        const looksLikeOtherField = /^\s*(jd|岗位jd|岗位描述|职位描述|岗位要求|job\s*description|公司|面试公司|企业|投递公司|目标公司|岗位|面试岗位|职位|应聘岗位|目标岗位|base|base地点|工作地点|办公地点|城市|联系人|联系人微信名?|微信名?|hr|对接人|猎头|意向|个人意向|求职意向|时间|面试时间|日期|地址|会议地址|地点|备注)\s*[：:]/i.test(token);
-        if (!row.整体进展 && !looksLikeOtherField && /已约|约面|面试|推进|待安排|待定|通过|未通过|offer|流程|进展/i.test(token)) {
+        if (!row.整体进展 && /已约|约面|面试|推进|待安排|待定|通过|未通过|offer|流程|进展/i.test(token)) {
           row.整体进展 = token;
         }
       });
-      const plainTokens = tokens.filter(token => !/base|HR|联系人|微信|对接人|猎头|已约|约面|面试|推进|待安排|通过|未通过|会议|Zoom|Teams|飞书|腾讯会议/i.test(token));
+      // Leftover bare tokens (no field label, no colon, no field keyword) seed company/role.
+      const plainTokens = tokens.filter(token => !isLabeledOtherField(token) && !/[：:]/.test(token) && !/base|HR|联系人|微信|对接人|猎头|已约|约面|面试|推进|待安排|通过|未通过|会议|Zoom|Teams|飞书|腾讯会议/i.test(token));
       if (!row.面试公司 && plainTokens[0]) row.面试公司 = plainTokens[0];
       if (!row.面试岗位 && plainTokens[1]) row.面试岗位 = plainTokens[1];
     }
@@ -12249,7 +12297,10 @@
         }
       }
       for (const alias of aliases) {
-        const pattern = new RegExp(`${escapeRegExp(alias)}\\s*[：:]\\s*([^\\n；;]+)`, "i");
+        // Same-line whitespace only around the colon: a `\s*` here would let the value
+        // capture jump across a newline, so an empty "面试公司：" line would steal the
+        // NEXT label line ("面试岗位：高级前端") as the company value.
+        const pattern = new RegExp(`${escapeRegExp(alias)}[ \\t]*[：:][ \\t]*([^\\n；;]+)`, "i");
         const match = String(text || "").match(pattern);
         if (match?.[1]) return cleanTextImportValue(match[1]);
       }
@@ -12266,9 +12317,13 @@
 
     function detectDelimiter(text) {
       const firstLine = String(text || "").split(/\r?\n/).find(line => line.trim()) || "";
-      const commaCount = (firstLine.match(/,/g) || []).length;
-      const tabCount = (firstLine.match(/\t/g) || []).length;
-      const semicolonCount = (firstLine.match(/;/g) || []).length;
+      // Ignore delimiters that live INSIDE a quoted cell, else a header whose first
+      // quoted cell contains commas ("北京, 海淀"\t备注) is mis-detected as comma and the
+      // whole tab/semicolon table collapses into one garbage column.
+      const scan = firstLine.replace(/"(?:[^"]|"")*"/g, "");
+      const commaCount = (scan.match(/,/g) || []).length;
+      const tabCount = (scan.match(/\t/g) || []).length;
+      const semicolonCount = (scan.match(/;/g) || []).length;
       if (tabCount >= commaCount && tabCount >= semicolonCount) return "\t";
       if (semicolonCount > commaCount) return ";";
       return ",";
@@ -12279,7 +12334,9 @@
       let row = [];
       let value = "";
       let quoted = false;
-      const input = String(text || "").replace(/^\uFEFF/, "");
+      // Normalize CRLF/lone-CR to LF up front so a quoted multi-line cell does not keep
+      // a stray \r (the in-loop CR handling only ran outside quotes).
+      const input = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
       for (let i = 0; i < input.length; i += 1) {
         const char = input[i];
         const next = input[i + 1];
@@ -12324,7 +12381,19 @@
       if (!normalizedRows.length) return [];
       const headerIndex = normalizedRows.findIndex(row => row.filter(Boolean).length >= 2);
       if (headerIndex < 0) return [];
-      const headers = normalizedRows[headerIndex].map((header, index) => header || `字段${index + 1}`);
+      // Suffix duplicate header names so a repeated column (two "时间"/"备注") does not
+      // overwrite the earlier column's value when keyed into the row object.
+      const seenHeaders = Object.create(null);
+      const headers = normalizedRows[headerIndex].map((header, index) => {
+        let name = header || `字段${index + 1}`;
+        if (seenHeaders[name]) {
+          const base = name;
+          let n = 2;
+          do { name = `${base}${n}`; n += 1; } while (seenHeaders[name]);
+        }
+        seenHeaders[name] = true;
+        return name;
+      });
       return normalizedRows.slice(headerIndex + 1).map(row => {
         const item = {};
         headers.forEach((header, index) => {
@@ -12427,8 +12496,12 @@
 
     function parseSharedStrings(xml = "") {
       if (!xml) return [];
-      return Array.from(xml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)).map(match => {
-        const textParts = Array.from(match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)).map(item => decodeXml(item[1]));
+      // Match self-closing <si/> as well as paired <si>...</si>. Dropping an empty
+      // self-closing entry would shift every later shared-string index and silently
+      // corrupt cell values. Mirrors the self-closing <c> defense in parseWorksheetXml.
+      return Array.from(xml.matchAll(/<si\b[^>]*?(?:\/>|>([\s\S]*?)<\/si>)/g)).map(match => {
+        const body = match[1] || "";
+        const textParts = Array.from(body.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)).map(item => decodeXml(item[1]));
         return textParts.join("");
       });
     }
@@ -12436,6 +12509,7 @@
     function parseWorksheetXml(xml, sharedStrings = []) {
       return Array.from(String(xml || "").matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)).map(rowMatch => {
         const row = [];
+        let maxCol = -1;
         // The alternation matches BOTH self-closing empty cells (<c r="B2" s="3"/>)
         // and paired cells (<c ...>...</c>). Without the self-closing branch, an
         // empty styled cell would swallow the following cell as its body, shifting
@@ -12445,7 +12519,7 @@
           const body = cellMatch[2] || "";
           const ref = attrs.match(/\br="([A-Z]+)\d+"/)?.[1] || "";
           let columnIndex = ref ? columnNameToIndex(ref) : row.length;
-          if (!Number.isInteger(columnIndex) || columnIndex < 0 || columnIndex > 16384) columnIndex = row.length;
+          if (!Number.isInteger(columnIndex) || columnIndex < 0 || columnIndex >= 16384) columnIndex = row.length;
           const type = attrs.match(/\bt="([^"]+)"/)?.[1] || "";
           let value = "";
           if (type === "s") {
@@ -12458,10 +12532,14 @@
             value = decodeXml((body.match(/<v>([\s\S]*?)<\/v>/) || [])[1] || "");
           }
           row[columnIndex] = String(value ?? "").trim();
+          if (columnIndex > maxCol) maxCol = columnIndex;
         });
-        // Array.from (not row.map) densifies sparse holes from omitted/empty
-        // columns; map() skips holes, leaving undefined that serialize to null.
-        return Array.from(row, cell => cell || "");
+        // Densify sparse holes (omitted/empty columns) to "" but cap the width at a
+        // generous-for-interview-data ceiling (1024). Without the cap, a crafted sheet
+        // with one cell at column XFD (16383) on every row would materialize a
+        // 16384-wide dense array per row and freeze/OOM the tab. Real interview sheets
+        // have a handful of columns, so nothing legitimate is dropped.
+        return Array.from({ length: Math.min(maxCol + 1, 1024) }, (_, i) => row[i] || "");
       }).filter(row => row.some(Boolean));
     }
 
@@ -12580,8 +12658,10 @@
     function normalizeImportedResult(value) {
       const text = String(value || "").trim().toLowerCase();
       if (!text) return "pending";
-      if (/未通过|不通过|失败|拒绝|挂|fail|failed|no|false|否/.test(text)) return "failed";
-      if (/通过|进入|pass|passed|yes|true|是|ok|offer/.test(text)) return "passed";
+      // CJK markers match anywhere; ASCII markers need \b word boundaries so English
+      // words like "normal"/"noted"/"now" aren't misclassified as "no" -> failed.
+      if (/未通过|不通过|失败|拒绝|挂|否/.test(text) || /\b(?:fail|failed|no|false)\b/.test(text)) return "failed";
+      if (/通过|进入|是/.test(text) || /\b(?:pass|passed|yes|true|ok|offer)\b/.test(text)) return "passed";
       return "pending";
     }
 
@@ -12731,7 +12811,15 @@
     function getInterviewRecordMergeKey(record) {
       const company = normalizeImportKey(record.company);
       const role = normalizeImportKey(record.role);
-      return company || role ? `${company}|${role}` : "";
+      const base = normalizeImportKey(record.baseLocation);
+      // Include base so two genuinely distinct pipelines at the same company+role (a
+      // different BG / city, e.g. WXG 广州 vs CSIG 深圳) do not silently collapse into one
+      // record on import. When company AND role are both blank, fall back to base + first
+      // scheduled round time so repeated imports of the same blank-company sheet still
+      // dedup instead of appending unbounded duplicates.
+      if (company || role) return `${company}|${role}|${base}`;
+      const firstTime = normalizeImportKey(((record.rounds || []).find(round => round && round.time) || {}).time || "");
+      return base || firstTime ? `空|${base}|${firstTime}` : "";
     }
 
     // Re-importing a spreadsheet that matches an existing record must not wipe

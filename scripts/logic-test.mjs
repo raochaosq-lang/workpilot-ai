@@ -51,7 +51,7 @@ const exposed = [
   "parseGenericJson", "parseJsonOrEmpty",
   "normalizeImportedResult", "normalizeImportKey", "findImportedValue", "normalizeImportedDateValue",
   "normalizeDateTimeLocal", "excelSerialToDateTimeLocal", "sanitizeInterviewLocation",
-  "normalizeInterviewRecord", "normalizeInterviewRound", "mergeInterviewRecordData",
+  "normalizeInterviewRecord", "normalizeInterviewRound", "mergeInterviewRecordData", "getInterviewRecordMergeKey",
   "normalizeResult", "normalizeRecruiterFacts",
   "detectContentRouting", "detectRecruiterSubtype",
   "escapeHtml", "escapeAttr", "escapeRegExp",
@@ -80,7 +80,7 @@ const {
   parseGenericJson, parseJsonOrEmpty,
   normalizeImportedResult, normalizeImportKey, findImportedValue, normalizeImportedDateValue,
   normalizeDateTimeLocal, excelSerialToDateTimeLocal, sanitizeInterviewLocation,
-  normalizeInterviewRecord, normalizeInterviewRound, mergeInterviewRecordData,
+  normalizeInterviewRecord, normalizeInterviewRound, mergeInterviewRecordData, getInterviewRecordMergeKey,
   normalizeResult, normalizeRecruiterFacts,
   detectContentRouting, detectRecruiterSubtype,
   escapeHtml, escapeAttr, escapeRegExp,
@@ -380,6 +380,72 @@ eq(detectContentRouting("猎头老师好\n这边有个腾讯的AI产品经理岗
   localStorage.setItem(KEY2, JSON.stringify([{ id: "Y", company: "a", userId: uid }, { id: "Y", company: "b", userId: uid }]));
   eq(getScopedLocalList(KEY2).filter(r => r.id === "Y").length, 1, "getScopedLocalList dedupes same-id rows for the current user");
 }
+
+// ===== 2026-06-22 ten-round test pass — Round 1 (import & parsing) regressions =====
+// All execution-verified against the real inline app code via the sandbox above.
+
+// R1#6/#7/#14: date-only values parse as LOCAL time (no UTC day-roll), bare
+// numbers/years are not coerced into phantom dates, and the Excel-serial band is the
+// realistic interview era. These are TZ-independent (local component construction).
+eq(normalizeDateTimeLocal("2026-05-22"), "2026-05-22T00:00", "date-only ISO -> local midnight, no tz day-drift");
+eq(normalizeImportedDateValue("2026/5/22"), "2026-05-22T00:00", "slash date-only stays same day at 00:00");
+eq(normalizeDateTimeLocal("2024"), "", "bare 4-digit year not coerced into a phantom date");
+eq(normalizeImportedDateValue("100"), "", "bare small number not coerced into a date");
+eq(excelSerialToDateTimeLocal("25001"), "", "pre-2015 excel serial rejected (was 1968-era phantom)");
+eq(excelSerialToDateTimeLocal("40000"), "", "below-band excel serial rejected");
+ok(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(excelSerialToDateTimeLocal("45000")), "in-band modern excel serial still parses");
+eq(sanitizeInterviewLocation("30000"), "30000", "numeric room code outside the serial band is not stripped as a date");
+
+// R1#1/#5: base地点 and 联系人微信名 heuristics must not swallow whole prose / round-address
+// / company lines that merely contain a city or HR/猎头 keyword.
+eq(extractInterviewFieldsFromText("第1轮地址：北京中关村\n面试公司：字节").base地点 || "", "", "round-address line must not populate base地点");
+ok(!/有限公司/.test(String(extractInterviewFieldsFromText("北京字节跳动科技有限公司").base地点 || "")), "company name containing a city must not be captured as base地点");
+eq(extractInterviewFieldsFromText("这个岗位是HR直招不走猎头").联系人微信名 || "", "", "prose merely mentioning HR/猎头 must not populate 联系人微信名");
+
+// R1#4: an empty labeled field ("面试公司：") must not let the value capture cross a
+// newline and steal the next label line as the company value.
+{
+  const f = extractInterviewFieldsFromText("面试公司：\n面试岗位：高级前端\n我的意向：高");
+  ok(!String(f.面试公司 || "").includes("："), "blank 面试公司 label must not steal the next label line as company");
+  eq(f.面试岗位, "高级前端", "the following labeled field still extracts correctly");
+}
+
+// R1#3: detectDelimiter ignores delimiters inside quoted cells.
+eq(detectDelimiter('"北京, 海淀, 中关村"\t备注\n腾讯\t一面'), "\t", "detect tab ignores commas inside a quoted cell");
+eq(detectDelimiter('"甲, 乙, 丙";状态\n腾讯;已约'), ";", "detect semicolon ignores quoted commas");
+eq(detectDelimiter('"姓名, 公司","岗位"'), ",", "genuine quoted-comma CSV still detects comma");
+
+// R1#13: CRLF inside a quoted cell normalizes to LF (no stray \r leaks into values).
+deep(parseDelimitedText('"l1\r\nl2",b'), [["l1\nl2", "b"]], "CSV CRLF inside quoted cell normalizes to LF");
+ok(!JSON.stringify(parseDelimitedText('a,"x\r\ny"')).includes("\\r"), "no stray CR survives in quoted cells");
+
+// R1#12: duplicate header columns are suffixed so neither column's data is dropped.
+deep(tableRowsToObjects([["公司", "备注", "备注"], ["腾讯", "A", "B"]]), [{ 公司: "腾讯", 备注: "A", 备注2: "B" }], "tableRowsToObjects keeps both duplicate-header columns");
+
+// R1#2: a self-closing empty shared string <si/> keeps its index slot.
+deep(parseSharedStrings('<si><t>A</t></si><si/><si><t>C</t></si>'), ["A", "", "C"], "parseSharedStrings keeps self-closing <si/> as empty slot (no index shift)");
+deep(parseWorksheetXml('<row r="1"><c r="A1" t="s"><v>2</v></c></row>', parseSharedStrings('<si><t>A</t></si><si/><si><t>C</t></si>')), [["C"]], "shared-string index alignment survives a self-closing <si/>");
+
+// R1#11: XFE (one past Excel's XFD max) is clamped, not materialized as a 16385-wide row.
+eq(parseWorksheetXml('<row r="1"><c r="XFE1" t="s"><v>0</v></c></row>', ["x"])[0].length, 1, "XFE column ref is clamped (off-by-one fixed), not a 16385-wide row");
+
+// R1#8/#9: import merge key separates distinct base pipelines and still dedups blank-company rows.
+{
+  const a = normalizeInterviewRecord({ company: "腾讯", role: "产品经理", baseLocation: "广州" });
+  const b = normalizeInterviewRecord({ company: "腾讯", role: "产品经理", baseLocation: "深圳" });
+  ok(getInterviewRecordMergeKey(a) !== getInterviewRecordMergeKey(b), "distinct base pipelines at same company+role do not collide");
+  ok(getInterviewRecordMergeKey(a) === getInterviewRecordMergeKey(normalizeInterviewRecord({ company: "腾讯", role: "产品经理", baseLocation: "广州" })), "re-importing the same company/role/base still matches (dedup preserved)");
+  const blank = normalizeInterviewRecord({ baseLocation: "上海", rounds: [{ time: "2026-07-01T10:00" }] });
+  ok(getInterviewRecordMergeKey(blank) !== "", "blank company/role row still gets a dedupable key from base + first round time");
+  ok(getInterviewRecordMergeKey(normalizeInterviewRecord({})) === "", "a record with nothing distinguishing gets an empty (non-dedupable) key");
+}
+
+// R1#15: ASCII result tokens are word-bounded so English words containing 'no' are not 'failed'.
+eq(normalizeImportedResult("noted"), "pending", "English word containing 'no' is not misclassified as failed");
+eq(normalizeImportedResult("normal"), "pending", "'normal' not misclassified as failed");
+eq(normalizeImportedResult("no"), "failed", "standalone 'no' still classified failed");
+eq(normalizeImportedResult("未通过"), "failed", "CJK fail token still classified");
+eq(normalizeImportedResult("offer"), "passed", "offer still classified passed");
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

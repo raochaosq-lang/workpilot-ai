@@ -131,14 +131,14 @@ function runStaticChecks() {
   // Guards added during the 2026-06-13 five-round test pass.
   assert(html.includes("文本模型：${escapeHtml(modelConfig.provider)") && html.includes("转写模型：${escapeHtml(asrProvider)"), "Model status must escape provider/asrProvider (XSS)");
   assert(html.includes("rawIndex != null && String(rawIndex).trim()"), "XLSX shared-string empty-index guard is missing");
-  assert(html.includes("columnIndex > 16384"), "XLSX column-index bounds clamp is missing");
+  assert(html.includes("columnIndex >= 16384"), "XLSX column-index bounds clamp is missing or off-by-one (XFD=16383 is the max valid column; >=16384 rejects XFE)");
   const relLine = (html.match(/const relPattern = new RegExp\([^\n]*/) || [""])[0];
   assert(relLine.includes("Relationship") && !relLine.includes("\\\\\\\\b"), "XLSX relationship regex word boundary is broken (\\\\b)");
   assert(html.includes('test(String(sourceTime || ""))) return null'), "findSourceEvidence must reject empty/invalid sourceTime");
   assert(html.includes("fall through to structured fallback"), "parseModelJson fallback parse must be wrapped in try/catch");
   assert(/async function closeInterviewFormModal[\s\S]*showConfirmDialog[\s\S]*放弃修改并关闭/.test(html), "Interview-form unsaved guard must use the product confirm dialog");
   assert(/async function clearModelConfig[\s\S]*showConfirmDialog/.test(html), "clearModelConfig must use the product confirm dialog");
-  assert(html.includes("looksLikeOtherField"), "Text-import heuristic must not assign labeled tokens to 整体进展");
+  assert(html.includes("isLabeledOtherField"), "Text-import heuristic must gate base地点/联系人微信名/整体进展 with a labeled-field check (isLabeledOtherField)");
   assert(html.includes("Number(raw.roundIndex ?? index + 1)"), "normalizeInterviewRound must preserve roundIndex 0 (use ??)");
   assert(html.includes("item.roundIndex == null"), "normalizeHistoryRecord must treat null/undefined roundIndex uniformly");
   assert(html.includes('.slice(0, 48)') && html.includes('.replace(/-+$/, "")'), "buildExportFileName must trim trailing hyphens");
@@ -146,7 +146,7 @@ function runStaticChecks() {
   assert(/\.manager-filter-toolbar \{[\s\S]*?background: var\(--card-soft\);/.test(html), "Filter toolbar must use a themed (dark-aware) background");
 
   // Guards added during the 2026-06-14 five-round test pass.
-  assert(html.includes("Array.from(row, cell => cell || \"\")"), "parseWorksheetXml must densify sparse rows via Array.from (row.map skips holes -> null cells)");
+  assert(/Array\.from\(\{ length: Math\.min\(maxCol \+ 1, 1024\) \}/.test(html), "parseWorksheetXml must cap densified row width (Math.min(maxCol+1,1024)) so a crafted far-right-cell sheet cannot materialize a 16384-wide row (DoS), while still filling sparse holes");
   assert(!/return row\.map\(cell => cell \|\| ""\);/.test(html), "parseWorksheetXml must not use row.map for densification (sparse XLSX columns become null)");
   assert(html.includes('} else if (value.trim() === "") {') && html.includes("a quote in the middle of an unquoted field is a literal"), "parseDelimitedText must treat mid-field quotes as literal so delimiters still split");
   assert(/match\(\/\(\\d\{1,3\}\(\?:\\\.\\d\+\)\?\)\\s\*%\//.test(html), "normalizePercentValue must capture the decimal part of percent strings");
