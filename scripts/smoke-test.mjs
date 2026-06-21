@@ -246,6 +246,20 @@ function runStaticChecks() {
   // appending a duplicate, and getScopedLocalList must dedupe by id on read.
   assert(/function saveScopedLocalList[\s\S]*scopedIds\.has\(item\.id\)\) return false/.test(html), "saveScopedLocalList must drop stale same-id rows from other scopes (was producing same-id duplicates)");
   assert(/function getScopedLocalList[\s\S]*seen\.has\(id\)\) return false/.test(html), "getScopedLocalList must dedupe records by id on read");
+
+  // === Guards added during the 2026-06-22 ten-round test pass ===
+  // R1 (import honesty): the import success line must report AI vs built-in field
+  // matching based on whether the model ACTUALLY produced the records (usedAi),
+  // never merely on whether an API key is configured. Claiming "已优先使用 AI 识别"
+  // when the AI call failed or returned nothing violates the AGENTS.md honesty rule
+  // (never label local field-matching as real AI) and contradicts the failure toast.
+  assert(!/modelConfig\.apiKey \? "已优先使用 AI 识别。"/.test(html), "Import success must not claim AI based only on apiKey presence (must use usedAi)");
+  assert(/function recognizeInterviewRecordsFromRows[\s\S]*?return \{ records: aiRecords, usedAi: true \}/.test(html), "recognizeInterviewRecordsFromRows must report usedAi:true only when the model returned records");
+  assert(/function recognizeInterviewRecordsFromRows[\s\S]*?return \{ records: inferInterviewRecordsFromRows\(rows\), usedAi: false \}/.test(html), "recognizeInterviewRecordsFromRows must report usedAi:false on the local-matching fallback");
+  assert(/async function importInterviewRecordsFromRows[\s\S]*?usedAi: recognized\.usedAi/.test(html), "importInterviewRecordsFromRows must thread usedAi up to the caller's status line");
+  assert(html.includes('result.usedAi ? "已用 AI 识别。"'), "Import success status must label provenance off result.usedAi");
+  assert(html.includes("AI 未识别成功，已用内置字段识别。"), "Import success must admit AI did not succeed when a key is set but usedAi is false");
+  assert(html.includes("AI 未识别出记录，已使用本地字段匹配"), "Empty-AI-result fall-through must surface a toast (parity with the AI-failure catch branch)");
 }
 
 function runScriptSyntaxCheck() {

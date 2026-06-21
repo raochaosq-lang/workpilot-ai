@@ -12048,12 +12048,15 @@
 
     async function importInterviewRecordsFromRows(rows, sourceLabel = "导入内容") {
       if (!rows.length) throw new Error("empty import file");
-      const records = await hydrateMissingCompanies(await recognizeInterviewRecordsFromRows(rows, sourceLabel));
+      const recognized = await recognizeInterviewRecordsFromRows(rows, sourceLabel);
+      const records = await hydrateMissingCompanies(recognized.records);
       const validRecords = records
         .map(normalizeInterviewRecord)
         .filter(record => record.company || record.role || record.baseLocation || record.intention || record.contactWechat || record.overallProgress || record.jd || record.rounds.some(round => round.time || round.location || round.note || round.result !== "pending"));
       if (!validRecords.length) throw new Error("no interview records recognized");
-      return mergeImportedInterviewRecords(validRecords);
+      // usedAi reflects whether the model actually produced the records, so the caller's
+      // status line can be honest about AI vs built-in field matching (AGENTS.md).
+      return { ...mergeImportedInterviewRecords(validRecords), usedAi: recognized.usedAi };
     }
 
     async function handleInterviewImportFile(event) {
@@ -12064,7 +12067,7 @@
       try {
         const rows = await readInterviewImportRows(file);
         const result = await importInterviewRecordsFromRows(rows, file.name);
-        renderImportStatus(`Excel 导入完成：新增 ${result.added} 条，更新 ${result.updated} 条。${modelConfig.apiKey ? "已优先使用 AI 识别。" : "已用内置字段识别完成。"}`, "success");
+        renderImportStatus(`Excel 导入完成：新增 ${result.added} 条，更新 ${result.updated} 条。${result.usedAi ? "已用 AI 识别。" : (modelConfig.apiKey ? "AI 未识别成功，已用内置字段识别。" : "已用内置字段识别完成。")}`, "success");
         showToast(`已导入 ${result.added + result.updated} 条面试记录`);
       } catch (error) {
         console.warn(error);
@@ -12090,7 +12093,7 @@
         const rows = buildInterviewRowsFromText(text);
         const result = await importInterviewRecordsFromRows(rows, "粘贴文本");
         closeInterviewTextImportModal();
-        renderImportStatus(`文本识别完成：新增 ${result.added} 条，更新 ${result.updated} 条。${modelConfig.apiKey ? "已优先使用 AI 识别。" : "已用内置字段识别完成。"}`, "success");
+        renderImportStatus(`文本识别完成：新增 ${result.added} 条，更新 ${result.updated} 条。${result.usedAi ? "已用 AI 识别。" : (modelConfig.apiKey ? "AI 未识别成功，已用内置字段识别。" : "已用内置字段识别完成。")}`, "success");
         showToast(`已识别导入 ${result.added + result.updated} 条面试记录`);
       } catch (error) {
         console.warn(error);
@@ -12479,13 +12482,16 @@
       if (modelConfig.apiKey) {
         try {
           const aiRecords = await callInterviewImportModel(rows, fileName);
-          if (aiRecords.length) return aiRecords;
+          if (aiRecords.length) return { records: aiRecords, usedAi: true };
+          // AI replied but recognized nothing usable — fall back to local matching and
+          // say so, so the success line never claims AI extraction that didn't happen.
+          showToast("AI 未识别出记录，已使用本地字段匹配");
         } catch (error) {
           console.warn(error);
           showToast("AI识别失败，已使用本地字段匹配");
         }
       }
-      return inferInterviewRecordsFromRows(rows);
+      return { records: inferInterviewRecordsFromRows(rows), usedAi: false };
     }
 
     async function callInterviewImportModel(rows, fileName = "") {
