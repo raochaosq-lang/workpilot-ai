@@ -12113,9 +12113,11 @@
     }
 
     function saveInterviewRecords() {
-      if (!interviewService.saveAll(interviewRecords)) {
-        showToast("面试记录保存失败，请检查浏览器存储空间");
+      const ok = interviewService.saveAll(interviewRecords);
+      if (!ok) {
+        showToast("面试记录保存失败，存储空间可能已满，请删除部分记录或清理后重试");
       }
+      return ok;
     }
 
     function renderImportStatus(message = "", tone = "") {
@@ -13558,6 +13560,19 @@
       els.interviewRoleInput.value = record.role || "";
       els.interviewBaseLocationInput.value = record.baseLocation || "";
       els.interviewIntentionInput.value = record.intention || "";
+      // The intention <select> has fixed presets; a free-text imported value (e.g. "想去")
+      // would silently snap to "" and be lost on the next save. Inject a temporary option
+      // so the value round-trips losslessly; clear any prior injected one first so it does
+      // not leak into another record's dropdown.
+      els.interviewIntentionInput.querySelectorAll("option[data-custom='1']").forEach(option => option.remove());
+      if (record.intention && els.interviewIntentionInput.value !== record.intention) {
+        const customOption = document.createElement("option");
+        customOption.value = record.intention;
+        customOption.textContent = record.intention;
+        customOption.dataset.custom = "1";
+        els.interviewIntentionInput.appendChild(customOption);
+        els.interviewIntentionInput.value = record.intention;
+      }
       els.interviewContactWechatInput.value = record.contactWechat || "";
       els.interviewOverallProgressInput.value = record.overallProgress || "";
       els.interviewJdInput.value = record.jd || "";
@@ -13614,12 +13629,19 @@
           return;
         }
         const existingIndex = interviewRecords.findIndex(item => item.id === record.id);
+        const previousRecords = interviewRecords;
         if (existingIndex >= 0) {
-          interviewRecords[existingIndex] = record;
+          interviewRecords = interviewRecords.map((item, index) => index === existingIndex ? record : item);
         } else {
           interviewRecords = [record, ...interviewRecords];
         }
-        saveInterviewRecords();
+        if (!saveInterviewRecords()) {
+          // Persist failed (e.g. storage quota): roll back so memory matches storage,
+          // keep the form open with the draft, and DON'T claim success. The failure toast
+          // from saveInterviewRecords is the lingering message the user sees.
+          interviewRecords = previousRecords;
+          return;
+        }
         fillInterviewForm(record);
         closeInterviewFormModal({ force: true });
         managerState.nextActionRecordId = record.id;

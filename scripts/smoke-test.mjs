@@ -279,6 +279,11 @@ function runStaticChecks() {
   assert(/function settleConfirmDialog[\s\S]*?restoreTarget && restoreTarget\.isConnected/.test(html), "confirm-dialog focus restore must validate the target is still connected/visible (no focus loss to <body>)");
   assert(/body\.modal-open\s*\{\s*overflow:\s*hidden/.test(html), "body scroll-lock (body.modal-open { overflow: hidden }) is missing");
   assert(/new MutationObserver[\s\S]{0,220}classList\.toggle\("modal-open"/.test(html), "modal scroll-lock observer (toggles body.modal-open on any modal open/close) is missing");
+
+  // === R2 fleet deep-sweep guards (data-loss in the save path) ===
+  assert(/function fillInterviewForm[\s\S]*?interviewIntentionInput[\s\S]*?data-custom='1'/.test(html), "intention <select> must preserve a non-preset imported value via an injected option (else it is silently wiped on edit-save)");
+  assert(/function saveInterviewRecords\(\)\s*\{[\s\S]*?return ok;/.test(html), "saveInterviewRecords must return its ok flag so callers can detect a failed persist");
+  assert(/function saveInterviewFromForm[\s\S]*?if \(!saveInterviewRecords\(\)\)[\s\S]*?interviewRecords = previousRecords;[\s\S]*?return;/.test(html), "saveInterviewFromForm must roll back + bail (no success toast / modal close) when the save fails");
 }
 
 function runScriptSyntaxCheck() {
