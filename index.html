@@ -4091,6 +4091,10 @@
       line-height: 1.5;
     }
 
+    body.modal-open {
+      overflow: hidden;
+    }
+
     .modal-mask {
       position: fixed;
       inset: 0;
@@ -10055,6 +10059,16 @@
       });
       els.copySourceBtn.addEventListener("click", () => copyText(state.activeSourceText || "", "已复制原文片段"));
       document.addEventListener("keydown", handleGlobalKeydown);
+      // Lock background scroll whenever any modal is open. One observer on each modal
+      // mask's class avoids threading a scroll-lock call through ~16 open/close sites.
+      if (typeof MutationObserver === "function") {
+        const scrollLockObserver = new MutationObserver(() => {
+          document.body.classList.toggle("modal-open", isAnyModalOpen());
+        });
+        [els.confirmModal, els.sourceModal, els.historyModal, els.modelModal, els.devCloudModal, els.interviewTextImportModal, els.interviewFormModal, els.accountModal]
+          .filter(Boolean)
+          .forEach(modal => scrollLockObserver.observe(modal, { attributes: true, attributeFilter: ["class"] }));
+      }
     }
 
     function isEditableEventTarget(target) {

@@ -277,6 +277,8 @@ function runStaticChecks() {
   assert(/if \(key === "Tab"\)[\s\S]{0,500}getTopOpenModal\(\)/.test(html), "modal focus trap (Tab containment inside the top open modal) is missing");
   assert(/function settleConfirmDialog[\s\S]*?const restoreTarget = confirmDialogLastFocus;/.test(html), "settleConfirmDialog must capture the focus-restore target locally before nulling the field");
   assert(/function settleConfirmDialog[\s\S]*?restoreTarget && restoreTarget\.isConnected/.test(html), "confirm-dialog focus restore must validate the target is still connected/visible (no focus loss to <body>)");
+  assert(/body\.modal-open\s*\{\s*overflow:\s*hidden/.test(html), "body scroll-lock (body.modal-open { overflow: hidden }) is missing");
+  assert(/new MutationObserver[\s\S]{0,220}classList\.toggle\("modal-open"/.test(html), "modal scroll-lock observer (toggles body.modal-open on any modal open/close) is missing");
 }
 
 function runScriptSyntaxCheck() {
