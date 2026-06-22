@@ -9929,6 +9929,7 @@
         setContentRouting("recruiterConversation", getValidRecruiterSubtype(els.recruiterSubtypeSelect.value), { manual: true });
       });
       els.redetectContentBtn.addEventListener("click", () => {
+        if (state.isLoading) { showToast("正在生成结果，完成后再重新识别"); return; }
         const before = `${state.contentType}:${state.recruiterSubtype}`;
         const detection = refreshContentRoutingFromSource({ force: true, clearResultOnChange: true });
         saveState();
@@ -10066,6 +10067,10 @@
       return Boolean(node?.classList?.contains("show"));
     }
 
+    function isAnyModalOpen() {
+      return [els.confirmModal, els.sourceModal, els.historyModal, els.modelModal, els.devCloudModal, els.interviewTextImportModal, els.interviewFormModal, els.accountModal].some(isModalShown);
+    }
+
     function showConfirmDialog({
       kicker = "请确认",
       title = "确认操作",
@@ -10155,6 +10160,9 @@
       const keyLower = key.toLowerCase();
       const commandKey = event.metaKey || event.ctrlKey;
       if (commandKey && keyLower === "k") {
+        // A modal is its own focus context — Cmd/Ctrl+K must not yank focus to the
+        // search/input box obscured behind it (Esc, handled above, is the way out).
+        if (isAnyModalOpen()) return;
         event.preventDefault();
         if (state.appPage === "manager") {
           els.interviewSearchInput.focus();
@@ -10169,7 +10177,10 @@
       }
 
       if (isEditableEventTarget(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
-      if (keyLower === "n" && state.appPage === "manager") {
+      if (keyLower === "n" && state.appPage === "manager" && !isAnyModalOpen()) {
+        // Guarded by !isAnyModalOpen() so pressing "n" with focus on a modal button
+        // can't silently reset an in-progress interview form (bypassing the dirty
+        // confirm) or stack a second modal on top of an open one.
         event.preventDefault();
         resetInterviewForm();
         openInterviewFormModal();
@@ -11029,6 +11040,14 @@
     }
 
     function setContentRouting(contentType, recruiterSubtype = state.recruiterSubtype, options = {}) {
+      if (state.isLoading) {
+        // A mid-generation switch would let the in-flight generate() coerce a
+        // recruiter-shaped payload into an interview-labeled report and auto-save it
+        // as success. Mirror the isLoading guard setScenario/prepareInputModeSwitch use.
+        showToast("正在生成结果，完成后再切换内容类型");
+        renderContentRouting();
+        return;
+      }
       const nextType = getValidContentType(contentType);
       const nextSubtype = getValidRecruiterSubtype(recruiterSubtype);
       const previous = `${state.contentType}:${state.recruiterSubtype}`;
@@ -13044,6 +13063,12 @@
       const statusMatched = managerState.status === "all"
         || progress.key === managerState.status
         || (managerState.status === "pending" && pendingKeys.includes(progress.key))
+        // The four quick-filter chips must filter by the SAME predicate their badge
+        // count uses (getInterviewDerivedStatusCounts), else a record with both a
+        // future and an overdue round (progress.key resolves to just one) makes the
+        // chip show "1" while its filtered list shows 0.
+        || (managerState.status === "upcoming" && Boolean(getFutureInterview(record)))
+        || (managerState.status === "needs-update" && Boolean(getOverdueInterview(record)))
         || (managerState.status === "needs-review" && Boolean(getReviewableInterviewRound(record)))
         || (managerState.status === "unscheduled" && needsInterviewTime(record));
       return statusMatched && (!query || text.includes(query));
@@ -13576,6 +13601,14 @@
         managerState.nextActionRecordId = "";
         managerState.nextActionMode = "";
       }
+      if (state.linkedInterviewId === id) {
+        // The deleted record was the active review link — clear it so the review
+        // page's "已关联" context bar / trust-note doesn't keep pointing at a ghost record.
+        state.linkedInterviewId = "";
+        state.linkedRoundIndex = null;
+        saveState();
+        render();
+      }
       renderInterviewManager();
       showToast("已删除面试记录");
     }
@@ -13585,6 +13618,15 @@
       if (!record) return;
       if (state.isLoading) {
         showToast("正在生成结果，完成后再进入复盘");
+        return;
+      }
+      if (state.linkedInterviewId === id && hasRealInput()) {
+        // Re-clicking 去复盘 on the already-linked record must not overwrite a
+        // pasted-but-ungenerated transcript with the record-context template.
+        state.appPage = "review";
+        render();
+        setMobilePage("input", { scroll: false });
+        showToast("已在复盘这条面试，当前输入已保留");
         return;
       }
       state.scenario = "interview";
@@ -15290,7 +15332,7 @@
         const ok = await showConfirmDialog({
           kicker: "重新生成",
           title: `覆盖当前${isRecruiterContent() ? "整理结果" : "复盘结果"}？`,
-          message: `重新生成会覆盖当前页面展示的${getActiveReportName()}，${editedCopy}\n\n当前结果已自动写入历史记录，可以从历史记录中找回；输入原文会继续保留。`,
+          message: `重新生成会覆盖当前页面展示的${getActiveReportName()}，${editedCopy}\n\n如需保留当前版本，请先复制或导出 Markdown——重新生成会替换它在历史记录中的同一条记录；输入原文会继续保留。`,
           confirmText: "重新生成",
           cancelText: "先不覆盖",
           tone: "danger"
