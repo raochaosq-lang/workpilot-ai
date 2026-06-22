@@ -10071,6 +10071,12 @@
       return [els.confirmModal, els.sourceModal, els.historyModal, els.modelModal, els.devCloudModal, els.interviewTextImportModal, els.interviewFormModal, els.accountModal].some(isModalShown);
     }
 
+    function getTopOpenModal() {
+      // confirmModal layers on top of any other modal, so it wins focus containment.
+      if (isModalShown(els.confirmModal)) return els.confirmModal;
+      return [els.sourceModal, els.historyModal, els.modelModal, els.devCloudModal, els.interviewTextImportModal, els.interviewFormModal, els.accountModal].find(isModalShown) || null;
+    }
+
     function showConfirmDialog({
       kicker = "请确认",
       title = "确认操作",
@@ -10098,13 +10104,21 @@
     function settleConfirmDialog(confirmed) {
       if (!els.confirmModal || !confirmDialogResolver) return;
       const resolve = confirmDialogResolver;
+      // Capture the restore target in a LOCAL before nulling the module field, else the
+      // deferred focus() reads the already-cleared field and focus falls to <body>.
+      const restoreTarget = confirmDialogLastFocus;
       confirmDialogResolver = null;
+      confirmDialogLastFocus = null;
       els.confirmModal.classList.remove("show");
       resolve(Boolean(confirmed));
-      if (confirmDialogLastFocus?.focus) {
-        setTimeout(() => confirmDialogLastFocus.focus({ preventScroll: true }), 20);
-      }
-      confirmDialogLastFocus = null;
+      setTimeout(() => {
+        // Only restore to the opener if it's still connected and visible (a button
+        // inside a now-closed modal is neither); otherwise anchor to a stable control
+        // so focus never silently lands on <body>.
+        const usable = restoreTarget && restoreTarget.isConnected && restoreTarget.offsetParent !== null;
+        const target = usable ? restoreTarget : (state.appPage === "manager" ? els.addInterviewBtn : els.generateBtn);
+        target?.focus?.({ preventScroll: true });
+      }, 20);
     }
 
     async function handleGlobalKeydown(event) {
@@ -10153,6 +10167,29 @@
         if (els.accountMenu?.classList.contains("show")) {
           closeAccountMenu();
           event.preventDefault();
+        }
+        return;
+      }
+
+      if (key === "Tab") {
+        // Focus trap: keep Tab/Shift+Tab inside the top open modal (all modals are
+        // aria-modal="true" but had no containment, so Tab walked to the page behind).
+        const modal = getTopOpenModal();
+        if (!modal) return;
+        const focusables = Array.from(modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter(el => el.offsetParent !== null);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (!modal.contains(active)) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        } else if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
         }
         return;
       }

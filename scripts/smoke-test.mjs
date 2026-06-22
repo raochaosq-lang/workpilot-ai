@@ -271,6 +271,12 @@ function runStaticChecks() {
   assert(html.includes("如需保留当前版本，请先复制或导出 Markdown") && !html.includes("可以从历史记录中找回"), "regenerate confirm must not falsely promise the result is recoverable from history (regenerate overwrites the same entry)");
   assert(/function deleteInterviewRecord[\s\S]*?state\.linkedInterviewId === id[\s\S]*?state\.linkedInterviewId = "";/.test(html), "deleting the linked interview must clear state.linkedInterviewId (no ghost review context bar)");
   assert(/function startReviewFromInterview[\s\S]*state\.linkedInterviewId === id && hasRealInput\(\)/.test(html), "re-clicking 去复盘 on the linked record with unsaved input must preserve it, not overwrite with the record template");
+
+  // === R10 part-2 (modal a11y: focus trap + focus restore) guards ===
+  assert(html.includes("function getTopOpenModal"), "getTopOpenModal helper (focus-trap target) is missing");
+  assert(/if \(key === "Tab"\)[\s\S]{0,500}getTopOpenModal\(\)/.test(html), "modal focus trap (Tab containment inside the top open modal) is missing");
+  assert(/function settleConfirmDialog[\s\S]*?const restoreTarget = confirmDialogLastFocus;/.test(html), "settleConfirmDialog must capture the focus-restore target locally before nulling the field");
+  assert(/function settleConfirmDialog[\s\S]*?restoreTarget && restoreTarget\.isConnected/.test(html), "confirm-dialog focus restore must validate the target is still connected/visible (no focus loss to <body>)");
 }
 
 function runScriptSyntaxCheck() {
