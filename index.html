@@ -9015,7 +9015,11 @@
 
     function getScopedLocalList(key) {
       const userId = getCurrentUserId();
-      const all = storageService.getJson(key, []);
+      const raw = storageService.getJson(key, []);
+      // Tolerate corrupted/tampered storage: a non-array value, or a null / non-object
+      // element, must not throw here — this runs on the load path and a crash would
+      // brick app boot (item.userId on null throws; .filter on a non-array throws).
+      const all = Array.isArray(raw) ? raw.filter(item => item && typeof item === "object") : [];
       const scoped = all.filter(item => {
         if (item.userId) return item.userId === userId;
         return !isCloudActive();
@@ -11620,6 +11624,7 @@
     }
 
     function normalizeResult(result = {}) {
+      if (!result || typeof result !== "object") result = {};
       const legacySummary = result.summary || "";
       const keyConclusions = Array.isArray(result.keyConclusions) ? result.keyConclusions : (Array.isArray(result.conclusions) ? result.conclusions : []);
       const tasks = Array.isArray(result.tasks) ? result.tasks.filter(Boolean).map(normalizeTask) : (Array.isArray(result.todos) ? result.todos.filter(Boolean).map(normalizeTask) : []);
@@ -11939,6 +11944,7 @@
     }
 
     function normalizeInterviewRecord(record = {}) {
+      if (!record || typeof record !== "object") record = {};
       const rounds = Array.isArray(record.rounds) ? record.rounds : [];
       const createdAt = record.createdAt || nowIso();
       const normalizedRounds = Array.from({ length: 4 }, (_, index) => {
@@ -17003,6 +17009,7 @@
     }
 
     function normalizeHistoryRecord(item = {}) {
+      if (!item || typeof item !== "object") item = {};
       const createdAt = item.createdAt || item.generatedAt || nowIso();
       const rawRoundIndex = item.roundIndex == null
         ? NaN

@@ -52,6 +52,7 @@ const exposed = [
   "normalizeImportedResult", "normalizeImportKey", "findImportedValue", "normalizeImportedDateValue",
   "normalizeDateTimeLocal", "excelSerialToDateTimeLocal", "sanitizeInterviewLocation",
   "normalizeInterviewRecord", "normalizeInterviewRound", "mergeInterviewRecordData", "getInterviewRecordMergeKey",
+  "normalizeHistoryRecord",
   "normalizeResult", "normalizeRecruiterFacts",
   "detectContentRouting", "detectRecruiterSubtype",
   "escapeHtml", "escapeAttr", "escapeRegExp",
@@ -81,6 +82,7 @@ const {
   normalizeImportedResult, normalizeImportKey, findImportedValue, normalizeImportedDateValue,
   normalizeDateTimeLocal, excelSerialToDateTimeLocal, sanitizeInterviewLocation,
   normalizeInterviewRecord, normalizeInterviewRound, mergeInterviewRecordData, getInterviewRecordMergeKey,
+  normalizeHistoryRecord,
   normalizeResult, normalizeRecruiterFacts,
   detectContentRouting, detectRecruiterSubtype,
   escapeHtml, escapeAttr, escapeRegExp,
@@ -446,6 +448,25 @@ eq(normalizeImportedResult("normal"), "pending", "'normal' not misclassified as 
 eq(normalizeImportedResult("no"), "failed", "standalone 'no' still classified failed");
 eq(normalizeImportedResult("未通过"), "failed", "CJK fail token still classified");
 eq(normalizeImportedResult("offer"), "passed", "offer still classified passed");
+
+// ===== 2026-06-22 R9 storage-resilience (found by adversarial execution probe) =====
+// The load path (getScopedLocalList -> normalize*) must tolerate corrupted/tampered
+// localStorage: a non-array value, or a null / non-object element, must NOT throw —
+// a crash here bricks app boot. `= {}` default params only catch undefined, not null.
+ok((() => { try { return normalizeResult(null) && typeof normalizeResult(null) === "object"; } catch { return false; } })(), "normalizeResult(null) must not throw");
+ok((() => { try { const r = normalizeInterviewRecord(null); return Array.isArray(r.rounds) && r.rounds.length === 4; } catch { return false; } })(), "normalizeInterviewRecord(null) must not throw and still yields 4 rounds");
+ok((() => { try { return normalizeHistoryRecord(null) && typeof normalizeHistoryRecord(null) === "object"; } catch { return false; } })(), "normalizeHistoryRecord(null) must not throw");
+ok((() => { try { normalizeInterviewRecord("x"); normalizeInterviewRecord(123); normalizeHistoryRecord([]); normalizeResult("nope"); return true; } catch { return false; } })(), "normalizers tolerate non-object inputs (string/number/array)");
+{
+  const KEY = "__logic_corrupt_storage__";
+  localStorage.setItem(KEY, JSON.stringify([null, "junk", 42, { id: "ok1", userId: getCurrentUserId(), company: "腾讯" }]));
+  let res;
+  ok((() => { try { res = getScopedLocalList(KEY); return Array.isArray(res); } catch { return false; } })(), "getScopedLocalList tolerates null/non-object elements in a corrupted stored array");
+  ok(Array.isArray(res) && res.every(item => item && typeof item === "object"), "getScopedLocalList drops null/non-object junk elements");
+  localStorage.setItem(KEY, JSON.stringify({ not: "an array" }));
+  ok((() => { try { return Array.isArray(getScopedLocalList(KEY)); } catch { return false; } })(), "getScopedLocalList returns [] when the stored value is not an array (no crash)");
+  localStorage.removeItem(KEY);
+}
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);
