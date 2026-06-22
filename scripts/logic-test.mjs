@@ -62,7 +62,8 @@ const exposed = [
   "inferCompanyLocally", "isGenericMeetingLocation",
   "buildInterviewRowsFromText", "extractInterviewFieldsFromText",
   "uniqueList", "uniqueBy",
-  "getScopedLocalList", "saveScopedLocalList", "getCurrentUserId"
+  "getScopedLocalList", "saveScopedLocalList", "getCurrentUserId",
+  "getInterviewDerivedStatusCounts", "matchesInterviewFilter", "managerState", "compareInterviewRecords", "getFutureInterview", "getOverdueInterview"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -93,6 +94,7 @@ const {
   buildInterviewRowsFromText, extractInterviewFieldsFromText,
   uniqueList, uniqueBy,
   getScopedLocalList, saveScopedLocalList, getCurrentUserId,
+  getInterviewDerivedStatusCounts, matchesInterviewFilter, managerState, compareInterviewRecords, getFutureInterview, getOverdueInterview,
   localStorage
 } = fns;
 
@@ -466,6 +468,38 @@ ok((() => { try { normalizeInterviewRecord("x"); normalizeInterviewRecord(123); 
   localStorage.setItem(KEY, JSON.stringify({ not: "an array" }));
   ok((() => { try { return Array.isArray(getScopedLocalList(KEY)); } catch { return false; } })(), "getScopedLocalList returns [] when the stored value is not an array (no crash)");
   localStorage.removeItem(KEY);
+}
+
+// ===== 2026-06-22 R10 (cross-feature integration) regressions =====
+// chip-count == filtered-list invariant: each quick-filter chip's badge count
+// (getInterviewDerivedStatusCounts) must equal the number of records matchesInterviewFilter
+// accepts for that status — including a record with BOTH an overdue and a future round.
+{
+  const list = [
+    normalizeInterviewRecord({ company: "OverdueAndFuture", rounds: [{ time: "2020-01-01T10:00", result: "pending" }, { time: "2099-01-01T10:00", result: "pending" }] }),
+    normalizeInterviewRecord({ company: "FailedOnly", rounds: [{ result: "failed" }] }),
+    normalizeInterviewRecord({ company: "Unscheduled" }),
+  ];
+  const counts = getInterviewDerivedStatusCounts(list);
+  const savedSearch = managerState.search, savedStatus = managerState.status;
+  managerState.search = "";
+  ["upcoming", "needs-update", "unscheduled", "needs-review"].forEach(status => {
+    managerState.status = status;
+    const filtered = list.filter(matchesInterviewFilter).length;
+    eq(filtered, counts[status], `quick-filter '${status}' badge count (${counts[status]}) must equal its filtered list (${filtered})`);
+  });
+  managerState.search = savedSearch;
+  managerState.status = savedStatus;
+}
+
+// compareInterviewRecords queue ordering: soonest upcoming first, finished last.
+{
+  const soon = normalizeInterviewRecord({ company: "Soon", rounds: [{ time: "2099-01-01T10:00", result: "pending" }] });
+  const later = normalizeInterviewRecord({ company: "Later", rounds: [{ time: "2099-06-01T10:00", result: "pending" }] });
+  const done = normalizeInterviewRecord({ company: "Done", rounds: [{ result: "passed" }, { result: "passed" }, { result: "passed" }, { result: "passed" }] });
+  ok(compareInterviewRecords(soon, later) < 0, "compareInterviewRecords: sooner upcoming sorts before later");
+  ok(compareInterviewRecords(soon, done) < 0, "compareInterviewRecords: an upcoming interview sorts before a finished one");
+  eq([done, later, soon].sort(compareInterviewRecords)[0].company, "Soon", "queue sort surfaces the soonest upcoming interview first");
 }
 
 if (failures.length) {

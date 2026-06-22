@@ -260,6 +260,17 @@ function runStaticChecks() {
   assert(html.includes('result.usedAi ? "已用 AI 识别。"'), "Import success status must label provenance off result.usedAi");
   assert(html.includes("AI 未识别成功，已用内置字段识别。"), "Import success must admit AI did not succeed when a key is set but usedAi is false");
   assert(html.includes("AI 未识别出记录，已使用本地字段匹配"), "Empty-AI-result fall-through must surface a toast (parity with the AI-failure catch branch)");
+
+  // === R10 part-1 (cross-feature integration + keyboard/modal safety) guards ===
+  assert(html.includes("function isAnyModalOpen"), "isAnyModalOpen modal-state helper is missing");
+  assert(/keyLower === "n" && state\.appPage === "manager" && !isAnyModalOpen\(\)/.test(html), "global 'n' new-interview shortcut must be gated by !isAnyModalOpen() (else it wipes an open unsaved form)");
+  assert(/if \(commandKey && keyLower === "k"\) \{[\s\S]{0,220}?if \(isAnyModalOpen\(\)\) return;/.test(html), "Cmd/Ctrl+K must bail out when a modal is open (no focus escape to the obscured search box)");
+  assert(/function setContentRouting\([^)]*\)\s*\{\s*if \(state\.isLoading\)/.test(html) && /function setContentRouting[\s\S]*?if \(state\.isLoading\)[\s\S]*?renderContentRouting\(\);\s*return;/.test(html), "setContentRouting must early-return while generating (state.isLoading) so a mid-flight switch can't mislabel+autosave the report");
+  assert(/redetectContentBtn\.addEventListener\("click"[\s\S]{0,90}state\.isLoading/.test(html), "重新识别 must be ignored while generating");
+  assert(/managerState\.status === "upcoming" && Boolean\(getFutureInterview/.test(html) && /managerState\.status === "needs-update" && Boolean\(getOverdueInterview/.test(html), "quick-filter chips must filter by the same predicate their badge count uses (no chip-count vs list drift)");
+  assert(html.includes("如需保留当前版本，请先复制或导出 Markdown") && !html.includes("可以从历史记录中找回"), "regenerate confirm must not falsely promise the result is recoverable from history (regenerate overwrites the same entry)");
+  assert(/function deleteInterviewRecord[\s\S]*?state\.linkedInterviewId === id[\s\S]*?state\.linkedInterviewId = "";/.test(html), "deleting the linked interview must clear state.linkedInterviewId (no ghost review context bar)");
+  assert(/function startReviewFromInterview[\s\S]*state\.linkedInterviewId === id && hasRealInput\(\)/.test(html), "re-clicking 去复盘 on the linked record with unsaved input must preserve it, not overwrite with the record template");
 }
 
 function runScriptSyntaxCheck() {
