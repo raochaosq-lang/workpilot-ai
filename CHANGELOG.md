@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.2.0 — 2026-06-24 — 九轮 Fleet 对抗式执行深扫 (R2–R10)
+
+Tag: `v0.2.0` (SemVer minor — 大量正确性 / 诚实 / 安全 / 数据保护 与无障碍硬化，无破坏性变更、无新功能). 在 v0.1.1 完成「人工逐轮阅读核验」后，本轮用 **fleet 对抗式执行深扫**（每轮 6 个维度 finder 并行 + 各自独立 skeptic 复核）覆盖全部十轮主题。深扫专门跑代码、喂构造输入，找出阅读会漏的执行级缺陷——并确实如此：在所有人工标记 CLEAN 的轮次里仍发现 **80 条确认真问题**。
+
+每轮：finder → 独立 skeptic 复核（默认证伪，仅在能用代码证据站住时确认）→ 主循环串行修复 → 回归守卫锁定 → `npm run check` 跑到 0 失败 + 对抗执行 probe 干净 → 提交。复核器证伪了若干夸大/不成立的发现（如 R6 的「文化场景被误标」实为 `getValidScenario` 恒返回 interview、文化场景休眠不可达；R9 的「队友读取云端副本」实被 user_id 隔离否定），严重度据实下调。R5 还抓到 R4 自己引入的回归（整数 1% 被当 0–1 分数放大成 100%），证明对抗式再扫的价值。
+
+最终套件：smoke 绿（`routing-fixtures=8`、`mock-records=200`，静态断言由 ~138 增至 ~240）+ logic 绿（断言 **194 → 308**），对抗执行 probe 干净。
+
+### 修复 (Fixed) — 80 条，按轮次
+
+- **R2 面试管理 (8)**：导入的非预设「我的意向」自由文本在编辑保存时被静默清空；保存失败却提示「已保存」（reload 丢记录）；公司识别异步期间保存弹窗可被 Esc/遮罩关闭、输入被覆盖；已挂流程因残留 pending 轮被算进「即将面试/已过期」；transcript/summary/uploadedFile 保存吞掉配额失败仍排队云同步→历史悬挂引用；「待安排」概览卡与「待补时间」chip 计数口径不一致；草稿 `STATE_KEY` 单一全局槽在身份切换时被对方覆盖；搜索实际匹配 JD/备注但文案未告知。
+- **R3 AI 复盘核心 (11)**：单作者标签笔记（公司：/年包：）被伪装成「多人对话」误路由为面试（改为要求**复现说话人**）；API 模式覆盖模型返回的 recruiterSubtype；trust-note 对规则结果谎称「当前由 <模型> 生成」；generate/regenerate 不停止进行中的录音/转写（麦克风继续录、输入被覆盖）；重传删除转写稿下方手写笔记；`inferSourceTime` 把正文里的时间段当成片段时间戳；来源按钮在时间戳重复时定位错轮；说话人正则把日期/数字（2021年：）当人名；零宽字符输入可触发生成；实时录音每帧重算路由+分段；历史与面板复盘名不一致。
+- **R4 生成引擎 (15)**：QA 卡答案窗口跨过中间提问轮、把不同问题的答案粘在一起；候选人陈述中的疑问词催生「角色颠倒」的伪面试官卡；猎头事实把占位/否定词当成具体公司+岗位；文化语言检测 `/[a-zA-Z]{24,}/` 永不命中→恒标中文（改为按 CJK/拉丁字符量判定）；Anthropic 浏览器直连缺 `anthropic-dangerous-direct-browser-access` 头必 CORS 失败；面试时长用合成 18s/行伪造；sim 与渲染器「具体机会」判定 OR/AND 不一致；文化卡混入相邻说话人且对「对方」发言给「你」的建议；0–1 分数/通过率被压成 1%；`parseModelJson` 把非对象 JSON 原样返回成空报告；API 加载显示本地引擎步骤文案；`inferCultureMisreadRisk` 凭单个 would/could 断言「委婉担忧」；猎头字符串字段渲染成 `[object Object]`；同标签事实只留最后一条；OpenAI/Gemini/Anthropic 丢弃 HTTP 200 错误体。
+- **R5 结果渲染/统计/诚实 (7)**：空 modelUsed 的旧/云历史在列表与导出里被误标「真实大模型：<当前模型>」（并丢失免责声明）→ 纯函数 `normalizeStoredModelLabel`；**R4 回归**：整数 1% 被放大成 100% → 改为开区间 (0,1)；无值事实变「待确认」伪造具体机会；完整度标签把占位值计入；猎头「待确认」统计卡滚动到无问题的 summary 区；QA 分数 0 显示成 78 却标「需重练」。
+- **R6 账号/云/安全 (7)**：云历史 mapper 丢失 contentRoutingManual/Reason 与 audioFileId（同步后手动分类被重测、音频重链失效）；诊断快照非 JSON 分支裸吐账号值→恒掩码；登录成功但首次云加载失败被当登录错误且弹窗不关；登录表单无回车提交；脱敏正则漏 clientId/publishableKey/anonKey 别名；`maskSensitiveValue` 对数组密钥半泄露；demo-admin 会话在任意源被复活（改为按 `isDevCloudConfigAllowed` 把关）。
+- **R7 模型/ASR 配置+音频/录音 (11)**：customModel 镜像下拉选项→陈旧自定义 id 越过云同步覆盖模型；ASR 连接测试对 200-错误体/空转写谎报「连接成功」；API Key 输入框无 autocomplete/密码管理器退出；不可解码音频被静默接受、转写仍可点；录音 onerror 对无害 no-speech 弹惊吓提示；数值参数接受 0/负/越界；`isAsrProbeReachable` 因裸词「model」误判；无超大文件提示；非字符串转写崩 `.trim()`；`parseJsonOrEmpty` 遇 JSON-null 体抛错；onerror 把 audio-capture/service-not-allowed 映射成误导性「稍后重试」。
+- **R8 历史/导出/保真 (7)**：`saveCurrentToHistory` 同源去重只删本地未删云端→旧副本下次同步复活；历史+管理器搜索吃掉空格（聚焦时 trim 回写）；嵌套对象事实/键值映射导出 `[object Object]`；`copyText` 忽略 execCommand 返回值→空剪贴板谎报「已复制」；导出文件名放过 bidi/控制字符；导出 JSON 谎称 version:1 可恢复格式。
+- **R9 安全深扫 (4)**：导出/复制/云 Markdown 原样拼接模型+转写文本→外部查看器自动拉远程图片(追踪像素)/执行内联 HTML（新增 `escapeMarkdownText`）；被篡改/云端嵌套对象字段渲染 `[object Object]`；诊断快照泄露顶层 JSON 字符串/数组 token；脱敏漏 serviceRole/service_role。
+- **R10 跨功能/无障碍/覆盖审计 (10)**：「去复盘」切到**另一条**记录时静默销毁未保存的转写/已生成结果（守卫只覆盖同记录）；重存恢复的旧/规则报告把 modelUsed 改写成当前真实模型名（R5 显示修复在写入侧复发）；`getFactValue` 仍接受占位/否定词伪造具体机会；切换复盘不停进行中的录音/转写；本地导入失败后同步药丸永久卡在「同步中」；五个非确认弹窗（历史/模型/来源/账号/开发者云）开启不入焦、关闭不还焦；账号弹窗不聚焦邮箱；`normalizeStringList` 对象→`[object Object]`；`mergeRecruiterCoreFacts` 把「待确认」占位拼到真实值前。
+
+### 改动 (Changed)
+
+- 新增多个共享纯函数收敛重复逻辑并便于测试：`coerceText`（扁平化嵌套对象/数组）、`escapeMarkdownText`、`normalizeStoredModelLabel`、`detectSourceLanguage`、`isPlaceholderFact`、`hasConcreteOpportunityFacts`、`clampModelNumber`、`resolveCustomModel`、`hasFailedRound`、`getDraftStateKey`、`openModalWithFocus`/`restoreModalFocus`。
+- 草稿持久化按身份作用域化（`${STATE_KEY}:${userId}`，含安全的一次性迁移与脱敏清理保护）。
+- `package.json` 版本 `0.1.1` → `0.2.0`。
+
+### 新增 (Added)
+
+- 回归守卫大幅扩充：smoke 静态断言约 +100，logic 可执行断言 **194 → 308**（每条修复均配套守卫；多处通过 `scripts/logic-test.mjs` 暴露纯函数以驱动执行级断言）。其中 R5/R7 的守卫在提交前就抓到了我方修复自身的边界回归（整数 1%、空字符串 clamp）。
+- `.agents/test-rounds/` 工作流工具：`round-runner.js`（单轮深扫 workflow）、`probe.mjs`（对抗执行 probe）、`ledger.json`（逐轮台账）。
+
+### 移除 (Removed)
+
+- 导出 JSON 的误导性 `version: 1` 字段（无对应导入路径），改为诚实的 `snapshotNote`。
+
 ## v0.1.1 — 2026-06-18 — Three-round test & UX-hardening pass (R10)
 
 Tag: `v0.1.1` (SemVer patch — fixes + hardening only, no new features, no breaking changes). Unlike prior sandboxed rounds, this environment allowed real local-port binding, so the dev server (`npm run dev` on `http://127.0.0.1:8001/`) and full browser journey verification (manager + AI-review flows, light/dark/mobile) were exercised end-to-end, and the git tag was created normally.
