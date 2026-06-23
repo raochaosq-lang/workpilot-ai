@@ -63,7 +63,8 @@ const exposed = [
   "buildInterviewRowsFromText", "extractInterviewFieldsFromText",
   "uniqueList", "uniqueBy",
   "getScopedLocalList", "saveScopedLocalList", "getCurrentUserId",
-  "getInterviewDerivedStatusCounts", "matchesInterviewFilter", "managerState", "compareInterviewRecords", "getFutureInterview", "getOverdueInterview"
+  "getInterviewDerivedStatusCounts", "matchesInterviewFilter", "managerState", "compareInterviewRecords", "getFutureInterview", "getOverdueInterview",
+  "getTranscriptSegmentsFromText", "inferSourceTime", "getEffectiveInput", "removeAudioUploadBlocks", "getActiveReportName", "getHistoryReportName"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -95,6 +96,7 @@ const {
   uniqueList, uniqueBy,
   getScopedLocalList, saveScopedLocalList, getCurrentUserId,
   getInterviewDerivedStatusCounts, matchesInterviewFilter, managerState, compareInterviewRecords, getFutureInterview, getOverdueInterview,
+  getTranscriptSegmentsFromText, inferSourceTime, getEffectiveInput, removeAudioUploadBlocks, getActiveReportName, getHistoryReportName,
   localStorage
 } = fns;
 
@@ -520,6 +522,38 @@ ok((() => { try { normalizeInterviewRecord("x"); normalizeInterviewRecord(123); 
   ok(compareInterviewRecords(soon, done) < 0, "compareInterviewRecords: an upcoming interview sorts before a finished one");
   eq([done, later, soon].sort(compareInterviewRecords)[0].company, "Soon", "queue sort surfaces the soonest upcoming interview first");
 }
+
+// ===== 2026-06-22 R3 deep-sweep (AI review core) regressions =====
+// [7] Speaker labels must start with a CJK/letter and exclude year/annotation tokens.
+{
+  const segs = getTranscriptSegmentsFromText("产品经理：聊增长\n2021年：我加入了公司\n负责人：明白");
+  eq(segs.length, 3, "three labeled lines yield three segments");
+  ok(/^说话人/.test(segs[1].speaker), "year token '2021年：' is not treated as a speaker name");
+  eq(segs[0].speaker, "产品经理", "real speaker label preserved");
+  const named = new Set(segs.map(s => s.speaker).filter(s => !/^说话人/.test(s)));
+  eq(named.size, 2, "only the two real names count as speakers (year token excluded)");
+}
+// [0] A labeled single-author recruiter note must route to recruiter, not a fake transcript.
+eq(detectContentRouting("猎头推荐：腾讯AI产品岗\n年包：80万\n职级：P7\n建议尽快约时间深聊推进流程。").contentType, "recruiterConversation", "labeled single-author recruiter note routes to recruiter (not fake multi-speaker)");
+ok(!detectContentRouting("公司：腾讯\n方向：AI\n规模：三十人\n这个机会值得看推进流程").reason.includes("多人对话"), "no false '多人对话' reason for single-author label notes");
+eq(detectContentRouting("张伟：先做个自我介绍吧\n王芳：我是产品经理\n张伟：聊聊职业定位\n王芳：我会结合简历项目经历来说\n张伟：好的").contentType, "interview", "recurring named-speaker dialog still routes to interview");
+// [5] inferSourceTime: an in-sentence time range must NOT hijack the segment timestamp.
+eq(inferSourceTime("候选人：每天 9:00 到 18:00 加班", 2), "00:00:36-00:00:54", "in-sentence time range falls through to positional index");
+eq(inferSourceTime("00:01:00-00:01:18 候选人：你好", 0), "00:01:00-00:01:18", "leading explicit timestamp range still honored");
+// [8] getEffectiveInput strips zero-width-only input to empty (no false generate-enable).
+eq(getEffectiveInput("​​​"), "", "zero-width-space-only input is treated as empty");
+eq(getEffectiveInput("﻿"), "", "BOM-only input is treated as empty");
+ok(getEffectiveInput("真实内容").length > 0, "real text still counts as input");
+// [4] removeAudioUploadBlocks preserves user notes typed below the transcript.
+{
+  const cleaned = removeAudioUploadBlocks("[转写稿｜a.mp3]\n台词。\n\n我的额外笔记：保留我");
+  ok(cleaned.includes("我的额外笔记"), "user notes below the transcript are preserved on re-upload");
+  ok(!cleaned.includes("转写稿"), "the transcript block itself is still stripped");
+}
+// [10] History list and output panel must agree on the recruiter report name per subtype.
+["opportunityRecommendation", "careerAnalysis", "profilePositioning", "interviewStrategy", "compensationNegotiation", "followUpCoordination", "mixed"].forEach(key => {
+  eq(getHistoryReportName({ contentType: "recruiterConversation", recruiterSubtype: key }), getActiveReportName("recruiterConversation", key, "interview"), `history vs panel recruiter name agree for ${key}`);
+});
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

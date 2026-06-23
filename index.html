@@ -8120,6 +8120,7 @@
     let selectedAudioUrl = "";
     let recordStartedAt = 0;
     let recordTimer = null;
+    let recordRenderTimer = null;
     let isAudioTranscribing = false;
     let audioTranscriptionController = null;
     const companyInferenceInFlight = new Set();
@@ -11008,15 +11009,21 @@
         [/(HR|招聘|人才顾问|顾问|老师).{0,16}(说|建议|推荐|沟通|反馈|约|看)/gi, 2]
       ]);
       const segments = getTranscriptSegmentsFromText(value);
-      // Count only real, labeled speakers — getTranscriptSegmentsFromText assigns a
-      // "说话人N" fallback to every unlabeled line, so unlabeled prose must not count
-      // as a multi-speaker dialog.
-      const namedSpeakers = new Set(segments.map(segment => segment.speaker).filter(speaker => speaker && !/^说话人/.test(speaker)));
+      // Count only RECURRING labeled speakers. getTranscriptSegmentsFromText assigns a
+      // "说话人N" fallback to every unlabeled line, and a single-author labeled note
+      // (公司：/年包：/职级：) yields one distinct "speaker" per field line — those must
+      // NOT read as a dialog. A real dialog has >=2 speakers who each appear in >=2
+      // turns (张伟×2, 王芳×2); field-label notes have zero recurring speakers.
+      const speakerTurns = segments.reduce((map, segment) => {
+        if (segment.speaker && !/^说话人/.test(segment.speaker)) map[segment.speaker] = (map[segment.speaker] || 0) + 1;
+        return map;
+      }, {});
+      const recurringSpeakers = Object.values(speakerTurns).filter(count => count >= 2).length;
       // A multi-speaker dialog is transcript evidence even without the four canonical
-      // labels: named speakers (e.g. 张伟：/王芳：) across >=3 segments, or any canonical
+      // labels: >=2 recurring named speakers across >=3 segments, or any canonical
       // 面试官/候选人 label in a >=2-segment exchange.
       const hasInterviewTranscript = (/(面试官|候选人|interviewer|candidate)[：:]/i.test(value) && segments.length >= 2)
-        || (namedSpeakers.size >= 2 && segments.length >= 3);
+        || (recurringSpeakers >= 2 && segments.length >= 3);
       // Recruiter-only signals. Interview-internal vocabulary (职业定位/市场行情/面试策略/
       // 简历/回答策略…) is intentionally excluded so it cannot short-circuit a genuine
       // transcript; those terms are weighed by scoreRoutingRules instead.
@@ -11625,13 +11632,19 @@
       return String(text || "")
         .replace(/\[音频文件\][^\n]*/g, "")
         .replace(/\[转写稿[^\]]*\]/g, "")
+        // Strip zero-width characters (ZWSP/ZWNJ/ZWJ/word-joiner/BOM) so visually-empty
+        // input can't pass trim() and falsely enable generation on invisible content.
+        .replace(/[​-‍⁠﻿]/g, "")
         .trim();
     }
 
     function removeAudioUploadBlocks(text = state.source) {
       return String(text || "")
         .replace(/\n*\[音频文件\][^\n]*(?=\n|$)/g, "")
-        .replace(/\n*\[转写稿[^\]]*\]\n[\s\S]*?(?=\n\n(?:\[音频文件\]|\[转写稿[^\]]*\])|$)/g, "")
+        // Stop the transcript block at the first blank line (the app's own block
+        // separator) instead of consuming to EOF — otherwise user notes typed BELOW the
+        // transcript are silently deleted on re-upload / re-transcribe.
+        .replace(/\n*\[转写稿[^\]]*\]\n[\s\S]*?(?=\n\n|$)/g, "")
         .trim();
     }
 
@@ -11713,8 +11726,18 @@
       return Boolean(modelConfig.asrApiKey && modelConfig.asrBaseUrl && asrLabel);
     }
 
+    // True only when the CURRENTLY-DISPLAYED result was actually produced by a real
+    // model call — keyed off state.modelUsed, not live config flags. Adding a key (or
+    // toggling api mode) after a rules result must not retroactively relabel it.
+    function resultIsModelGenerated() {
+      if (!hasResult()) return false;
+      const used = String(state.modelUsed || "").trim();
+      if (!used) return false;
+      return !["规则快速分析", "本地模拟分析", "本地模拟", "声流内置分析"].includes(used);
+    }
+
     function getAnalysisModeLabel() {
-      if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed) return `真实大模型：${getModelName()}`;
+      if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed && resultIsModelGenerated()) return `真实大模型：${getModelName()}`;
       return isDeveloperMode() ? "本地模拟分析" : "规则快速分析";
     }
 
@@ -11852,7 +11875,10 @@
         critique: card.critique || card.feedback || card.aiReview || "建议补充具体证据、结果和下一步动作。",
         score: Number.isFinite(Number(card.score)) ? Math.max(0, Math.min(100, Math.round(Number(card.score)))) : 78,
         risk: card.risk || card.riskPoint || "",
-        sourceTime: card.sourceTime || card.timestamp || card.time || ""
+        sourceTime: card.sourceTime || card.timestamp || card.time || "",
+        // Identity of the exact transcript segment this card was built from, so the
+        // 来源 button resolves to the right turn even when two turns share a timestamp.
+        sourceIndex: Number.isInteger(card.sourceIndex) ? card.sourceIndex : null
       };
     }
 
@@ -14012,9 +14038,13 @@
       return lines
         .map((line, index) => {
           const withoutTime = line.replace(/^\[?\d{1,2}:\d{2}(?::\d{2})?(?:\s*-\s*\d{1,2}:\d{2}(?::\d{2})?)?\]?\s*/, "");
-          const speakerMatch = withoutTime.match(/^([\u4e00-\u9fa5A-Za-z0-9]{2,12})[：:]\s*(.+)$/);
-          const speaker = speakerMatch ? speakerMatch[1] : `说话人${index % 2 + 1}`;
-          const text = speakerMatch ? speakerMatch[2] : withoutTime;
+          const speakerMatch = withoutTime.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9]{1,11})[：:]\s*(.+)$/);
+          // Reject pure-numeric/year tokens ("2021年：") and annotation prefixes
+          // (备注：/Q1：/结论：) so only real speaker names create a labeled speaker turn.
+          const isAnnotationLabel = speakerMatch && (/^\d{2,4}年$/.test(speakerMatch[1]) || /^(注|备注|主题|背景|结论|说明|补充|总结|时间|地点|日期|Q\d+|A\d+)$/.test(speakerMatch[1]));
+          const isSpeakerLabel = Boolean(speakerMatch) && !isAnnotationLabel;
+          const speaker = isSpeakerLabel ? speakerMatch[1] : `说话人${index % 2 + 1}`;
+          const text = isSpeakerLabel ? speakerMatch[2] : withoutTime;
           return {
             index,
             speaker,
@@ -14027,7 +14057,10 @@
     }
 
     function inferSourceTime(text, index = 0) {
-      const explicit = String(text || "").match(/(\d{1,2}:\d{2}(?::\d{2})?)\s*[-~—至到]\s*(\d{1,2}:\d{2}(?::\d{2})?)/);
+      // Anchor the range to the line start (real ASR timestamps lead the line) so a
+      // time range spoken INSIDE the content (e.g. "每天 9:00 到 18:00") doesn't hijack
+      // the segment timestamp; in-sentence times fall through to the positional index.
+      const explicit = String(text || "").match(/^\[?\s*(\d{1,2}:\d{2}(?::\d{2})?)\s*[-~—至到]\s*(\d{1,2}:\d{2}(?::\d{2})?)\]?/);
       if (explicit) return `${normalizeTime(explicit[1])}-${normalizeTime(explicit[2])}`;
       const single = String(text || "").match(/^\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?/);
       if (single) {
@@ -14075,7 +14108,7 @@
       return `<button class="source-link ${missing ? "missing" : ""}" data-source-time="${escapeAttr(label)}" data-source-missing="${missing ? "true" : "false"}" type="button" aria-disabled="${missing ? "true" : "false"}" title="${missing ? "原文片段未加载" : "查看原文依据"}">来源 ${escapeHtml(label)}</button>`;
     }
 
-    function bindSourceButton(root, sourceTime, reason = "") {
+    function bindSourceButton(root, sourceTime, reason = "", sourceIndex = null) {
       const button = root.querySelector("[data-source-time]");
       if (!button) return;
       button.addEventListener("click", event => {
@@ -14085,13 +14118,13 @@
           showToast("原文片段未加载");
           return;
         }
-        openSourceModal(sourceTime, reason);
+        openSourceModal(sourceTime, reason, sourceIndex);
       });
     }
 
-    function openSourceModal(sourceTime, reason = "") {
+    function openSourceModal(sourceTime, reason = "", sourceIndex = null) {
       const scenario = getScenario();
-      const evidence = findSourceEvidence(sourceTime);
+      const evidence = findSourceEvidence(sourceTime, sourceIndex);
       state.activeSourceTime = sourceTime;
       state.activeSourceText = evidence?.text || "";
       els.sourceDrawerMeta.textContent = `来源 ${sourceTime || "未定位"}`;
@@ -14109,9 +14142,16 @@
       els.sourceModal.classList.remove("show");
     }
 
-    function findSourceEvidence(sourceTime) {
+    function findSourceEvidence(sourceTime, sourceIndex = null) {
       const segments = getTranscriptSegments();
       if (!segments.length) return null;
+      // Prefer the exact segment this card was built from (carried as sourceIndex), so
+      // two turns resolving to the same time string don't both collapse to the first
+      // hit. Fall back to time-equality / overlap when no usable index is available.
+      if (Number.isInteger(sourceIndex)) {
+        const byIndex = segments.find(segment => segment.index === sourceIndex && segment.time === sourceTime);
+        if (byIndex) return byIndex;
+      }
       const exact = segments.find(segment => segment.time === sourceTime);
       if (exact) return exact;
       if (!/\d{1,2}:\d{2}/.test(String(sourceTime || ""))) return null;
@@ -14292,7 +14332,7 @@
         els.trustNote.classList.add("local");
         return;
       }
-      if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed) {
+      if (state.mode === "api" && modelConfig.apiKey && !state.lastApiFailed && resultIsModelGenerated()) {
         els.trustNote.textContent = `${getReviewLinkLabel()}当前由 ${getModelName()} 生成，已按「${reportName}」结构完成拆解。`;
       } else {
         els.trustNote.textContent = isDeveloperMode()
@@ -14525,6 +14565,7 @@
       }
       state.result.qaCards.forEach((card, index) => {
         const sourceTime = card.sourceTime || inferSourceTimeByText(`${card.question} ${card.answer}`, index);
+        const sourceIndex = Number.isInteger(card.sourceIndex) ? card.sourceIndex : null;
         const quality = getScoreQuality(card.score);
         const div = document.createElement("article");
         div.className = `qa-card ${quality.key}`;
@@ -14553,7 +14594,7 @@
           </div>
           <div class="source-footer">${sourceButtonHtml(sourceTime)}</div>
         `;
-        bindSourceButton(div, sourceTime, card.question);
+        bindSourceButton(div, sourceTime, card.question, sourceIndex);
         els.conclusionList.appendChild(div);
       });
     }
@@ -15277,9 +15318,16 @@
               interim += text;
             }
           }
-          setActiveSource(`${finalTranscript}${interim}`.trim());
-          saveState();
-          renderInputDependentState();
+          // Update the textarea cheaply on every interim chunk (skipRouting), but
+          // debounce the expensive routing detection + full re-render so live capture
+          // doesn't re-scan the whole growing transcript many times per second.
+          setActiveSource(`${finalTranscript}${interim}`.trim(), { skipRouting: true });
+          if (recordRenderTimer) return;
+          recordRenderTimer = setTimeout(() => {
+            recordRenderTimer = null;
+            saveState();
+            renderInputDependentState();
+          }, 400);
         };
         speechRecognition.onerror = event => {
           showToast(event.error === "not-allowed" ? "麦克风权限未开启" : "录音转写异常，请稍后重试");
@@ -15307,6 +15355,10 @@
 
     function stopRecording(showMessage = true) {
       isRecording = false;
+      // Cancel any pending debounced live-render; stopRecording does a full final
+      // persistVisibleSource + render below, which captures the final routing.
+      clearTimeout(recordRenderTimer);
+      recordRenderTimer = null;
       if (speechRecognition) {
         try {
           speechRecognition.stop();
@@ -15359,6 +15411,18 @@
 
     async function generate() {
       if (state.isLoading) return;
+      // Finalize any in-flight capture before generating (mirrors prepareInputModeSwitch).
+      // Otherwise the mic keeps recording / transcription keeps resolving and clobbers
+      // state.source after the result is saved, instantly flagging it stale against text
+      // the model never saw. Declining preserves the live capture.
+      if (isRecording) {
+        const ok = await confirmStopRecordingForSwitch(`生成${getActiveReportName()}`);
+        if (!ok) return;
+      }
+      if (isAudioTranscribing) {
+        const ok = await confirmAbortAudioTranscriptionForSwitch(`生成${getActiveReportName()}`);
+        if (!ok) return;
+      }
       persistVisibleSource({ trim: true });
       if (!hasRealInput()) {
         showToast("请先上传音频、录音转写或粘贴需要处理的内容");
@@ -15385,6 +15449,19 @@
           state.loadingText = `正在调用 ${modelConfig.model || modelConfig.customModel}...`;
           renderLoading();
           result = await callConfiguredModel(state.source);
+          // The model is the authority on content type/subtype (its prompt requires
+          // e.g. recruiterSubtype:"mixed" when both job-rec and career analysis appear).
+          // Adopt it unless the user manually pinned routing, so the report title,
+          // recruiter sections and history label match what the model actually produced
+          // instead of the heuristic's pre-call guess. (Local fallback keeps state
+          // values: simulateLocalGeneration is built around them.)
+          if (!state.contentRoutingManual) {
+            const modelType = getValidContentType(result.contentType || state.contentType);
+            state.contentType = modelType;
+            state.recruiterSubtype = modelType === "recruiterConversation"
+              ? getValidRecruiterSubtype(result.recruiterSubtype || state.recruiterSubtype)
+              : DEFAULT_RECRUITER_SUBTYPE;
+          }
         } else {
           result = await simulateLocalGeneration(state.source);
         }
@@ -15915,7 +15992,8 @@
           critique: buildCultureCritique(original),
           score: scoreCultureClarity(original),
           risk: inferCultureMisreadRisk(original),
-          sourceTime: segment.time
+          sourceTime: segment.time,
+          sourceIndex: segment.index
         }));
       });
       if (!cards.length) {
@@ -16155,7 +16233,8 @@
           critique: buildQaCritique(answer || segment.text),
           score: scoreInterviewAnswer(answer || segment.text),
           risk: inferQaRisk(answer || segment.text),
-          sourceTime: segment.time
+          sourceTime: segment.time,
+          sourceIndex: segment.index
         }));
       });
       if (!cards.length) {
@@ -17366,7 +17445,10 @@
     function getHistoryReportName(item = {}, scenarioKey = DEFAULT_SCENARIO) {
       const contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
       const subtype = getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE);
-      if (contentType === "recruiterConversation") return `${CONTENT_TYPES.recruiterConversation.reportName} · ${getRecruiterSubtypeLabel(subtype)}`;
+      // Reuse the canonical per-subtype report name so the history list agrees with the
+      // output-panel title, exported MD H1 and trust note (was a generic base name +
+      // subtype suffix, which diverged for every subtype).
+      if (contentType === "recruiterConversation") return getActiveReportName("recruiterConversation", subtype);
       return getScenarioByKey(scenarioKey).reportName;
     }
 

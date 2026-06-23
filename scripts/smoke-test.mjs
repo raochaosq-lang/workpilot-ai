@@ -313,6 +313,25 @@ function runStaticChecks() {
   assert(/key\.startsWith\(`\$\{STATE_KEY\}:`\)\) return false/.test(html), "legacy-account purge must protect per-identity draft slots from removal");
   // [7] Search copy must disclose JD + round notes are matched (placeholder + empty state).
   assert(/interviewSearchInput[\s\S]{0,140}placeholder="[^"]*JD[^"]*备注/.test(html), "search placeholder must disclose JD and 备注 are searched (matches actual behavior)");
+
+  // === R3 fleet deep-sweep guards (AI review core) ===
+  // [0] routing: a multi-speaker dialog requires RECURRING speakers, so a single-author
+  // labeled note (公司：/年包：) can't masquerade as a fake transcript.
+  assert(/recurringSpeakers\s*>=\s*2\s*&&\s*segments\.length\s*>=\s*3/.test(html), "routing multi-speaker detection must require >=2 recurring speakers");
+  // [1] API-mode generate adopts the model's content type/subtype unless routing is pinned.
+  assert(/result = await callConfiguredModel\(state\.source\);[\s\S]{0,600}if \(!state\.contentRoutingManual\)[\s\S]{0,300}state\.recruiterSubtype = modelType === "recruiterConversation"/.test(html), "API-mode generate must adopt the model's returned content type/subtype (not clobber it) when routing is auto");
+  // [2] Trust note / analysis label must not claim real-model output for a rules result.
+  assert(/function resultIsModelGenerated/.test(html), "resultIsModelGenerated helper must gate real-model claims on what actually produced the result");
+  assert(/!state\.lastApiFailed && resultIsModelGenerated\(\)\)[\s\S]{0,90}当前由 \$\{getModelName\(\)\}/.test(html), "trust note's '当前由 <模型> 生成' must be gated on resultIsModelGenerated()");
+  // [3] generate() must confirm-stop in-flight recording/transcription before generating.
+  assert(/async function generate\(\)[\s\S]{0,400}if \(isRecording\)[\s\S]{0,200}confirmStopRecordingForSwitch[\s\S]{0,200}if \(isAudioTranscribing\)[\s\S]{0,200}confirmAbortAudioTranscriptionForSwitch[\s\S]{0,200}persistVisibleSource/.test(html), "generate() must confirm-stop any in-flight recording/transcription before generating");
+  // [6] Source-evidence must resolve by carried segment index, not just first time match.
+  assert(/function findSourceEvidence\(sourceTime, sourceIndex[\s\S]{0,500}segment\.index === sourceIndex && segment\.time === sourceTime/.test(html), "findSourceEvidence must prefer the card's carried sourceIndex over the first time match");
+  assert(/function normalizeQaCard[\s\S]{0,900}sourceIndex:/.test(html), "QA cards must carry a sourceIndex for source-evidence disambiguation");
+  // [7] Speaker detection must reject year/annotation tokens as speaker names.
+  assert(/isAnnotationLabel = speakerMatch/.test(html), "transcript speaker detection must reject year/annotation tokens (备注：/2021年：)");
+  // [9] Live-recording onresult must skip per-chunk routing and debounce the heavy render.
+  assert(/speechRecognition\.onresult[\s\S]{0,700}skipRouting: true[\s\S]{0,300}recordRenderTimer = setTimeout/.test(html), "live-recording onresult must skip per-chunk routing detection and debounce the full re-render");
 }
 
 function runScriptSyntaxCheck() {
