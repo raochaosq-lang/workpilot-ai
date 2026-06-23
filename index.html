@@ -6832,7 +6832,7 @@
           </div>
           <div class="panel-body">
             <div class="manager-filter-grid">
-              <input id="interviewSearchInput" class="input" placeholder="搜索公司 / 岗位 / 地点 / 联系人 / 进展">
+              <input id="interviewSearchInput" class="input" placeholder="搜索公司 / 岗位 / 地点 / 联系人 / 进展 / JD / 备注">
               <select id="interviewStatusFilter" class="select" aria-label="面试状态筛选">
                 <option value="all">全部状态</option>
                 <option value="pending">待进行</option>
@@ -8103,7 +8103,8 @@
       search: "",
       status: "all",
       nextActionRecordId: "",
-      nextActionMode: ""
+      nextActionMode: "",
+      savingInterview: false
     };
     const historyState = {
       search: ""
@@ -8616,6 +8617,10 @@
     function shouldRemoveLegacyAccountKey(key, value = "") {
       const lowerKey = key.toLowerCase();
       if (BUSINESS_STORAGE_KEYS.has(key)) return false;
+      // Per-identity draft slots (`${STATE_KEY}:<userId>`) are business data and must
+      // be protected from the legacy-account purge just like the base STATE_KEY, even
+      // though their pasted content could otherwise trip a value-pattern heuristic.
+      if (key.startsWith(`${STATE_KEY}:`)) return false;
       if (LEGACY_ACCOUNT_STORAGE_KEYS.includes(key)) return true;
       if (lowerKey.includes("supabase")) return true;
       if (lowerKey.includes("isloggedin")) return true;
@@ -8965,7 +8970,12 @@
         const list = getScopedLocalList(TRANSCRIPTS_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
         const merged = [next, ...list.filter(row => row.id !== next.id)];
-        saveScopedLocalList(TRANSCRIPTS_KEY, merged.slice(0, 100));
+        // Gate cloud sync on a successful local write (mirrors interview/history
+        // saveAll). On quota failure: don't queue a cloud sync for a row that never
+        // persisted, surface a recoverable toast, and return null so the caller can
+        // avoid writing a history record that dangles to a missing transcript.
+        const ok = saveScopedLocalList(TRANSCRIPTS_KEY, merged.slice(0, 100));
+        if (!ok) { showToast("本地保存失败，存储空间可能已满，请清理后重试"); return null; }
         queueCloudSync("transcripts", [next]);
         // Evict records past the 100-cap from cloud too, or a later refresh resurrects them.
         merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("transcripts", row.id); });
@@ -8981,7 +8991,8 @@
         const list = getScopedLocalList(SUMMARY_REPORTS_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
         const merged = [next, ...list.filter(row => row.id !== next.id)];
-        saveScopedLocalList(SUMMARY_REPORTS_KEY, merged.slice(0, 100));
+        const ok = saveScopedLocalList(SUMMARY_REPORTS_KEY, merged.slice(0, 100));
+        if (!ok) { showToast("本地保存失败，存储空间可能已满，请清理后重试"); return null; }
         queueCloudSync("summaries", [next]);
         merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("ai_summaries", row.id); });
         return next;
@@ -8996,7 +9007,8 @@
         const list = getScopedLocalList(UPLOADED_FILES_KEY);
         const next = { ...item, userId: getCurrentUserId(), updatedAt: nowIso() };
         const merged = [next, ...list.filter(row => row.id !== next.id)];
-        saveScopedLocalList(UPLOADED_FILES_KEY, merged.slice(0, 100));
+        const ok = saveScopedLocalList(UPLOADED_FILES_KEY, merged.slice(0, 100));
+        if (!ok) { showToast("本地保存失败，存储空间可能已满，请清理后重试"); return null; }
         queueCloudSync("uploadedFiles", [next]);
         merged.slice(100).forEach(row => { if (row && row.id) queueCloudDelete("uploaded_files", row.id); });
         return next;
@@ -10779,6 +10791,11 @@
     }
 
     async function closeInterviewFormModal(options = {}) {
+      // A save in flight (e.g. awaiting async company inference) must not be
+      // dismissable by Escape / overlay-click / close-button: closing mid-save would
+      // either persist a record the user tried to abandon or orphan a confirm dialog
+      // over an already-resolved save. The save path itself closes with { force: true }.
+      if (!options.force && managerState.savingInterview) return false;
       if (!options.force && isInterviewFormDirty()) {
         const ok = await showConfirmDialog({
           kicker: "未保存",
@@ -11288,11 +11305,31 @@
       if (resultButton) resultButton.classList.toggle("has-update", hasRealInput() && (!shouldShowFormalResult() || isResultStale()));
     }
 
+    function getDraftStateKey() {
+      // The in-progress draft (source/result/edits) is scoped per identity so signing
+      // in/out or switching accounts keeps each identity's own draft instead of the
+      // single global slot being reset on switch and then clobbered on the next save.
+      return `${STATE_KEY}:${getCurrentUserId()}`;
+    }
+
     function loadAll() {
       let savedMode = "";
       try {
         currentUser = authService.getCurrentUser();
-        const saved = storageService.getJson(STATE_KEY, {});
+        let saved = storageService.getJson(getDraftStateKey(), null);
+        if (!saved) {
+          // One-time migration from the pre-scoping single global slot. Adopt it ONLY
+          // when it provably belongs to this identity (matching userId, or an
+          // anonymous/local slot for a local identity), so a logged-in account never
+          // inherits another user's leftover draft.
+          const legacy = storageService.getJson(STATE_KEY, null);
+          const currentId = getCurrentUserId();
+          if (legacy && (legacy.userId === currentId || (!legacy.userId && isLocalIdentifier(currentId)))) {
+            saved = legacy;
+            storageService.remove(STATE_KEY);
+          }
+        }
+        saved = saved || {};
         savedMode = saved.mode || "";
         const canRestorePrivateState = !saved.userId || saved.userId === getCurrentUserId();
         const savedOutputType = saved.outputType || DEFAULT_OUTPUT_TYPE;
@@ -11352,7 +11389,7 @@
 
     function saveState() {
       if (!state.autoSave) return;
-      const ok = storageService.setJson(STATE_KEY, {
+      const ok = storageService.setJson(getDraftStateKey(), {
         schemaVersion: STATE_SCHEMA_VERSION,
         userId: getCurrentUserId(),
         appPage: state.appPage,
@@ -13011,7 +13048,15 @@
       return getFutureInterview(record);
     }
 
+    function hasFailedRound(record) {
+      return (record.rounds || []).some(round => round.result === "failed");
+    }
+
     function getOverdueInterview(record, referenceMs = Date.now()) {
+      // A terminally-failed pipeline (getInterviewProgress short-circuits to "failed")
+      // exposes no active round: a leftover pending later round must not resurface the
+      // record under 已过期待更新 / the next-interview surfaces. (Passed-then-future is fine.)
+      if (hasFailedRound(record)) return null;
       return (record.rounds || [])
         .map((round, index) => ({ ...round, index }))
         .filter(round => {
@@ -13022,6 +13067,7 @@
     }
 
     function getFutureInterview(record, referenceMs = Date.now()) {
+      if (hasFailedRound(record)) return null;
       return (record.rounds || [])
         .map((round, index) => ({ ...round, index }))
         .filter(round => {
@@ -13254,8 +13300,12 @@
       const stats = records.reduce((acc, record) => {
         const progress = getInterviewProgress(record);
         acc.total += 1;
-        if (["upcoming", "needs-update", "in-progress"].includes(progress.key)) acc.active += 1;
-        if (progress.key === "unscheduled") acc.unscheduled += 1;
+        // 待安排 card must use the SAME predicate as the 待补时间 chip/dropdown/badge
+        // (needsInterviewTime), or the card shows 0 while the matching chip shows 1.
+        // A record still needing a time is counted there, not under 推进中, so the two
+        // cards never double-count the same record.
+        if (["upcoming", "needs-update", "in-progress"].includes(progress.key) && !needsInterviewTime(record)) acc.active += 1;
+        if (needsInterviewTime(record)) acc.unscheduled += 1;
         if (getFutureInterview(record)) acc.next += 1;
         return acc;
       }, { total: 0, active: 0, unscheduled: 0, next: 0 });
@@ -13293,9 +13343,9 @@
           state: "filter",
           label: "无匹配",
           title: "没有匹配的面试记录",
-          description: "可以换一个公司、岗位、地点、联系人或进展关键词，也可以把状态筛选切回全部状态。",
+          description: "可以换一个公司、岗位、地点、联系人、进展，或 JD / 备注里的关键词，也可以把状态筛选切回全部状态。",
           cards: [
-            { title: "关键词", description: "支持公司、岗位、base 和联系人。" },
+            { title: "关键词", description: "公司、岗位、base、联系人，也会搜 JD 与轮次备注。" },
             { title: "进展状态", description: "按待进行、已通过、已挂筛选。" },
             { title: "时间排序", description: "匹配后仍按下一场时间优先展示。" }
           ],
@@ -13618,11 +13668,18 @@
       const originalButtonText = els.saveInterviewBtn.textContent;
       const shouldInferCompany = !record.company && buildCompanyInferenceText(record);
       try {
+        managerState.savingInterview = true;
         els.saveInterviewBtn.disabled = true;
         els.saveInterviewBtn.textContent = shouldInferCompany ? "识别公司中..." : "保存中...";
         if (shouldInferCompany) {
+          // Lock the company field during inference so a value the user types in the
+          // await window isn't silently overwritten by the inferred one below.
+          els.interviewCompanyInput.disabled = true;
           record = await hydrateMissingCompany(record);
-          if (record.company) els.interviewCompanyInput.value = record.company;
+          els.interviewCompanyInput.disabled = false;
+          const typedCompany = els.interviewCompanyInput.value.trim();
+          if (typedCompany) record.company = typedCompany;
+          else if (record.company) els.interviewCompanyInput.value = record.company;
         }
         if (!validateInterviewRequiredFields(record, { focus: true })) {
           showToast("请至少填写面试公司和岗位，之后才能稳定关联复盘");
@@ -13649,6 +13706,8 @@
         renderInterviewManager();
         showToast(record.company && shouldInferCompany ? `已识别公司并保存：${record.company}` : (existingIndex >= 0 ? "面试记录已更新" : "面试记录已保存"));
       } finally {
+        managerState.savingInterview = false;
+        els.interviewCompanyInput.disabled = false;
         els.saveInterviewBtn.disabled = false;
         els.saveInterviewBtn.textContent = originalButtonText;
       }
@@ -14883,7 +14942,9 @@
         storageKey: "",
         createdAt: nowIso()
       });
-      state.currentUploadedFileId = fileRecord.id;
+      // uploadedFileService.save returns null if the local persist failed (quota);
+      // it already toasted, so just avoid a crash on .id and keep the in-session file.
+      state.currentUploadedFileId = fileRecord?.id || "";
       const note = `\n\n[音频文件] ${file.name}（${formatFileSize(file.size)}）`;
       const preservedSource = removeAudioUploadBlocks(state.sourceByMode.upload || "");
       setActiveSource(`${preservedSource ? `${preservedSource}\n\n` : ""}${note.trim()}`.trim());
@@ -17056,6 +17117,7 @@
       state.restored = false;
       if (els.audioFileInput) els.audioFileInput.value = "";
       if (els.audioPreview) els.audioPreview.removeAttribute("src");
+      storageService.remove(getDraftStateKey());
       storageService.remove(STATE_KEY);
       render();
       showToast("已清空内容");
@@ -17197,7 +17259,7 @@
       const title = titleSource.replace(/\s+/g, " ").slice(0, 28);
       state.currentTranscriptId = transcriptId;
       state.currentSummaryId = summaryReportId;
-      transcriptService.save({
+      const savedTranscript = transcriptService.save({
         id: transcriptId,
         interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
         roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
@@ -17206,7 +17268,7 @@
         audioFileId: state.currentUploadedFileId || "",
         createdAt: state.generatedAt || nowIso()
       });
-      summaryService.save({
+      const savedSummary = summaryService.save({
         id: summaryReportId,
         interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
         roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
@@ -17214,6 +17276,12 @@
         modelUsed: state.modelUsed || getModelName(),
         createdAt: state.generatedAt || nowIso()
       });
+      if (!savedTranscript || !savedSummary) {
+        // The failed local persist already surfaced a recoverable toast in the
+        // service. Abort before writing a history record that would dangle to a
+        // missing transcript/summary, and don't claim "已写入历史记录".
+        return false;
+      }
       const item = normalizeHistoryRecord({
         id: createId(),
         userId: getCurrentUserId(),

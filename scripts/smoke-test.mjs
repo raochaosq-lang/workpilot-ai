@@ -284,6 +284,35 @@ function runStaticChecks() {
   assert(/function fillInterviewForm[\s\S]*?interviewIntentionInput[\s\S]*?data-custom='1'/.test(html), "intention <select> must preserve a non-preset imported value via an injected option (else it is silently wiped on edit-save)");
   assert(/function saveInterviewRecords\(\)\s*\{[\s\S]*?return ok;/.test(html), "saveInterviewRecords must return its ok flag so callers can detect a failed persist");
   assert(/function saveInterviewFromForm[\s\S]*?if \(!saveInterviewRecords\(\)\)[\s\S]*?interviewRecords = previousRecords;[\s\S]*?return;/.test(html), "saveInterviewFromForm must roll back + bail (no success toast / modal close) when the save fails");
+
+  // === R2 fleet deep-sweep guards, part 2 ===
+  // [2] An in-flight save (esp. async company inference) must not be dismissable by
+  // Escape/overlay/close, and must clear the busy flag in finally.
+  assert(/async function saveInterviewFromForm[\s\S]*?managerState\.savingInterview = true[\s\S]*?finally[\s\S]*?managerState\.savingInterview = false/.test(html), "saveInterviewFromForm must set/clear a savingInterview busy flag (set in try, cleared in finally)");
+  assert(/function closeInterviewFormModal[\s\S]*?!options\.force && managerState\.savingInterview\) return false/.test(html), "closeInterviewFormModal must refuse non-forced close while a save is in flight");
+  // [3] A terminally-failed pipeline must expose no upcoming/overdue active round.
+  assert(/function hasFailedRound[\s\S]*?result === "failed"/.test(html), "hasFailedRound helper must detect a failed round");
+  assert(/function getFutureInterview[\s\S]*?if \(hasFailedRound\(record\)\) return null;/.test(html), "getFutureInterview must return null for a failed pipeline");
+  assert(/function getOverdueInterview[\s\S]*?if \(hasFailedRound\(record\)\) return null;/.test(html), "getOverdueInterview must return null for a failed pipeline");
+  // [4] transcript/summary/uploadedFile saves must gate cloud sync on a successful
+  // local write (return null otherwise) so a failed persist can't queue a sync or
+  // leave a dangling history reference.
+  assert(/const ok = saveScopedLocalList\(TRANSCRIPTS_KEY[\s\S]{0,200}if \(!ok\)[\s\S]{0,140}return null;[\s\S]{0,80}queueCloudSync\("transcripts"/.test(html), "transcriptService.save must gate queueCloudSync on a successful local write");
+  assert(/const ok = saveScopedLocalList\(SUMMARY_REPORTS_KEY[\s\S]{0,200}if \(!ok\)[\s\S]{0,140}return null;[\s\S]{0,80}queueCloudSync\("summaries"/.test(html), "summaryService.save must gate queueCloudSync on a successful local write");
+  assert(/const ok = saveScopedLocalList\(UPLOADED_FILES_KEY[\s\S]{0,200}if \(!ok\)[\s\S]{0,140}return null;[\s\S]{0,80}queueCloudSync\("uploadedFiles"/.test(html), "uploadedFileService.save must gate queueCloudSync on a successful local write");
+  assert(/const savedTranscript = transcriptService\.save[\s\S]*?const savedSummary = summaryService\.save[\s\S]*?if \(!savedTranscript \|\| !savedSummary\)[\s\S]*?return false;/.test(html), "saveCurrentToHistory must abort before writing history when transcript/summary persist fails");
+  // [5] 待安排 stat card must use the same predicate (needsInterviewTime) as the
+  // 待补时间 chip, and not double-count the record under 推进中.
+  assert(/includes\(progress\.key\) && !needsInterviewTime\(record\)\) acc\.active \+= 1;/.test(html), "推进中 stat card must exclude records still needing a time (needsInterviewTime)");
+  assert(/if \(needsInterviewTime\(record\)\) acc\.unscheduled \+= 1;/.test(html), "待安排 stat card must count via needsInterviewTime (same predicate as the 待补时间 chip)");
+  assert(!/progress\.key === "unscheduled"\) acc\.unscheduled \+= 1;/.test(html), "待安排 stat card must NOT use the narrow progress.key predicate that diverges from the chip count");
+  // [6] The in-progress draft must be scoped per identity so a login/switch can't
+  // clobber another identity's draft.
+  assert(/function getDraftStateKey[\s\S]*?\$\{STATE_KEY\}:\$\{getCurrentUserId\(\)\}/.test(html), "getDraftStateKey must scope the draft slot per identity");
+  assert(/function saveState\(\)[\s\S]*?setJson\(getDraftStateKey\(\)/.test(html), "saveState must persist the draft under the per-identity key");
+  assert(/key\.startsWith\(`\$\{STATE_KEY\}:`\)\) return false/.test(html), "legacy-account purge must protect per-identity draft slots from removal");
+  // [7] Search copy must disclose JD + round notes are matched (placeholder + empty state).
+  assert(/interviewSearchInput[\s\S]{0,140}placeholder="[^"]*JD[^"]*备注/.test(html), "search placeholder must disclose JD and 备注 are searched (matches actual behavior)");
 }
 
 function runScriptSyntaxCheck() {

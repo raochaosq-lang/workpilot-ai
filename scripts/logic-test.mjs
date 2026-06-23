@@ -492,6 +492,25 @@ ok((() => { try { normalizeInterviewRecord("x"); normalizeInterviewRecord(123); 
   managerState.status = savedStatus;
 }
 
+// R2 deep-sweep [3]: a terminally-failed pipeline must expose NO active round, so a
+// leftover pending later round can't resurface it under 即将面试 / 已过期待更新 / next-up.
+{
+  const failedThenFuture = normalizeInterviewRecord({ company: "FailedThenFuture", rounds: [{ result: "failed" }, { time: "2099-01-01T10:00", result: "pending" }] });
+  eq(getFutureInterview(failedThenFuture), null, "a failed pipeline exposes no upcoming round even with a later pending round");
+  const failedThenPast = normalizeInterviewRecord({ company: "FailedThenPast", rounds: [{ result: "failed" }, { time: "2000-01-01T10:00", result: "pending" }] });
+  eq(getOverdueInterview(failedThenPast), null, "a failed pipeline exposes no overdue round even with a stale past pending round");
+  const counts = getInterviewDerivedStatusCounts([failedThenFuture]);
+  eq(counts.upcoming, 0, "failed-then-future record is not counted as upcoming");
+  eq(counts.failed, 1, "failed-then-future record is counted as failed");
+  const savedSearch = managerState.search, savedStatus = managerState.status;
+  managerState.search = ""; managerState.status = "upcoming";
+  ok(!matchesInterviewFilter(failedThenFuture), "failed pipeline must not appear under the 即将面试 filter");
+  managerState.search = savedSearch; managerState.status = savedStatus;
+  // Positive control: passing early rounds with a real future round still counts.
+  const passedThenFuture = normalizeInterviewRecord({ company: "PassedThenFuture", rounds: [{ result: "passed" }, { time: "2099-01-01T10:00", result: "pending" }] });
+  ok(getFutureInterview(passedThenFuture) !== null, "passed-then-future still counts as an upcoming interview");
+}
+
 // compareInterviewRecords queue ordering: soonest upcoming first, finished last.
 {
   const soon = normalizeInterviewRecord({ company: "Soon", rounds: [{ time: "2099-01-01T10:00", result: "pending" }] });
