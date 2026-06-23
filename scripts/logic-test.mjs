@@ -701,6 +701,29 @@ deep(parseJsonOrEmpty("null"), {}, "JSON null body -> {} (no crash on .error/.te
 deep(parseJsonOrEmpty("123"), {}, "JSON primitive body -> {}");
 ok(typeof getAsrResponseErrorMessage(parseJsonOrEmpty("null"), "null", { status: 500, statusText: "X" }) === "string", "getAsrResponseErrorMessage tolerates a null-parsed body");
 
+// ===== 2026-06-22 R8 deep-sweep (history / export / fidelity) regressions =====
+// [1] Search query is trimmed only at the use-site, so a trailing/leading space still matches.
+{
+  const rec = normalizeInterviewRecord({ company: "字节跳动", role: "PM" });
+  const savedSearch = managerState.search, savedStatus = managerState.status;
+  managerState.status = "all"; managerState.search = "  字节  ";
+  ok(matchesInterviewFilter(rec), "a search with surrounding spaces still matches (trim at use-site)");
+  managerState.search = savedSearch; managerState.status = savedStatus;
+}
+// [2] Nested-object recruiter fact value flattens (no [object Object] in report/export).
+{
+  const r = normalizeRecruiterReport({ facts: [{ label: "薪资/职级", value: { min: "60万", max: "80万" } }] }, "opportunityRecommendation");
+  ok(!/\[object Object\]/.test(JSON.stringify(r.facts)), "nested-object fact value flattened, no [object Object]");
+}
+// [3] Nested-object key-value map (专项分析) flattens.
+{
+  const r = normalizeRecruiterReport({ career: { direction: { primary: "AI产品" }, market: "偏热" } }, "careerAnalysis");
+  ok(!/\[object Object\]/.test(JSON.stringify(r.career)) && r.career.market === "偏热", "key-value map flattens nested objects");
+}
+// [5] Export filename strips control/bidi chars but keeps CJK.
+ok(!/‮/.test(buildExportFileName(`report${String.fromCharCode(0x202e)}gpj.exe`, "md")), "buildExportFileName strips a bidi override");
+ok(/字节跳动/.test(buildExportFileName("字节跳动 产品", "md")), "buildExportFileName keeps CJK names");
+
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);
   failures.forEach(item => console.error(`- ${item}`));

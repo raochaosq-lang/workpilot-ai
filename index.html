@@ -9893,7 +9893,7 @@
       els.importInterviewTextBtn.addEventListener("click", openInterviewTextImportModal);
       els.interviewImportInput.addEventListener("change", handleInterviewImportFile);
       els.interviewSearchInput.addEventListener("input", () => {
-        managerState.search = els.interviewSearchInput.value.trim();
+        managerState.search = els.interviewSearchInput.value;
         renderInterviewManager();
       });
       els.interviewStatusFilter.addEventListener("change", () => {
@@ -10099,7 +10099,7 @@
       els.clearModelBtn.addEventListener("click", clearModelConfig);
       els.closeHistoryBtn.addEventListener("click", closeHistoryModal);
       els.historySearchInput.addEventListener("input", () => {
-        historyState.search = els.historySearchInput.value.trim();
+        historyState.search = els.historySearchInput.value;
         renderHistory();
       });
       els.historyModal.addEventListener("click", event => {
@@ -12101,7 +12101,9 @@
           }
           return {
             label: item.label || item.name || item.key || "事实信息",
-            value: String(item.value || item.detail || item.description || item.text || "待确认")
+            // Flatten a nested-object/array value (model output) instead of stringifying it
+            // to "[object Object]" in the report + Markdown export.
+            value: coerceText(item.value ?? item.detail ?? item.description ?? item.text) || "待确认"
           };
         })
         .filter(item => item.label || item.value);
@@ -12124,7 +12126,9 @@
 
     function normalizeKeyValueMap(value = {}) {
       if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, String(item || "")]));
+      // Flatten nested objects/arrays via coerceText so a structured 专项分析 value never
+      // renders as "[object Object]" in the panel or Markdown export.
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, coerceText(item)]));
     }
 
     function normalizeTask(task = {}) {
@@ -13279,7 +13283,7 @@
 
     function matchesInterviewFilter(record) {
       const progress = getInterviewProgress(record);
-      const query = managerState.search.toLowerCase();
+      const query = managerState.search.trim().toLowerCase();
       const text = [
         record.company,
         record.role,
@@ -13446,7 +13450,9 @@
       els.managerActiveCount.textContent = stats.active;
       els.managerUnscheduledCount.textContent = stats.unscheduled;
       els.managerNextCount.textContent = stats.next;
-      els.interviewSearchInput.value = managerState.search;
+      // Don't rewrite the search input while it's focused (eats a trailing space mid-typing);
+      // sync only on programmatic resets.
+      if (document.activeElement !== els.interviewSearchInput) els.interviewSearchInput.value = managerState.search;
       els.interviewStatusFilter.value = managerState.status;
       recognizeMissingCompaniesInBackground(records);
       renderInterviewQuickFilters(records);
@@ -17679,11 +17685,19 @@
           uploadedFileId: item.audioFileId
         });
       }
-      const list = getHistory().filter(history => !(history.generatedSourceHash === item.generatedSourceHash
+      const isDuplicateOf = history => history.generatedSourceHash === item.generatedSourceHash
         && history.outputType === item.outputType
         && getValidScenario(history.scenario || DEFAULT_SCENARIO) === scenario.key
         && getValidContentType(history.contentType || DEFAULT_CONTENT_TYPE) === item.contentType
-        && getValidRecruiterSubtype(history.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) === item.recruiterSubtype));
+        && getValidRecruiterSubtype(history.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) === item.recruiterSubtype;
+      const previousHistory = getHistory();
+      const list = previousHistory.filter(history => !isDuplicateOf(history));
+      // The new item gets a fresh id, so the same-source records we just dropped locally
+      // must ALSO leave the cloud — otherwise the next refreshAllCloudData resurrects the
+      // pre-edit copy as a phantom duplicate (mirrors the 50-cap eviction guard).
+      previousHistory.filter(isDuplicateOf).forEach(stale => {
+        if (stale.id && stale.id !== item.id) queueCloudDelete("history_records", stale.id);
+      });
       saveHistory([item, ...list]);
       if (!silent) showToast(isInterviewReport && item.interviewId ? "已保存到历史，并关联回面试记录" : "已写入历史记录");
       saveState();
@@ -17783,8 +17797,10 @@
 
     function renderHistory() {
       const list = getHistory();
-      const query = historyState.search.toLowerCase();
-      if (els.historySearchInput && els.historySearchInput.value !== historyState.search) {
+      const query = historyState.search.trim().toLowerCase();
+      // Only sync the input value when it's NOT focused (programmatic resets). Rewriting a
+      // focused input mid-typing deletes a trailing space, making multi-word queries impossible.
+      if (els.historySearchInput && document.activeElement !== els.historySearchInput && els.historySearchInput.value !== historyState.search) {
         els.historySearchInput.value = historyState.search;
       }
       const visibleList = query
@@ -18052,7 +18068,9 @@
       const payload = {
         exportedAt: nowIso(),
         app: "Senlo",
-        version: 1,
+        // Not a restore format — there is no JSON re-import path. Framed as a snapshot so the
+        // file doesn't read as something the app can ingest back.
+        snapshotNote: "本地数据快照，仅用于查看与备份，暂不支持回传导入",
         cloudSyncAdapter: {
           ...CLOUD_SYNC_ADAPTER,
           configured: hasCloudConfig(),
@@ -18072,6 +18090,7 @@
 
     function buildExportFileName(name, ext) {
       const safeName = String(name || "senlo-export")
+        .split("").filter(ch => { const code = ch.charCodeAt(0); return code > 31 && code !== 127 && !(code >= 0x200b && code <= 0x206f) && code !== 0xfeff; }).join("")
         .replace(/[\\/:*?"<>|]+/g, "-")
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-")
@@ -18103,8 +18122,14 @@
           temp.value = text;
           document.body.appendChild(temp);
           temp.select();
-          document.execCommand("copy");
+          // execCommand returns false (without throwing) when the copy is blocked — don't
+          // claim "已复制" for a clipboard that's actually empty.
+          const ok = document.execCommand("copy");
           temp.remove();
+          if (!ok) {
+            showToast("复制失败，请手动选择文本复制");
+            return;
+          }
         } catch (fallbackError) {
           showToast("复制失败，请手动选择文本复制");
           return;

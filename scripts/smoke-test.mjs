@@ -403,6 +403,22 @@ function runStaticChecks() {
   assert(!/data\.text \|\| data\.transcript \|\| data\.result\?\.text \|\| ""/.test(html), "transcript extraction must coerce a non-string field before trim");
   // [6] isAsrProbeReachable no longer excludes on the bare word 'model'.
   assert(!/permission\|model\|not found/.test(html), "isAsrProbeReachable must not exclude on the bare word 'model'");
+
+  // === R8 fleet deep-sweep guards (history / export / fidelity) ===
+  // [0] Dedup-evicted history records are also cloud-deleted (no resurrection on sync).
+  assert(/function saveCurrentToHistory[\s\S]*isDuplicateOf[\s\S]*queueCloudDelete\("history_records"/.test(html), "saveCurrentToHistory must cloud-delete same-source dedup-evicted records");
+  // [1] Search inputs store the raw value and only sync when not focused (don't eat spaces).
+  assert(/historyState\.search = els\.historySearchInput\.value;/.test(html), "history search must store the raw value (no mid-typing trim)");
+  assert(/document\.activeElement !== els\.historySearchInput/.test(html) && /document\.activeElement !== els\.interviewSearchInput/.test(html), "search inputs must not be rewritten while focused");
+  // [2]/[3] Recruiter fact + key-value map values flatten nested objects.
+  assert(/coerceText\(item\.value \?\? item\.detail/.test(html), "normalizeRecruiterFacts must flatten nested fact values via coerceText");
+  assert(/Object\.entries\(value\)\.map\(\(\[key, item\]\) => \[key, coerceText\(item\)\]\)/.test(html), "normalizeKeyValueMap must flatten nested values via coerceText");
+  // [4] copyText branches on the execCommand result (no false success toast).
+  assert(/const ok = document\.execCommand\("copy"\)/.test(html), "copyText must check the execCommand return before claiming success");
+  // [5] Export filename strips control/bidi via codepoint filter.
+  assert(/code > 31 && code !== 127 && !\(code >= 0x200b && code <= 0x206f\)/.test(html), "buildExportFileName must strip control/bidi characters");
+  // [6] The JSON export no longer advertises a non-existent restore version.
+  assert(!/app: "Senlo",\s*version: 1/.test(html), "exportAllUserData must not imply a restore format (version:1) with no import path");
 }
 
 function runScriptSyntaxCheck() {
