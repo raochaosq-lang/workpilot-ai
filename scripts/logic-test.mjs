@@ -67,7 +67,8 @@ const exposed = [
   "getTranscriptSegmentsFromText", "inferSourceTime", "getEffectiveInput", "removeAudioUploadBlocks", "getActiveReportName", "getHistoryReportName",
   "buildInterviewQaCards", "splitSentences", "inferInterviewDuration", "inferCultureInfo", "detectSourceLanguage",
   "inferRecruiterFacts", "getFactValue", "hasConcreteOpportunityFacts", "hasConcreteOpportunityReport", "normalizeRecruiterReport", "mergeRecruiterCoreFacts",
-  "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard"
+  "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard",
+  "normalizeStoredModelLabel", "getRecruiterCompletenessLabel"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -103,6 +104,7 @@ const {
   buildInterviewQaCards, splitSentences, inferInterviewDuration, inferCultureInfo, detectSourceLanguage,
   inferRecruiterFacts, getFactValue, hasConcreteOpportunityFacts, hasConcreteOpportunityReport, normalizeRecruiterReport, mergeRecruiterCoreFacts,
   inferCultureMisreadRisk, buildCultureCards, parseModelJson, normalizeQaCard,
+  normalizeStoredModelLabel, getRecruiterCompletenessLabel,
   localStorage
 } = fns;
 
@@ -597,7 +599,8 @@ eq(getFactValue(inferRecruiterFacts("他们公司最近裁员很厉害不太稳�
 // [8] Fractional probability (0–1) is rescaled to a percent, not collapsed to 1%.
 eq(normalizePercentValue(0.72), 72, "fractional probability rescaled to percent");
 eq(normalizePercentValue(0.85), 85, "fractional 0.85 -> 85");
-eq(normalizePercentValue(1), 100, "bare 1 treated as full (100%), not 1%");
+eq(normalizePercentValue(1), 1, "integer 1 means 1 percent, not 100 (R5: only the open interval (0,1) is a fraction)");
+eq(normalizePercentValue(0.999), 100, "a true sub-1 fraction still rescales and clamps");
 eq(normalizePercentValue(72), 72, "integer percent unchanged");
 eq(normalizePercentValue(0), 0, "zero stays zero");
 eq(normalizeQaCard({ score: 0.85 }).score, 85, "fractional qa-card score rescaled");
@@ -628,6 +631,28 @@ ok(inferCultureMisreadRisk("I have a concern, not sure this would work").include
   const cards = buildCultureCards(segs, []);
   ok(cards[0] && !cards[0].answer.includes("我再确认资源"), "culture card does not merge the next (different) speaker's turn");
 }
+
+// ===== 2026-06-22 R5 deep-sweep (result rendering / stats / honesty) regressions =====
+// [0] A stored record's engine label must NEVER read as 真实大模型 for an empty modelUsed.
+ok(!normalizeStoredModelLabel("").startsWith("真实大模型"), "empty stored modelUsed must not be labeled as a real model");
+ok(normalizeStoredModelLabel("").length > 0, "empty stored modelUsed gets a rules/local label");
+eq(normalizeStoredModelLabel("claude-opus-4"), "claude-opus-4", "a real stored model name passes through");
+// [1] (regression from R4) an integer 1% must not inflate to 100% via double-normalization.
+eq(normalizePercentValue(1), 1, "integer 1 stays 1%");
+eq(normalizeQaCard({ score: 1 }).score, 1, "qa score of 1 stays 1, not 100");
+// [2] value-less model fact objects must not fake a concrete opportunity.
+{
+  const rep = normalizeRecruiterReport({ facts: [{ label: "推荐公司/团队", value: "" }, { label: "推荐岗位" }] }, "opportunityRecommendation");
+  eq(getFactValue(rep.facts, "推荐公司/团队"), "", "value-less / 待确认 fact is not a real value");
+  ok(hasConcreteOpportunityReport(rep) === false, "empty model facts do not fake a concrete opportunity");
+}
+// [3] completeness label must not count placeholder/negation fact values as known.
+{
+  const rep = normalizeRecruiterReport({ facts: [{ label: "薪资/职级", value: "保密" }, { label: "base/工作方式", value: "还没定" }, { label: "流程/时间点", value: "不太清楚" }] }, "opportunityRecommendation");
+  eq(getRecruiterCompletenessLabel(rep), "信息待补齐", "placeholder fact values do not inflate completeness");
+}
+// [5]/[6] a qa score of 0 is preserved and is consistent with the 需重练 bucket.
+eq(normalizeQaCard({ score: 0 }).score, 0, "qa score 0 is preserved (not defaulted to 78)");
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

@@ -11748,6 +11748,17 @@
       return text;
     }
 
+    // Label for a STORED record's engine. Unlike normalizeModelUsedLabel it must NEVER
+    // consult live api/model state — a legacy/cloud item with empty modelUsed must read as
+    // a rules-based label, not "真实大模型：<whatever is open now>" (which would also drop
+    // the export disclaimer).
+    function normalizeStoredModelLabel(value = "") {
+      const text = String(value || "").trim();
+      if (!text) return isDeveloperMode() ? "本地模拟分析" : "规则快速分析";
+      if (!isDeveloperMode() && (text === "本地模拟" || text === "声流内置分析")) return "规则快速分析";
+      return text;
+    }
+
     function markEdited() {
       if (!hasResult()) return;
       state.editedAt = nowIso();
@@ -11846,7 +11857,10 @@
       // A finite value in (0,1] is a probability fraction (a passRate/probabilityScore
       // of 0.72 means 72%, not 1%) — rescale it before clamping. Integers >1 are already
       // percentages.
-      if (Number.isFinite(direct)) return clampPercent(direct > 0 && direct <= 1 ? direct * 100 : direct);
+      // Only a value in the OPEN interval (0,1) is a probability fraction. An integer 1
+      // is a legitimate 1% (the local engine emits integer percents via clampPercent), so
+      // it must NOT be re-scaled to 100.
+      if (Number.isFinite(direct)) return clampPercent(direct > 0 && direct < 1 ? direct * 100 : direct);
       const text = String(value || "").trim();
       const percentMatch = text.match(/(\d{1,3}(?:\.\d+)?)\s*%/);
       if (percentMatch) return clampPercent(Number(percentMatch[1]));
@@ -11876,7 +11890,7 @@
         question: card.question || card.q || "核心问题待识别",
         answer: card.answer || card.a || card.candidateAnswer || "原文中没有识别到完整回答。",
         critique: card.critique || card.feedback || card.aiReview || "建议补充具体证据、结果和下一步动作。",
-        score: Number.isFinite(Number(card.score)) ? clampPercent(Number(card.score) > 0 && Number(card.score) <= 1 ? Number(card.score) * 100 : Number(card.score)) : 78,
+        score: Number.isFinite(Number(card.score)) ? clampPercent(Number(card.score) > 0 && Number(card.score) < 1 ? Number(card.score) * 100 : Number(card.score)) : 78,
         risk: card.risk || card.riskPoint || "",
         speaker: card.speaker || "",
         sourceTime: card.sourceTime || card.timestamp || card.time || "",
@@ -14469,6 +14483,10 @@
         const report = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
         els.taskCount.textContent = report.facts.filter(item => item.value && item.value !== "未提及").length;
         els.passRateStat.textContent = report.questions.length;
+        // The 待确认 card counts questions, which render in tasksSection — point the
+        // click-to-scroll there, not at the summary section that holds no questions.
+        const recruiterPassCard = els.passRateStat.closest(".stat-card");
+        if (recruiterPassCard) recruiterPassCard.dataset.target = "tasksSection";
         els.riskCount.textContent = report.nextActions.length;
         els.statsGrid.classList.toggle("hidden", !shouldShowFormalResult());
         els.conclusionCount.textContent = report.facts.length;
@@ -14481,6 +14499,10 @@
       const coach = normalizeCoachSummary(state.result.coachSummary, state.result);
       els.taskCount.textContent = qaCount;
       els.passRateStat.textContent = formatPercent(coach.passRate);
+      // Reset the shared stat-card's scroll target for interview mode (the 通过率 card's
+      // detail lives in summarySection), undoing the recruiter retarget above.
+      const interviewPassCard = els.passRateStat.closest(".stat-card");
+      if (interviewPassCard) interviewPassCard.dataset.target = "summarySection";
       els.riskCount.textContent = improvementCount;
       els.statsGrid.classList.toggle("hidden", !shouldShowFormalResult());
       els.conclusionCount.textContent = qaCount;
@@ -14575,7 +14597,12 @@
     }
 
     function getRecruiterCompletenessLabel(report) {
-      const knownFacts = report.facts.filter(item => item.value && item.value !== "未提及").length;
+      // Count only REAL facts toward completeness — placeholder/negation/value-less
+      // values (保密 / 还没定 / 待确认 / 未提及) must not inflate 信息完整度.
+      const knownFacts = report.facts.filter(item => {
+        const value = String(item.value || "").trim();
+        return value && value !== "未提及" && value !== "待确认" && !isPlaceholderFact(value);
+      }).length;
       if (knownFacts >= 4) return "事实较完整";
       if (knownFacts >= 2) return "部分明确";
       return "信息待补齐";
@@ -14608,7 +14635,7 @@
               <h4>${escapeHtml(card.question)}</h4>
             </div>
             <div class="qa-score">
-              <strong>${escapeHtml(String(card.score || 78))}</strong>
+              <strong>${escapeHtml(String(Number.isFinite(Number(card.score)) ? card.score : 78))}</strong>
               <span>${escapeHtml(quality.label)}</span>
             </div>
           </div>
@@ -15744,9 +15771,11 @@
     }
 
     function getFactValue(facts, label) {
-      const item = facts.find(fact => fact.label === label);
-      const value = String(item?.value || "");
-      return value && value !== "未提及" ? value : "";
+      const item = (facts || []).find(fact => fact.label === label);
+      const value = String(item?.value || "").trim();
+      // "待确认" is the value-less backfill; it is NOT a real fact, so a concrete-opportunity
+      // gate / saved companyName must not treat it as known.
+      return value && value !== "未提及" && value !== "待确认" ? value : "";
     }
 
     function buildRecruiterCoreConclusion(text, subtype, facts, hasConcreteOpportunity) {
@@ -17692,7 +17721,7 @@
         const relation = item.companyName || item.positionName
           ? ` · ${[item.companyName, item.positionName, itemContentType === "interview" && item.roundIndex == null ? "" : itemContentType === "interview" ? `第${Number(item.roundIndex) + 1}轮` : ""].filter(Boolean).join(" / ")}`
           : "";
-        const modelUsedLabel = normalizeModelUsedLabel(item.modelUsed);
+        const modelUsedLabel = normalizeStoredModelLabel(item.modelUsed);
         card.innerHTML = `
           <div class="history-title">${escapeHtml(item.title)}</div>
           <div class="history-meta">${escapeHtml(itemReportName)}${escapeHtml(relation)} · ${escapeHtml(modelUsedLabel)} · 生成于 ${escapeHtml(formatTime(item.generatedAt))}${item.editedAt ? " · 已编辑" : ""}</div>
@@ -17831,7 +17860,7 @@
       const r = normalizeResult(result);
       const info = r.interviewInfo;
       const dossierText = scenario.dossier.map(([label, key]) => `${label}：${info[key] || "待识别"}`).join("\n");
-      const modeText = normalizeModelUsedLabel(modelUsed);
+      const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
       return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
     }
@@ -17840,7 +17869,7 @@
       const subtype = getValidRecruiterSubtype(recruiterSubtype || result.recruiterSubtype);
       const r = normalizeResult({ ...result, contentType: "recruiterConversation", recruiterSubtype: subtype });
       const report = normalizeRecruiterReport(r.recruiterReport || {}, subtype);
-      const modeText = normalizeModelUsedLabel(modelUsed);
+      const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
       const facts = report.facts.length ? report.facts.map((fact, i) => `${i + 1}. ${fact.label}：${fact.value || "待确认"}`).join("\n") : "暂无";
       const opportunityText = hasConcreteOpportunityReport(report)

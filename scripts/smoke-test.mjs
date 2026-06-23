@@ -343,13 +343,24 @@ function runStaticChecks() {
   // [10] Loading ticker must be mode-aware (model-waiting copy in API mode, not local stages).
   assert(/function startLoadingTicker[\s\S]{0,450}state\.mode === "api"[\s\S]{0,200}等待返回/.test(html), "loading ticker must show model-waiting copy in API mode instead of local rule-engine stage labels");
   // [8] Fractional probability/score is rescaled, not collapsed to 1%.
-  assert(/direct > 0 && direct <= 1 \? direct \* 100 : direct/.test(html), "normalizePercentValue must rescale a 0–1 fraction to a percent");
+  assert(/direct > 0 && direct < 1 \? direct \* 100 : direct/.test(html), "normalizePercentValue must rescale only an open (0,1) fraction (integer 1 stays 1%)");
   // [2] Recruiter facts reject placeholder/negation prose as a concrete company/role.
   assert(/function isPlaceholderFact/.test(html), "inferRecruiterFacts must drop placeholder/negation values via isPlaceholderFact");
   // [6] One shared opportunity gate (company AND role) for sim + renderer.
   assert(/function hasConcreteOpportunityFacts/.test(html) && /const hasConcreteOpportunity = hasConcreteOpportunityFacts\(facts\)/.test(html), "simulateRecruiterGeneration must use the shared AND opportunity gate");
   // [12] Recruiter string fields flatten nested objects (no [object Object]).
   assert(/function coerceText/.test(html) && /coreConclusion: coerceText\(/.test(html), "recruiter report string fields must flatten nested objects via coerceText");
+
+  // === R5 fleet deep-sweep guards (result rendering / stats / honesty) ===
+  // [0] Stored records use a pure label helper that can't emit 真实大模型 for empty modelUsed.
+  assert(/function normalizeStoredModelLabel/.test(html), "normalizeStoredModelLabel must exist for stored-record engine labels");
+  assert(/const modelUsedLabel = normalizeStoredModelLabel\(item\.modelUsed\)/.test(html), "history card must label the stored item via normalizeStoredModelLabel, not live state");
+  assert(!/normalizeModelUsedLabel\(modelUsed\)/.test(html), "buildMinutes* must not flow a stored modelUsed through the live-state normalizeModelUsedLabel");
+  // [4] Recruiter 待确认 stat-card scroll target points at the section that holds questions.
+  assert(/recruiterPassCard\)\s*recruiterPassCard\.dataset\.target = "tasksSection"/.test(html), "recruiter 待确认 stat-card must scroll to tasksSection");
+  assert(/interviewPassCard\)\s*interviewPassCard\.dataset\.target = "summarySection"/.test(html), "interview 通过率 stat-card must reset its scroll target to summarySection");
+  // [5]/[6] QA score must not collapse a legitimate 0 to 78 via a truthy-OR fallback.
+  assert(!/String\(card\.score \|\| 78\)/.test(html), "QA score display must not collapse 0 to 78 via || fallback");
 }
 
 function runScriptSyntaxCheck() {
