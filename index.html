@@ -7486,7 +7486,7 @@
             <div class="field wide-field">
               <label for="apiKeyInput">API Key</label>
               <div class="password-row">
-                <input id="apiKeyInput" class="input" type="password" placeholder="请输入文本模型 API Key">
+                <input id="apiKeyInput" class="input" type="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="请输入文本模型 API Key">
                 <button id="toggleKeyBtn" class="btn visibility-btn" type="button" aria-label="显示文本模型 API Key" title="显示文本模型 API Key" aria-pressed="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
@@ -7548,7 +7548,7 @@
             <div class="field wide-field">
               <label for="asrApiKeyInput">ASR API Key</label>
               <div class="password-row">
-                <input id="asrApiKeyInput" class="input" type="password" placeholder="请输入 ASR API Key">
+                <input id="asrApiKeyInput" class="input" type="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-form-type="other" placeholder="请输入 ASR API Key">
                 <button id="toggleAsrKeyBtn" class="btn visibility-btn" type="button" aria-label="显示 ASR API Key" title="显示 ASR API Key" aria-pressed="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
@@ -8118,6 +8118,8 @@
     let finalTranscript = "";
     let selectedAudioFile = null;
     let selectedAudioUrl = "";
+    let audioPreviewError = false;
+    const MAX_ASR_BYTES = 25 * 1024 * 1024;
     let recordStartedAt = 0;
     let recordTimer = null;
     let recordRenderTimer = null;
@@ -9489,6 +9491,10 @@
         ...modelConfig,
         provider: row.text_model_provider || modelConfig.provider,
         model: row.text_model_id || modelConfig.model,
+        // Clear a stale local customModel when the cloud row provides an explicit model id,
+        // so a previously-typed custom id can't override the synced provider's model (and so
+        // already-polluted configs heal on the next sync).
+        customModel: row.text_model_id ? "" : modelConfig.customModel,
         baseUrl: row.text_model_base_url || modelConfig.baseUrl,
         asrProvider: row.asr_provider || modelConfig.asrProvider,
         asrModel: row.asr_model_id || modelConfig.asrModel,
@@ -9928,6 +9934,15 @@
       els.recordBtn.addEventListener("click", toggleRecording);
       els.audioFileInput.addEventListener("change", handleAudioFile);
       els.audioPreview.addEventListener("loadedmetadata", renderAudioMeta);
+      // The browser fires 'error' on the <audio> element when it can't decode the chosen
+      // file (renamed .txt, corrupt/unsupported codec). Without this, the meta is frozen at
+      // "读取时长中" and 转写音频 stays enabled on an undecodable file.
+      els.audioPreview.addEventListener("error", () => {
+        if (!selectedAudioFile) return;
+        audioPreviewError = true;
+        if (els.audioMeta) els.audioMeta.textContent = `无法读取「${selectedAudioFile.name}」，可能格式不受支持或文件已损坏，请更换文件`;
+        renderInputMode();
+      });
       els.transcribeAudioBtn.addEventListener("click", transcribeSelectedAudio);
       els.focusTextBtn.addEventListener("click", async () => {
         if (!(await setInputMode("text"))) return;
@@ -14302,11 +14317,14 @@
         els.recordStatus.classList.remove("recording");
       }
       if (selectedAudioFile) {
-        if (!isAudioTranscribing) renderAudioMeta();
-        if (!asrReady && !isDeveloperMode()) {
+        if (!isAudioTranscribing && !audioPreviewError) renderAudioMeta();
+        if (audioPreviewError) {
+          els.audioMeta.textContent = `无法读取「${selectedAudioFile.name}」，可能格式不受支持或文件已损坏，请更换文件`;
+        } else if (!asrReady && !isDeveloperMode()) {
           els.audioMeta.textContent = `${selectedAudioFile.name} · 转写服务暂未接入，请先粘贴已有转写文本`;
         }
-        els.transcribeAudioBtn.disabled = isAudioTranscribing || (!asrReady && !isDeveloperMode());
+        // A file the browser couldn't decode can't be transcribed — keep the button off.
+        els.transcribeAudioBtn.disabled = audioPreviewError || isAudioTranscribing || (!asrReady && !isDeveloperMode());
         if (!isAudioTranscribing) {
           els.transcribeAudioBtn.textContent = asrReady || isDeveloperMode() ? "转写音频" : "转写服务未配置";
           els.transcribeAudioBtn.title = asrReady || isDeveloperMode()
@@ -15075,6 +15093,8 @@
     function handleAudioFile(event) {
       const file = event.target.files?.[0];
       if (!file) return;
+      audioPreviewError = false;
+      const isOversize = file.size > MAX_ASR_BYTES;
       selectedAudioFile = file;
       if (selectedAudioUrl) URL.revokeObjectURL(selectedAudioUrl);
       selectedAudioUrl = URL.createObjectURL(file);
@@ -15105,7 +15125,9 @@
       saveState();
       render();
       renderAudioMeta();
-      showToast(`已选择音频：${file.name}，将替换上一次音频转写`);
+      showToast(isOversize
+        ? `已选择音频：${file.name}（${formatFileSize(file.size)}）。文件较大，可能超过转写服务上限或较慢，建议截取较短片段`
+        : `已选择音频：${file.name}，将替换上一次音频转写`);
     }
 
     function renderAudioMeta() {
@@ -15267,7 +15289,11 @@
       const responseText = await response.text();
       const data = parseJsonOrEmpty(responseText);
       if (!response.ok) throw new Error(getAsrResponseErrorMessage(data, responseText, response));
-      const text = data.text || data.transcript || data.result?.text || "";
+      // Coerce a non-string transcript (segmented array / number / object) instead of
+      // crashing on .trim(), so a real ASR result isn't reported as a generic failure.
+      let text = data.text ?? data.transcript ?? data.result?.text ?? "";
+      if (Array.isArray(text)) text = text.join("");
+      else if (typeof text !== "string") text = text == null ? "" : String(text);
       if (!text.trim()) throw new Error("empty transcription response");
       return text.trim();
     }
@@ -15354,9 +15380,10 @@
     }
 
     function getAsrResponseErrorMessage(data, responseText, response) {
-      return data.error?.message
-        || data.message
-        || data.error
+      const d = (data && typeof data === "object") ? data : {};
+      return d.error?.message
+        || d.message
+        || (typeof d.error === "string" ? d.error : "")
         || responseText
         || `${response.status} ${response.statusText}`.trim();
     }
@@ -15364,7 +15391,10 @@
     function parseJsonOrEmpty(text) {
       if (!text) return {};
       try {
-        return JSON.parse(text);
+        const parsed = JSON.parse(text);
+        // Only a plain object is useful here; a JSON null/primitive/array body would make
+        // callers throw on `.error`/`.text`, masking the real failure.
+        return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
       } catch (error) {
         return {};
       }
@@ -15442,7 +15472,21 @@
           }, 400);
         };
         speechRecognition.onerror = event => {
-          showToast(event.error === "not-allowed" ? "麦克风权限未开启" : "录音转写异常，请稍后重试");
+          // "no-speech" (a thinking pause) and "aborted" (our own stop()) are benign — don't
+          // show a scary error or hard-fail the session. Map real failures to honest,
+          // actionable copy instead of a misleading "retry later".
+          if (event.error === "no-speech") {
+            if (els.recordStatus) els.recordStatus.textContent = "暂未识别到语音，请继续说话";
+            return;
+          }
+          if (event.error === "aborted") return;
+          const messages = {
+            "not-allowed": "麦克风权限未开启",
+            "audio-capture": "未检测到可用麦克风，请检查设备或改用上传音频/粘贴文字",
+            "service-not-allowed": "当前环境暂不支持语音识别，请改用上传音频或粘贴文字",
+            "network": "语音识别需要网络，请检查连接或改用上传/粘贴"
+          };
+          showToast(messages[event.error] || "录音转写异常，请稍后重试");
           stopRecording(false);
         };
         speechRecognition.onend = () => {
@@ -17138,18 +17182,36 @@
       `;
     }
 
+    // Don't persist a customModel that merely echoes the dropdown pick (the change handler
+    // mirrors the selection into the input). A redundant customModel would otherwise survive
+    // a cloud settings sync and override the synced provider's model via customModel||model.
+    function resolveCustomModel(typed, dropdownValue) {
+      const value = String(typed || "").trim();
+      return value === dropdownValue ? "" : value;
+    }
+
+    // Clamp model numeric params to their declared bounds — the modal is not a <form>, so the
+    // input min/max attributes are never enforced and 0/negative/out-of-range would break
+    // every request with a misleading error.
+    function clampModelNumber(raw, def, min, max) {
+      // An empty/blank input means "use default" (Number("") is 0, not NaN, so guard it).
+      if (String(raw ?? "").trim() === "") return def;
+      const n = Number(raw);
+      return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
+    }
+
     function saveModelFromForm() {
       modelConfig = {
         ...modelConfig,
         provider: els.providerSelect.value,
         model: els.modelSelect.value,
         customProvider: els.customProviderInput.value.trim(),
-        customModel: els.customModelInput.value.trim(),
+        customModel: resolveCustomModel(els.customModelInput.value, els.modelSelect.value),
         apiKey: els.apiKeyInput.value.trim(),
         baseUrl: els.baseUrlInput.value.trim(),
-        temperature: Number(els.temperatureInput.value || 0.2),
-        max_tokens: Number(els.maxTokensInput.value || 4000),
-        timeout: Number(els.timeoutInput.value || 30000),
+        temperature: clampModelNumber(els.temperatureInput.value, 0.2, 0, 2),
+        max_tokens: clampModelNumber(els.maxTokensInput.value, 4000, 256, 32000),
+        timeout: clampModelNumber(els.timeoutInput.value, 30000, 1000, 600000),
         asrProvider: els.asrProviderInput.value.trim() || ASR_DEFAULTS.provider,
         asrBaseUrl: els.asrBaseUrlInput.value.trim() || ASR_DEFAULTS.baseUrl,
         asrModel: els.asrModelInput.value.trim() || ASR_DEFAULTS.model,
@@ -17297,6 +17359,13 @@
       }, config.timeout);
       const responseText = await response.text();
       const data = parseJsonOrEmpty(responseText);
+      // A 200 with an {error} body (relay/gateway over quota etc.) is NOT a working ASR
+      // endpoint — surface it instead of reporting 连接成功, mirroring the text adapter.
+      if (data.error?.message || (typeof data.error === "string" && data.error)) {
+        const error = new Error(getAsrResponseErrorMessage(data, responseText, response));
+        error.status = response.status;
+        throw error;
+      }
       if (!response.ok) {
         const error = new Error(getAsrResponseErrorMessage(data, responseText, response));
         error.status = response.status;
@@ -17334,7 +17403,10 @@
     function isAsrProbeReachable(error) {
       const message = String(error?.message || error || "");
       if (!/^4\d\d$/.test(String(error?.status || ""))) return false;
-      if (/401|403|unauthorized|forbidden|invalid api key|permission|model|not found/i.test(message)) return false;
+      // Require "model" to co-occur with a not-found/invalid signal, not the bare word —
+      // otherwise "audio too short, model received no speech" (a reachable-but-rejected probe)
+      // is wrongly marked 连接失败.
+      if (/401|403|unauthorized|forbidden|invalid api key|permission|(model[^\n]{0,20}(not found|不存在|无效|invalid|unsupported|does not exist))|not found/i.test(message)) return false;
       return /(audio|file|format|decode|duration|short|empty|speech|voice|sample|wav|multipart)/i.test(message);
     }
 
@@ -17354,12 +17426,12 @@
         provider: els.providerSelect.value,
         model: els.modelSelect.value,
         customProvider: els.customProviderInput.value.trim(),
-        customModel: els.customModelInput.value.trim(),
+        customModel: resolveCustomModel(els.customModelInput.value, els.modelSelect.value),
         apiKey: els.apiKeyInput.value.trim(),
         baseUrl: els.baseUrlInput.value.trim(),
-        temperature: Number(els.temperatureInput.value || 0.2),
-        max_tokens: Number(els.maxTokensInput.value || 4000),
-        timeout: Number(els.timeoutInput.value || 30000),
+        temperature: clampModelNumber(els.temperatureInput.value, 0.2, 0, 2),
+        max_tokens: clampModelNumber(els.maxTokensInput.value, 4000, 256, 32000),
+        timeout: clampModelNumber(els.timeoutInput.value, 30000, 1000, 600000),
         asrProvider: els.asrProviderInput.value.trim() || ASR_DEFAULTS.provider,
         asrBaseUrl: els.asrBaseUrlInput.value.trim() || ASR_DEFAULTS.baseUrl,
         asrModel: els.asrModelInput.value.trim() || ASR_DEFAULTS.model,

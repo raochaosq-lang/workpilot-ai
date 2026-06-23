@@ -378,6 +378,31 @@ function runStaticChecks() {
   assert(/typeof entry === "string" && entry\) \? maskSensitiveValue\(entry\) : "\[redacted\]"/.test(html), "sanitizeDiagnosticValue must fully redact non-string sensitive values");
   // [6] Restored/forged demo-admin session is inert off local-debug origins.
   assert(/authState\.user\?\.authMode === "admin" && isDevCloudConfigAllowed\(\)/.test(html), "isAdminActive must re-check isDevCloudConfigAllowed so a restored/forged admin session is inert in prod");
+
+  // === R7 fleet deep-sweep guards (model/ASR config + audio/recording) ===
+  // [0] customModel reconciliation on save + defensive clear on sync.
+  assert(/customModel: resolveCustomModel\(els\.customModelInput\.value, els\.modelSelect\.value\)/.test(html), "saveModelFromForm must drop a customModel that just echoes the dropdown pick");
+  assert(/customModel: row\.text_model_id \? "" : modelConfig\.customModel/.test(html), "mergeCloudModelSettings must clear a stale local customModel when the cloud provides a model id");
+  // [5] Numeric model params are clamped (no raw Number(... || default)).
+  assert(/function clampModelNumber/.test(html) && !/Number\(els\.timeoutInput\.value \|\| 30000\)/.test(html), "model numeric params must be clamped, not raw Number(... || default)");
+  // [1] ASR connection test inspects an in-body error even on HTTP 200.
+  assert(/async function requestAsrConnectionTest[\s\S]{0,1000}data\.error\?\.message/.test(html), "requestAsrConnectionTest must surface a 200-with-error body instead of reporting 连接成功");
+  // [2] Both key inputs opt out of password-manager / autofill save (device-local keys).
+  ["apiKeyInput", "asrApiKeyInput"].forEach(id => {
+    const tag = (html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`)) || [""])[0];
+    assert(/autocomplete="off"/.test(tag) && /data-1p-ignore/.test(tag), `${id} must opt out of browser/password-manager credential save`);
+  });
+  // [3] Audio preview registers a decode-error handler.
+  assert(/els\.audioPreview\.addEventListener\("error"/.test(html), "audio preview must handle a decode/load error (not freeze at 读取时长中)");
+  assert(/audioPreviewError \|\| isAudioTranscribing/.test(html), "transcribe button must be disabled when the audio file failed to decode");
+  // [4]/[10] Recording onerror special-cases benign no-speech and maps real errors honestly.
+  assert(/speechRecognition\.onerror[\s\S]{0,200}no-speech/.test(html) && /"audio-capture":/.test(html), "recording onerror must special-case no-speech and map audio-capture to honest copy");
+  // [7] Oversize-audio warning threshold exists.
+  assert(/MAX_ASR_BYTES/.test(html) && /file\.size > MAX_ASR_BYTES/.test(html), "handleAudioFile must warn on an oversize audio file");
+  // [8] Transcript field is coerced before .trim() (no crash on array/number).
+  assert(!/data\.text \|\| data\.transcript \|\| data\.result\?\.text \|\| ""/.test(html), "transcript extraction must coerce a non-string field before trim");
+  // [6] isAsrProbeReachable no longer excludes on the bare word 'model'.
+  assert(!/permission\|model\|not found/.test(html), "isAsrProbeReachable must not exclude on the bare word 'model'");
 }
 
 function runScriptSyntaxCheck() {

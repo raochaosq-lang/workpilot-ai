@@ -69,7 +69,8 @@ const exposed = [
   "inferRecruiterFacts", "getFactValue", "hasConcreteOpportunityFacts", "hasConcreteOpportunityReport", "normalizeRecruiterReport", "mergeRecruiterCoreFacts",
   "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard",
   "normalizeStoredModelLabel", "getRecruiterCompletenessLabel",
-  "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue"
+  "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue",
+  "clampModelNumber", "resolveCustomModel", "isAsrProbeReachable", "getAsrResponseErrorMessage"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -107,6 +108,7 @@ const {
   inferCultureMisreadRisk, buildCultureCards, parseModelJson, normalizeQaCard,
   normalizeStoredModelLabel, getRecruiterCompletenessLabel,
   toCloudHistory, fromCloudHistory, redactSensitiveValue, sanitizeDiagnosticValue,
+  clampModelNumber, resolveCustomModel, isAsrProbeReachable, getAsrResponseErrorMessage,
   localStorage
 } = fns;
 
@@ -677,6 +679,27 @@ eq(redactSensitiveValue("displayName", "Alice"), "Alice", "non-sensitive key pas
   // a primitive string sensitive value is still partially masked (unchanged behavior)
   ok(sanitizeDiagnosticValue({ token: "abcdefghijkl" }).token.includes("••••"), "string sensitive value still masked");
 }
+
+// ===== 2026-06-22 R7 deep-sweep (model/ASR config + audio/recording) regressions =====
+// [0] A plain dropdown pick must not persist a redundant customModel (would survive sync).
+eq(resolveCustomModel("gpt-4o", "gpt-4o"), "", "dropdown pick stores empty customModel");
+eq(resolveCustomModel("internal-gateway-v2", ""), "internal-gateway-v2", "a real typed custom id is kept");
+eq(resolveCustomModel("  gpt-4o  ", "gpt-4o"), "", "whitespace-trimmed echo also drops");
+// [5] Numeric model params are clamped to their declared bounds.
+eq(clampModelNumber("0", 30000, 1000, 600000), 1000, "timeout 0 clamps to min");
+eq(clampModelNumber("-5", 30000, 1000, 600000), 1000, "negative timeout clamps to min");
+eq(clampModelNumber("0", 4000, 256, 32000), 256, "max_tokens 0 clamps to min");
+eq(clampModelNumber("5", 0.2, 0, 2), 2, "temperature 5 clamps to max");
+eq(clampModelNumber("", 0.2, 0, 2), 0.2, "empty falls back to default");
+eq(clampModelNumber("0", 0.2, 0, 2), 0, "temperature 0 is in range and kept");
+// [6] isAsrProbeReachable distinguishes a reachable-but-rejected probe from a wrong-model 4xx.
+ok(isAsrProbeReachable({ status: 400, message: "audio too short, model received no speech" }) === true, "reachable probe (audio too short) is not marked unreachable by the bare word 'model'");
+ok(isAsrProbeReachable({ status: 404, message: "model FunAudioLLM/x not found" }) === false, "wrong-model 404 is still unreachable");
+ok(isAsrProbeReachable({ status: 401, message: "invalid api key" }) === false, "auth error is unreachable");
+// [8]/[9] ASR JSON parsing/error reading is null-safe.
+deep(parseJsonOrEmpty("null"), {}, "JSON null body -> {} (no crash on .error/.text)");
+deep(parseJsonOrEmpty("123"), {}, "JSON primitive body -> {}");
+ok(typeof getAsrResponseErrorMessage(parseJsonOrEmpty("null"), "null", { status: 500, statusText: "X" }) === "string", "getAsrResponseErrorMessage tolerates a null-parsed body");
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);
