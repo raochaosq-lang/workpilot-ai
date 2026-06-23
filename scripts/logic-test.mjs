@@ -749,6 +749,25 @@ ok(!JSON.stringify(normalizeHistoryRecord({ sourceByMode: { text: { n: 1 } }, in
 // [3] redactSensitiveValue covers serviceRole/service_role.
 ["serviceRole", "service_role"].forEach(k => eq(redactSensitiveValue(k, "SUPERSECRET"), "[redacted]", `redactSensitiveValue redacts ${k}`));
 
+// ===== 2026-06-22 R10 deep-sweep (cross-feature / coverage audit) regressions =====
+// [3] A placeholder/negation fact value must not fake a concrete opportunity.
+{
+  const rep = normalizeRecruiterReport({ facts: [{ label: "推荐公司/团队", value: "腾讯" }, { label: "推荐岗位", value: "还没定" }] }, "opportunityRecommendation");
+  eq(getFactValue(rep.facts, "推荐岗位"), "", "placeholder role 还没定 is not a real fact value");
+  ok(hasConcreteOpportunityReport(rep) === false, "a placeholder role must not fake a concrete opportunity (parity with completeness label)");
+}
+// [8] An object-shaped analysis/questions/risks list flattens, no [object Object].
+{
+  const r = normalizeRecruiterReport({ analysis: { market: "偏热", level: "P7" } }, "careerAnalysis");
+  ok(!JSON.stringify(r.analysis).includes("[object Object]"), "object-shaped analysis flattens, not [object Object]");
+  ok(r.analysis.some(x => x.includes("偏热")), "object analysis values are preserved");
+}
+// [9] A value-less 待确认 placeholder is not concatenated in front of a real merged value.
+{
+  const m = mergeRecruiterCoreFacts(normalizeRecruiterFacts([{ label: "推荐岗位" }, { label: "推荐岗位", value: "PM-增长" }]));
+  eq(m.find(f => f.label === "推荐岗位").value, "PM-增长", "待确认 placeholder is dropped, not concatenated");
+}
+
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);
   failures.forEach(item => console.error(`- ${item}`));

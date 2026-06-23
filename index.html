@@ -8130,6 +8130,7 @@
     let activeMobilePage = "input";
     let confirmDialogResolver = null;
     let confirmDialogLastFocus = null;
+    let lastModalFocus = null;
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     const SPEAKER_TONES = [
       { color: "#2563eb", bg: "#eff6ff", border: "#bfdbfe" },
@@ -9255,6 +9256,9 @@
         showToast("本地数据已导入当前账号");
       } catch (error) {
         const detail = logCloudAuthError("importLocalData", error);
+        // Move the sync pill out of "syncing" — otherwise it spins on "正在导入本地数据到云端"
+        // forever after the import has actually aborted (dishonest in-progress claim).
+        setSyncStatus("error", `导入失败：${detail.userMessage} 本地数据未删除，可重试。`);
         showAccountMessage(`导入失败：${detail.userMessage} 本地数据未删除。`, "error");
         showToast("导入失败，本地数据未删除");
       }
@@ -9415,9 +9419,11 @@
         round_index: item.roundIndex,
         transcript_id: item.transcriptId || null,
         model_provider: modelConfig.provider || "",
-        model_id: item.modelUsed || getModelName(),
+        // Use the stored-safe label (never live config) so a legacy/empty modelUsed isn't
+        // relabeled with the currently-configured real model name in the cloud copy.
+        model_id: normalizeStoredModelLabel(item.modelUsed),
         report_json: item.report || item.result || EMPTY_RESULT,
-        report_markdown: buildMinutesText(item.report || item.result || EMPTY_RESULT, state.scenario, item.modelUsed),
+        report_markdown: buildMinutesText(item.report || item.result || EMPTY_RESULT, state.scenario, normalizeStoredModelLabel(item.modelUsed)),
         created_at: item.createdAt || nowIso(),
         updated_at: item.updatedAt || nowIso()
       };
@@ -10318,16 +10324,37 @@
       if (isCloudActive()) await refreshAllCloudData();
     }
 
+    // a11y: move focus INTO a modal on open and RESTORE it to the opener on close, so
+    // keyboard/screen-reader focus never silently drops to <body> (mirrors the confirm dialog).
+    function openModalWithFocus(modal, focusTarget) {
+      lastModalFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      modal.classList.add("show");
+      setTimeout(() => focusTarget?.focus?.({ preventScroll: true }), 20);
+    }
+
+    function restoreModalFocus(modal) {
+      const restoreTarget = lastModalFocus;
+      lastModalFocus = null;
+      modal.classList.remove("show");
+      setTimeout(() => {
+        const usable = restoreTarget && restoreTarget.isConnected && restoreTarget.offsetParent !== null;
+        const target = usable ? restoreTarget : (state.appPage === "manager" ? els.addInterviewBtn : els.generateBtn);
+        target?.focus?.({ preventScroll: true });
+      }, 20);
+    }
+
     function openAccountModal(mode = authUiState.formMode) {
       if (!isCloudActive()) setAuthFormMode(mode, { silent: true });
       showAccountMessage("");
       renderAccountStatus();
       renderAuthForm();
-      els.accountModal.classList.add("show");
+      // Signed out: focus the email field (highest intent); signed in: a safe control.
+      const focusTarget = (!isCloudActive() && !els.accountEmailInput?.disabled) ? els.accountEmailInput : els.closeAccountBtn;
+      openModalWithFocus(els.accountModal, focusTarget);
     }
 
     function closeAccountModal() {
-      els.accountModal.classList.remove("show");
+      restoreModalFocus(els.accountModal);
     }
 
     function showAccountMessage(message = "", tone = "") {
@@ -10352,11 +10379,11 @@
       renderCloudDiagnostics([]);
       renderAccountDiagnosticPanel();
       showDevCloudMessage("");
-      els.devCloudModal.classList.add("show");
+      openModalWithFocus(els.devCloudModal, els.closeDevCloudBtn);
     }
 
     function closeDevCloudModal() {
-      els.devCloudModal.classList.remove("show");
+      restoreModalFocus(els.devCloudModal);
     }
 
     function toggleAccountMenu() {
@@ -12068,10 +12095,13 @@
         if (!item || !item.label) return;
         const existing = byLabel.get(item.label);
         if (!existing) { byLabel.set(item.label, { ...item }); return; }
+        // Treat 未提及 / 待确认 / placeholder values as non-real, so a value-less backfill
+        // is never concatenated in front of (or behind) a real merged value.
+        const isReal = v => Boolean(v && v !== "未提及" && v !== "待确认" && !isPlaceholderFact(v));
         const a = String(existing.value || "").trim();
         const b = String(item.value || "").trim();
-        if (b && b !== a && a && a !== "未提及") existing.value = `${a}；${b}`;
-        else if (b && (!a || a === "未提及")) existing.value = b;
+        if (isReal(b) && b !== a && isReal(a)) existing.value = `${a}；${b}`;
+        else if (isReal(b) && !isReal(a)) existing.value = b;
       });
       coreLabels.forEach(label => {
         if (!byLabel.has(label)) byLabel.set(label, { label, value: "未提及" });
@@ -12082,7 +12112,11 @@
     }
 
     function normalizeStringList(items = []) {
-      const list = Array.isArray(items) ? items : String(items || "").split(/\n+/);
+      // A non-array object (e.g. model returns analysis as {market:"偏热"}) must use its
+      // values, not String(obj) -> "[object Object]".
+      const list = Array.isArray(items)
+        ? items
+        : (items && typeof items === "object" ? Object.values(items) : String(items || "").split(/\n+/));
       return list
         .map(item => typeof item === "string" ? item : ((item && (item.title || item.detail || item.description || item.value)) || ""))
         .map(item => String(item || "").trim())
@@ -13890,7 +13924,7 @@
       showToast("已删除面试记录");
     }
 
-    function startReviewFromInterview(id) {
+    async function startReviewFromInterview(id) {
       const record = interviewRecords.find(item => item.id === id);
       if (!record) return;
       if (state.isLoading) {
@@ -13905,6 +13939,37 @@
         setMobilePage("input", { scroll: false });
         showToast("已在复盘这条面试，当前输入已保留");
         return;
+      }
+      const switchTarget = `复盘${record.company || record.role || "这条面试"}`;
+      // Finalize any in-flight capture before switching review target (mirrors setScenario);
+      // declining leaves the current input untouched.
+      if (isRecording) {
+        if (!(await confirmStopRecordingForSwitch(switchTarget))) return;
+      }
+      if (isAudioTranscribing) {
+        if (!(await confirmAbortAudioTranscriptionForSwitch(switchTarget))) return;
+      }
+      // Switching to a DIFFERENT record overwrites the input and clears the result. Confirm
+      // first when there's unsaved work — a generated/edited result, or pasted input that
+      // isn't just the currently-linked record's untouched auto-template — so it isn't lost.
+      if (state.linkedInterviewId !== id) {
+        const linkedRecord = interviewRecords.find(item => item.id === state.linkedInterviewId);
+        const currentTemplate = linkedRecord
+          ? buildInterviewRecordContext(linkedRecord, Number.isInteger(state.linkedRoundIndex) ? state.linkedRoundIndex : getPreferredReviewRoundIndex(linkedRecord))
+          : "";
+        const inputIsUntouchedTemplate = getEffectiveInput(state.source).trim() === getEffectiveInput(currentTemplate).trim();
+        const hasUnsavedWork = hasResult() || (hasRealInput() && !inputIsUntouchedTemplate);
+        if (hasUnsavedWork) {
+          const ok = await showConfirmDialog({
+            kicker: "切换复盘",
+            title: "切换到这条面试？",
+            message: "复盘工作区里未保存到历史的转写和结果，会被这条面试的上下文替换。\n\n如需保留，请先点“保存到历史”或复制/导出。",
+            confirmText: "切换并替换",
+            cancelText: "留在当前",
+            tone: "danger"
+          });
+          if (!ok) return;
+        }
       }
       state.scenario = "interview";
       state.contentType = "interview";
@@ -14254,11 +14319,11 @@
         : (isRecruiterContent() ? "这段原文与当前事实信息、分析观点或下一步行动相关。" : (scenario.key === "culture" ? "这段原文与当前沟通节点、语气判断或表达建议相关。" : "这段原文与当前面试问题、回答点评或改进建议相关。"));
       els.jumpTranscriptBtn.disabled = !evidence;
       els.copySourceBtn.disabled = !evidence;
-      els.sourceModal.classList.add("show");
+      openModalWithFocus(els.sourceModal, els.closeSourceBtn);
     }
 
     function closeSourceModal() {
-      els.sourceModal.classList.remove("show");
+      restoreModalFocus(els.sourceModal);
     }
 
     function findSourceEvidence(sourceTime, sourceIndex = null) {
@@ -15876,9 +15941,10 @@
     function getFactValue(facts, label) {
       const item = (facts || []).find(fact => fact.label === label);
       const value = String(item?.value || "").trim();
-      // "待确认" is the value-less backfill; it is NOT a real fact, so a concrete-opportunity
-      // gate / saved companyName must not treat it as known.
-      return value && value !== "未提及" && value !== "待确认" ? value : "";
+      // "待确认" is the value-less backfill, and isPlaceholderFact catches negation/prose
+      // (还没定 / 保密 …) — none are real facts, so a concrete-opportunity gate / saved
+      // companyName must not treat them as known (parity with getRecruiterCompletenessLabel).
+      return value && value !== "未提及" && value !== "待确认" && !isPlaceholderFact(value) ? value : "";
     }
 
     function buildRecruiterCoreConclusion(text, subtype, facts, hasConcreteOpportunity) {
@@ -17149,11 +17215,11 @@
       }
       fillModelForm();
       els.testMessage.textContent = "";
-      els.modelModal.classList.add("show");
+      openModalWithFocus(els.modelModal, els.closeModelBtn);
     }
 
     function closeModelModal() {
-      els.modelModal.classList.remove("show");
+      restoreModalFocus(els.modelModal);
     }
 
     function toggleApiKey() {
@@ -17646,7 +17712,7 @@
         interviewId: isInterviewReport ? (state.linkedInterviewId || "") : "",
         roundIndex: isInterviewReport ? state.linkedRoundIndex : null,
         report: state.result,
-        modelUsed: state.modelUsed || getModelName(),
+        modelUsed: normalizeModelUsedLabel(state.modelUsed),
         createdAt: state.generatedAt || nowIso()
       });
       if (!savedTranscript || !savedSummary) {
@@ -17676,7 +17742,7 @@
         inputMode: state.inputMode,
         outputType: state.outputType,
         mode: state.mode,
-        modelUsed: state.modelUsed || getModelName(),
+        modelUsed: normalizeModelUsedLabel(state.modelUsed),
         generatedAt: state.generatedAt || nowIso(),
         generatedSourceHash: state.generatedSourceHash || hashSource(),
         editedAt: state.editedAt,
@@ -17730,11 +17796,11 @@
 
     function openHistoryModal() {
       renderHistory();
-      els.historyModal.classList.add("show");
+      openModalWithFocus(els.historyModal, els.historySearchInput || els.closeHistoryBtn);
     }
 
     function closeHistoryModal() {
-      els.historyModal.classList.remove("show");
+      restoreModalFocus(els.historyModal);
     }
 
     function clearHistorySearch() {

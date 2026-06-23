@@ -431,6 +431,27 @@ function runStaticChecks() {
   assert(/typeof parsed === "string"\) snapshot\[key\] = maskSensitiveValue\(parsed\)/.test(html), "getAccountStorageSnapshot must mask a top-level JSON string token");
   // [3] Redaction covers serviceRole/service_role.
   assert(/service\[-_\]\?role/.test(html), "redactSensitiveValue must cover serviceRole/service_role");
+
+  // === R10 fleet deep-sweep guards (cross-feature / coverage audit) ===
+  // [0]/[2] Switching 去复盘 to a different record confirms before discarding unsaved work.
+  assert(/async function startReviewFromInterview[\s\S]*state\.linkedInterviewId !== id[\s\S]{0,800}showConfirmDialog/.test(html), "startReviewFromInterview must confirm before overwriting unsaved input/result when switching records");
+  // [4] ...and confirm-stops in-flight recording/transcription.
+  assert(/async function startReviewFromInterview[\s\S]*confirmStopRecordingForSwitch[\s\S]{0,400}confirmAbortAudioTranscriptionForSwitch/.test(html), "startReviewFromInterview must confirm-stop in-flight recording/transcription");
+  // [1] Re-saving a restored rules report must not fabricate a real-model attribution.
+  assert(!/modelUsed: state\.modelUsed \|\| getModelName\(\)/.test(html), "saveCurrentToHistory must not relabel an empty modelUsed with the live model name");
+  assert(/modelUsed: normalizeModelUsedLabel\(state\.modelUsed\)/.test(html) && /model_id: normalizeStoredModelLabel\(item\.modelUsed\)/.test(html), "save + cloud paths must use honest engine labels");
+  // [3] getFactValue excludes placeholder values.
+  assert(/value !== "待确认" && !isPlaceholderFact\(value\)/.test(html), "getFactValue must exclude placeholder/negation values");
+  // [5] Failed local import resets the sync pill out of 'syncing'.
+  assert(/function importLocalDataToCloud[\s\S]*catch \(error\)[\s\S]{0,400}setSyncStatus\("error"/.test(html), "importLocalDataToCloud catch must reset sync status (no stuck syncing spinner)");
+  // [6]/[7] Modals manage focus on open/close.
+  assert(/function openModalWithFocus/.test(html) && /function restoreModalFocus/.test(html), "modal open/close focus helpers must exist");
+  assert(/function openHistoryModal[\s\S]{0,80}openModalWithFocus/.test(html) && /function closeHistoryModal[\s\S]{0,60}restoreModalFocus/.test(html), "history modal must focus on open and restore on close");
+  assert(/!isCloudActive\(\) && !els\.accountEmailInput\?\.disabled\) \? els\.accountEmailInput/.test(html), "account modal must focus the email field when signed out");
+  // [8] normalizeStringList flattens a non-array object.
+  assert(/typeof items === "object" \? Object\.values\(items\)/.test(html), "normalizeStringList must use Object.values for a non-array object");
+  // [9] mergeRecruiterCoreFacts treats placeholders as non-real when merging.
+  assert(/const isReal = v => Boolean\(v && v !== "未提及" && v !== "待确认" && !isPlaceholderFact\(v\)\)/.test(html), "mergeRecruiterCoreFacts must not concatenate placeholder values");
 }
 
 function runScriptSyntaxCheck() {
