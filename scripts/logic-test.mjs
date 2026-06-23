@@ -70,7 +70,8 @@ const exposed = [
   "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard",
   "normalizeStoredModelLabel", "getRecruiterCompletenessLabel",
   "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue",
-  "clampModelNumber", "resolveCustomModel", "isAsrProbeReachable", "getAsrResponseErrorMessage"
+  "clampModelNumber", "resolveCustomModel", "isAsrProbeReachable", "getAsrResponseErrorMessage",
+  "escapeMarkdownText", "buildMinutesText", "buildRecruiterMinutesText"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -109,6 +110,7 @@ const {
   normalizeStoredModelLabel, getRecruiterCompletenessLabel,
   toCloudHistory, fromCloudHistory, redactSensitiveValue, sanitizeDiagnosticValue,
   clampModelNumber, resolveCustomModel, isAsrProbeReachable, getAsrResponseErrorMessage,
+  escapeMarkdownText, buildMinutesText, buildRecruiterMinutesText,
   localStorage
 } = fns;
 
@@ -723,6 +725,29 @@ ok(typeof getAsrResponseErrorMessage(parseJsonOrEmpty("null"), "null", { status:
 // [5] Export filename strips control/bidi chars but keeps CJK.
 ok(!/‮/.test(buildExportFileName(`report${String.fromCharCode(0x202e)}gpj.exe`, "md")), "buildExportFileName strips a bidi override");
 ok(/字节跳动/.test(buildExportFileName("字节跳动 产品", "md")), "buildExportFileName keeps CJK names");
+
+// ===== 2026-06-22 R9 deep-sweep (security: markdown injection, tamper, key-leak) regressions =====
+// [0] Exported Markdown neutralizes image/HTML payloads from model/transcript text.
+// escapeMarkdownText backslash-escapes the markers (![ and ]( both get a preceding \) so a
+// renderer won't form an image, and HTML angle brackets become entities. The guards below
+// look for an UNESCAPED image marker (] ( not preceded by a backslash) and a raw <img>.
+eq(escapeMarkdownText("![](https://evil/leak)"), "\\![\\](https://evil/leak)", "markdown image markers are backslash-escaped");
+ok(!/<img/.test(escapeMarkdownText("<img src=x onerror=alert(1)>")), "inline HTML is neutralized to entities");
+{
+  const md = buildMinutesText({ contentType: "interview", qaCards: [{ question: "q", answer: "我的项目 ![](https://evil/leak) <img src=x onerror=alert(1)> 上线了", critique: "c", score: 70 }] }, "interview", "规则快速分析");
+  ok(!/[^\\]\]\(https?:/.test(md), "exported interview report has no UNESCAPED auto-loading markdown image");
+  ok(!/<img\b/.test(md), "exported interview report has no raw inline <img>");
+}
+{
+  const md = buildRecruiterMinutesText({ recruiterReport: { coreConclusion: "<img src=x onerror=alert(1)>", facts: [{ label: "推荐公司/团队", value: "![](https://evil/p)" }] } }, "规则快速分析", "opportunityRecommendation");
+  ok(!/<img\b/.test(md) && !/[^\\]\]\(https?:/.test(md), "exported recruiter report neutralizes injected image/HTML");
+}
+// [1] Tampered nested-object string fields degrade to text/empty, never "[object Object]".
+ok(normalizeInterviewRecord({ company: { zh: "腾讯" }, baseLocation: { city: "SZ" } }).company !== "[object Object]", "interview company never [object Object]");
+ok(normalizeHistoryRecord({ title: { a: 1 }, companyName: { x: 1 } }).companyName !== "[object Object]", "history companyName never [object Object]");
+ok(!JSON.stringify(normalizeHistoryRecord({ sourceByMode: { text: { n: 1 } }, inputMode: "text" }).sourceByMode).includes("[object Object]"), "sourceByMode never [object Object]");
+// [3] redactSensitiveValue covers serviceRole/service_role.
+["serviceRole", "service_role"].forEach(k => eq(redactSensitiveValue(k, "SUPERSECRET"), "[redacted]", `redactSensitiveValue redacts ${k}`));
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

@@ -9507,7 +9507,7 @@
       // Include the alias names the codebase actually uses for the CloudBase access key
       // (clientId/client_id/publishableKey/anonKey) so a serialized SDK config/error can't
       // leak the secret under one of those names.
-      if (/password|secret|token|api[-_]?key|access[-_]?key|anon[-_]?key|client[-_]?id|publishable[-_]?key|authorization|credential/i.test(key)) return "[redacted]";
+      if (/password|secret|token|api[-_]?key|access[-_]?key|anon[-_]?key|client[-_]?id|publishable[-_]?key|service[-_]?role|authorization|credential/i.test(key)) return "[redacted]";
       return value;
     }
 
@@ -9580,7 +9580,13 @@
           if (!isAccountRelated || BUSINESS_STORAGE_KEYS.has(key)) return;
           const raw = localStorage.getItem(key);
           try {
-            snapshot[key] = sanitizeDiagnosticValue(JSON.parse(raw || "null"));
+            const parsed = JSON.parse(raw || "null");
+            // A token can be stored as a JSON string or array-of-strings (e.g. sb-*-auth-token).
+            // Those arrive without a key for the field-name redactor to catch, so mask them
+            // directly — every key here already passed the account-related filter.
+            if (typeof parsed === "string") snapshot[key] = maskSensitiveValue(parsed);
+            else if (Array.isArray(parsed)) snapshot[key] = parsed.map(item => typeof item === "string" ? maskSensitiveValue(item) : sanitizeDiagnosticValue(item));
+            else snapshot[key] = sanitizeDiagnosticValue(parsed);
           } catch (_) {
             // Every key reaching this branch is account-related (passed the filter above).
             // A non-JSON raw value (e.g. a bare session token) must always be masked — the
@@ -11569,11 +11575,11 @@
       const next = createEmptySourceByMode();
       if (sourceByMode && typeof sourceByMode === "object") {
         INPUT_MODES.forEach(mode => {
-          next[mode] = String(sourceByMode[mode] || "");
+          next[mode] = coerceText(sourceByMode[mode]);
         });
       }
       const mode = getValidInputMode(activeMode);
-      if (activeSource && !next[mode]) next[mode] = String(activeSource);
+      if (activeSource && !next[mode]) next[mode] = coerceText(activeSource);
       return next;
     }
 
@@ -12199,16 +12205,16 @@
       return {
         id: record.id || createId(),
         userId: record.userId || getCurrentUserId(),
-        company: String(record.company || record.companyName || "").trim(),
-        role: String(record.role || record.positionName || "").trim(),
-        companyName: String(record.companyName || record.company || "").trim(),
-        positionName: String(record.positionName || record.role || "").trim(),
-        baseLocation: String(record.baseLocation || record.base || record.locationBase || record.city || "").trim(),
-        intention: String(record.intention || record.myIntention || record.preference || "").trim(),
-        intentionLevel: String(record.intentionLevel || record.intention || record.myIntention || record.preference || "").trim(),
-        contactWechat: String(record.contactWechat || record.wechat || record.wechatName || record.contact || "").trim(),
-        contactName: String(record.contactName || record.contactWechat || record.wechat || record.wechatName || record.contact || "").trim(),
-        overallProgress: String(record.overallProgress || record.progress || record.pipelineStatus || "").trim(),
+        company: coerceText(record.company || record.companyName).trim(),
+        role: coerceText(record.role || record.positionName).trim(),
+        companyName: coerceText(record.companyName || record.company).trim(),
+        positionName: coerceText(record.positionName || record.role).trim(),
+        baseLocation: coerceText(record.baseLocation || record.base || record.locationBase || record.city).trim(),
+        intention: coerceText(record.intention || record.myIntention || record.preference).trim(),
+        intentionLevel: coerceText(record.intentionLevel || record.intention || record.myIntention || record.preference).trim(),
+        contactWechat: coerceText(record.contactWechat || record.wechat || record.wechatName || record.contact).trim(),
+        contactName: coerceText(record.contactName || record.contactWechat || record.wechat || record.wechatName || record.contact).trim(),
+        overallProgress: coerceText(record.overallProgress || record.progress || record.pipelineStatus).trim(),
         status: record.status || progress.key,
         currentRound: Number(record.currentRound || progress.currentRound || 1),
         jd: String(record.jd || record.jobDescription || "").trim(),
@@ -17564,7 +17570,7 @@
       return {
         id: item.id || createId(),
         userId: item.userId || getCurrentUserId(),
-        title: String(item.title || "未命名复盘"),
+        title: coerceText(item.title) || "未命名复盘",
         scenario: getValidScenario(item.scenario || DEFAULT_SCENARIO),
         contentType,
         recruiterSubtype,
@@ -17572,12 +17578,12 @@
         contentRoutingReason: String(item.contentRoutingReason || ""),
         interviewId: String(item.interviewId || ""),
         roundIndex,
-        companyName: String(item.companyName || item.company || item.result?.interviewInfo?.company || ""),
-        positionName: String(item.positionName || item.role || item.result?.interviewInfo?.role || ""),
+        companyName: coerceText(item.companyName || item.company || item.result?.interviewInfo?.company),
+        positionName: coerceText(item.positionName || item.role || item.result?.interviewInfo?.role),
         audioFileId: String(item.audioFileId || ""),
         transcriptId: String(item.transcriptId || ""),
         summaryReportId: String(item.summaryReportId || item.summaryId || ""),
-        source: String(item.source || ""),
+        source: coerceText(item.source),
         sourceByMode: normalizeSourceByMode(item.sourceByMode, item.inputMode || "text", item.source || ""),
         inputMode: getValidInputMode(item.inputMode || "text"),
         outputType: getValidOutputType(item.outputType),
@@ -17943,47 +17949,59 @@
       return SCENARIOS[getValidScenario(key)];
     }
 
+    // Neutralize model/transcript-derived text before it goes into EXPORTED/COPIED/cloud
+    // Markdown: escape < > (inline HTML), and the ![ / ]( / ` constructs so an external
+    // viewer (GitHub/Obsidian/Typora) can't auto-load a remote image (tracking pixel) or
+    // execute injected HTML. In-app DOM rendering is already escapeHtml-protected.
+    function escapeMarkdownText(value) {
+      return String(value == null ? "" : value)
+        .replace(/[<>]/g, ch => (ch === "<" ? "&lt;" : "&gt;"))
+        .replace(/!\[/g, "\\![")
+        .replace(/\]\(/g, "\\](")
+        .replace(/`/g, "\\`");
+    }
+
     function buildCoachSummaryText(result = state.result, scenarioKey = state.scenario) {
       if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
         const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
         return [
-          `核心结论：${report.coreConclusion || "暂无"}`,
-          `对我有用的判断：${report.usefulJudgement || "暂无"}`,
+          `核心结论：${escapeMarkdownText(report.coreConclusion) || "暂无"}`,
+          `对我有用的判断：${escapeMarkdownText(report.usefulJudgement) || "暂无"}`,
           `信息完整度：${getRecruiterCompletenessLabel(report)}`,
-          `最大不确定性：${report.risks[0] || "暂无"}`,
-          `可复制回复：${report.replySuggestion || "暂无"}`
+          `最大不确定性：${escapeMarkdownText(report.risks[0]) || "暂无"}`,
+          `可复制回复：${escapeMarkdownText(report.replySuggestion) || "暂无"}`
         ].join("\n");
       }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       const coach = r.coachSummary;
       return [
-        `${scenario.coreLabel}：${coach.coreDiscussion || "暂无"}`,
-        `${scenario.atmosphereLabel}：${coach.atmosphere || "暂无"}`,
-        `${scenario.probabilityLabel}：${scenario.key === "interview" ? formatPercent(coach.passRate) : (coach.probability || "暂无")}`,
-        scenario.key === "interview" && coach.probability ? `通过率依据：${coach.probability}` : "",
-        `${scenario.strengthLabel}：${coach.strength || "暂无"}`,
-        `${scenario.riskLabel}：${coach.risk || "暂无"}`,
-        `教练判断：${coach.coachTakeaway || r.summary || "暂无"}`
+        `${scenario.coreLabel}：${escapeMarkdownText(coach.coreDiscussion) || "暂无"}`,
+        `${scenario.atmosphereLabel}：${escapeMarkdownText(coach.atmosphere) || "暂无"}`,
+        `${scenario.probabilityLabel}：${scenario.key === "interview" ? formatPercent(coach.passRate) : (escapeMarkdownText(coach.probability) || "暂无")}`,
+        scenario.key === "interview" && coach.probability ? `通过率依据：${escapeMarkdownText(coach.probability)}` : "",
+        `${scenario.strengthLabel}：${escapeMarkdownText(coach.strength) || "暂无"}`,
+        `${scenario.riskLabel}：${escapeMarkdownText(coach.risk) || "暂无"}`,
+        `教练判断：${escapeMarkdownText(coach.coachTakeaway || r.summary) || "暂无"}`
       ].filter(Boolean).join("\n");
     }
 
     function buildQaText(result = state.result, scenarioKey = state.scenario) {
       if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
         const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
-        const facts = report.facts.length ? report.facts.map((fact, index) => `${index + 1}. ${fact.label}：${fact.value || "待确认"}`).join("\n") : "暂无事实信息";
-        const analysis = report.analysis.length ? report.analysis.map((item, index) => `${index + 1}. ${item}`).join("\n") : "暂无分析观点";
+        const facts = report.facts.length ? report.facts.map((fact, index) => `${index + 1}. ${escapeMarkdownText(fact.label)}：${escapeMarkdownText(fact.value) || "待确认"}`).join("\n") : "暂无事实信息";
+        const analysis = report.analysis.length ? report.analysis.map((item, index) => `${index + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无分析观点";
         return `事实信息：\n${facts}\n\n分析观点：\n${analysis}`;
       }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       if (!r.qaCards.length) return `暂无${scenario.qaTitle}`;
       return r.qaCards.map((card, index) => [
-        `${index + 1}. ${scenario.qaLabels.question}：${card.question}`,
-        `${scenario.qaLabels.answer}：${card.answer}`,
-        `${scenario.qaLabels.critique}：${card.critique}`,
+        `${index + 1}. ${scenario.qaLabels.question}：${escapeMarkdownText(card.question)}`,
+        `${scenario.qaLabels.answer}：${escapeMarkdownText(card.answer)}`,
+        `${scenario.qaLabels.critique}：${escapeMarkdownText(card.critique)}`,
         `${scenario.qaLabels.score}：${card.score}`,
-        card.risk ? `${scenario.qaLabels.risk}：${card.risk}` : ""
+        card.risk ? `${scenario.qaLabels.risk}：${escapeMarkdownText(card.risk)}` : ""
       ].filter(Boolean).join("\n")).join("\n\n");
     }
 
@@ -17994,10 +18012,10 @@
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       const info = r.interviewInfo;
-      const dossierText = scenario.dossier.map(([label, key]) => `${label}：${info[key] || "待识别"}`).join("\n");
+      const dossierText = scenario.dossier.map(([label, key]) => `${label}：${escapeMarkdownText(info[key]) || "待识别"}`).join("\n");
       const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
-      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${item.name}｜${item.signal}｜${item.evidence}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${item.title}：${item.detail}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${item.issue}\n现象：${item.symptom}\n建议：${item.suggestion}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.name)}｜${escapeMarkdownText(item.signal)}｜${escapeMarkdownText(item.evidence)}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.title)}：${escapeMarkdownText(item.detail)}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.issue)}\n现象：${escapeMarkdownText(item.symptom)}\n建议：${escapeMarkdownText(item.suggestion)}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
     }
 
     function buildRecruiterMinutesText(result = state.result, modelUsed = state.modelUsed, recruiterSubtype = state.recruiterSubtype) {
@@ -18006,28 +18024,28 @@
       const report = normalizeRecruiterReport(r.recruiterReport || {}, subtype);
       const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
-      const facts = report.facts.length ? report.facts.map((fact, i) => `${i + 1}. ${fact.label}：${fact.value || "待确认"}`).join("\n") : "暂无";
+      const facts = report.facts.length ? report.facts.map((fact, i) => `${i + 1}. ${escapeMarkdownText(fact.label)}：${escapeMarkdownText(fact.value) || "待确认"}`).join("\n") : "暂无";
       const opportunityText = hasConcreteOpportunityReport(report)
         ? formatKeyValueMarkdown(report.opportunity)
         : "本次未明确公司和岗位，不生成空的推荐职位卡。";
-      return `# ${getActiveReportName("recruiterConversation", subtype)}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\nrecruiterConversation / ${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n## 沟通概览\n沟通对象：${report.counterpart || "未识别"}\n沟通目的：${report.purpose || getRecruiterSubtypeLabel(subtype)}\n核心结论：${report.coreConclusion || "暂无"}\n对我有用的判断：${report.usefulJudgement || "暂无"}\n\n## 事实信息\n${facts}\n\n## 分析观点\n${report.analysis.length ? report.analysis.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 专项分析\n${opportunityText}\n${subtype === "careerAnalysis" || subtype === "mixed" ? `\n\n### 职业方向分析\n${formatKeyValueMarkdown(report.career)}` : ""}${subtype === "profilePositioning" || subtype === "mixed" ? `\n\n### 简历与候选人定位\n${formatKeyValueMarkdown(report.profile)}` : ""}${subtype === "interviewStrategy" || subtype === "mixed" ? `\n\n### 面试策略建议\n${formatKeyValueMarkdown(report.interviewStrategy)}` : ""}${subtype === "compensationNegotiation" || subtype === "mixed" ? `\n\n### 薪资谈判准备\n${formatKeyValueMarkdown(report.compensation)}` : ""}${subtype === "followUpCoordination" || subtype === "mixed" ? `\n\n### 流程跟进行动\n${formatKeyValueMarkdown(report.followUp)}` : ""}\n\n## 待确认问题\n${report.questions.length ? report.questions.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 风险和不确定性\n${report.risks.length ? report.risks.map((item, i) => `${i + 1}. ${item}`).join("\n") : "暂无"}\n\n## 下一步行动\n${buildTodoListText(r, "interview")}\n\n## 可复制回复\n${report.replySuggestion || "暂无"}`;
+      return `# ${getActiveReportName("recruiterConversation", subtype)}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\nrecruiterConversation / ${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n## 沟通概览\n沟通对象：${escapeMarkdownText(report.counterpart) || "未识别"}\n沟通目的：${escapeMarkdownText(report.purpose) || getRecruiterSubtypeLabel(subtype)}\n核心结论：${escapeMarkdownText(report.coreConclusion) || "暂无"}\n对我有用的判断：${escapeMarkdownText(report.usefulJudgement) || "暂无"}\n\n## 事实信息\n${facts}\n\n## 分析观点\n${report.analysis.length ? report.analysis.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 专项分析\n${opportunityText}\n${subtype === "careerAnalysis" || subtype === "mixed" ? `\n\n### 职业方向分析\n${formatKeyValueMarkdown(report.career)}` : ""}${subtype === "profilePositioning" || subtype === "mixed" ? `\n\n### 简历与候选人定位\n${formatKeyValueMarkdown(report.profile)}` : ""}${subtype === "interviewStrategy" || subtype === "mixed" ? `\n\n### 面试策略建议\n${formatKeyValueMarkdown(report.interviewStrategy)}` : ""}${subtype === "compensationNegotiation" || subtype === "mixed" ? `\n\n### 薪资谈判准备\n${formatKeyValueMarkdown(report.compensation)}` : ""}${subtype === "followUpCoordination" || subtype === "mixed" ? `\n\n### 流程跟进行动\n${formatKeyValueMarkdown(report.followUp)}` : ""}\n\n## 待确认问题\n${report.questions.length ? report.questions.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 风险和不确定性\n${report.risks.length ? report.risks.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 下一步行动\n${buildTodoListText(r, "interview")}\n\n## 可复制回复\n${escapeMarkdownText(report.replySuggestion) || "暂无"}`;
     }
 
     function formatKeyValueMarkdown(values = {}) {
       const entries = Object.entries(values || {}).filter(([, value]) => String(value || "").trim());
-      return entries.length ? entries.map(([key, value]) => `- ${formatRecruiterFieldLabel(key)}：${value}`).join("\n") : "暂无";
+      return entries.length ? entries.map(([key, value]) => `- ${formatRecruiterFieldLabel(key)}：${escapeMarkdownText(value)}`).join("\n") : "暂无";
     }
 
     function buildTodoListText(result = state.result, scenarioKey = state.scenario) {
       if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
         const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
         if (!report.nextActions.length) return "暂无下一步行动";
-        return report.nextActions.map((action, index) => `${index + 1}. 【${action.priority}优先】${action.title}：${action.detail}`).join("\n");
+        return report.nextActions.map((action, index) => `${index + 1}. 【${escapeMarkdownText(action.priority)}优先】${escapeMarkdownText(action.title)}：${escapeMarkdownText(action.detail)}`).join("\n");
       }
       const scenario = getScenarioByKey(scenarioKey);
       const r = normalizeResult(result);
       if (!r.nextSteps.length) return `暂无${scenario.nextStepTitle}`;
-      return r.nextSteps.map((step, index) => `${index + 1}. 【${step.type}】${step.title}：${step.detail}`).join("\n");
+      return r.nextSteps.map((step, index) => `${index + 1}. 【${escapeMarkdownText(step.type)}】${escapeMarkdownText(step.title)}：${escapeMarkdownText(step.detail)}`).join("\n");
     }
 
     async function exportCurrentReportMarkdown() {

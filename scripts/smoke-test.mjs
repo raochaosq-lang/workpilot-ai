@@ -419,6 +419,18 @@ function runStaticChecks() {
   assert(/code > 31 && code !== 127 && !\(code >= 0x200b && code <= 0x206f\)/.test(html), "buildExportFileName must strip control/bidi characters");
   // [6] The JSON export no longer advertises a non-existent restore version.
   assert(!/app: "Senlo",\s*version: 1/.test(html), "exportAllUserData must not imply a restore format (version:1) with no import path");
+
+  // === R9 fleet deep-sweep guards (security: markdown injection, tamper, key-leak) ===
+  // [0] Markdown export neutralizes model/transcript-derived text.
+  assert(/function escapeMarkdownText/.test(html), "escapeMarkdownText helper must exist for exported Markdown");
+  assert(/escapeMarkdownText\(card\.answer\)/.test(html) && /escapeMarkdownText\(report\.coreConclusion\)/.test(html), "Markdown builders must run model/transcript values through escapeMarkdownText");
+  // [1] Tampered nested-object string fields are coerced, not stringified to [object Object].
+  assert(/company: coerceText\(record\.company/.test(html), "normalizeInterviewRecord must coerce string fields (no [object Object])");
+  assert(/next\[mode\] = coerceText\(sourceByMode\[mode\]\)/.test(html), "normalizeSourceByMode must coerce values");
+  // [2] Diagnostics snapshot masks a top-level JSON string/array token.
+  assert(/typeof parsed === "string"\) snapshot\[key\] = maskSensitiveValue\(parsed\)/.test(html), "getAccountStorageSnapshot must mask a top-level JSON string token");
+  // [3] Redaction covers serviceRole/service_role.
+  assert(/service\[-_\]\?role/.test(html), "redactSensitiveValue must cover serviceRole/service_role");
 }
 
 function runScriptSyntaxCheck() {
