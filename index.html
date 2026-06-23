@@ -8278,7 +8278,11 @@
     }
 
     function isAdminActive() {
-      return Boolean(authState.adminSession?.active && authState.user?.authMode === "admin");
+      // Re-check the origin gate (mirrors the create-time gate) so a restored or
+      // hand-forged demo-admin session is inert on a public/non-debug origin. Every
+      // downstream consumer (getAuthRuntimeStatus/renderAccountStatus/saveModelConfig)
+      // goes through here, so the dev-admin role can never surface in prod.
+      return Boolean(authState.adminSession?.active && authState.user?.authMode === "admin" && isDevCloudConfigAllowed());
     }
 
     function isAnonymousIdentifier(value = "") {
@@ -8700,7 +8704,10 @@
       },
       async restoreSession() {
         migrateLegacyAuthStorage();
-        const adminSession = storageService.getJson(DEMO_ADMIN_SESSION_KEY, null);
+        // A demo-admin session may only be restored on a local-debug origin (mirrors the
+        // create gate). Off such origins, drop the stale/forged key so it can't linger.
+        const adminSession = isDevCloudConfigAllowed() ? storageService.getJson(DEMO_ADMIN_SESSION_KEY, null) : null;
+        if (!isDevCloudConfigAllowed()) storageService.remove(DEMO_ADMIN_SESSION_KEY);
         if (adminSession?.active) {
           authState.adminSession = adminSession;
           authState.session = null;
@@ -9319,6 +9326,13 @@
         output_type: record.outputType,
         content_type: record.contentType,
         recruiter_subtype: record.recruiterSubtype,
+        // Preserve fields the cloud round-trip used to drop: a deliberate manual
+        // content-routing override (else the report is silently re-detected/flipped on
+        // reopen) and the uploaded-audio link (else relink/unlink no-ops).
+        scenario: record.scenario,
+        content_routing_manual: Boolean(record.contentRoutingManual),
+        content_routing_reason: record.contentRoutingReason || "",
+        audio_file_id: record.audioFileId || null,
         mode: record.mode,
         model_used: record.modelUsed,
         report_json: record.result,
@@ -9347,6 +9361,10 @@
         outputType: row.output_type,
         contentType: row.content_type,
         recruiterSubtype: row.recruiter_subtype,
+        scenario: row.scenario,
+        contentRoutingManual: row.content_routing_manual,
+        contentRoutingReason: row.content_routing_reason,
+        audioFileId: row.audio_file_id,
         mode: row.mode,
         modelUsed: row.model_used,
         result: row.report_json,
@@ -9480,7 +9498,10 @@
     }
 
     function redactSensitiveValue(key, value) {
-      if (/password|secret|token|api[-_]?key|access[-_]?key|authorization|credential/i.test(key)) return "[redacted]";
+      // Include the alias names the codebase actually uses for the CloudBase access key
+      // (clientId/client_id/publishableKey/anonKey) so a serialized SDK config/error can't
+      // leak the secret under one of those names.
+      if (/password|secret|token|api[-_]?key|access[-_]?key|anon[-_]?key|client[-_]?id|publishable[-_]?key|authorization|credential/i.test(key)) return "[redacted]";
       return value;
     }
 
@@ -9512,7 +9533,10 @@
         Object.entries(value).slice(0, 40).forEach(([key, entry]) => {
           if (typeof entry === "function") return;
           if (redactSensitiveValue(key, entry) === "[redacted]") {
-            next[key] = entry ? maskSensitiveValue(entry) : "[redacted]";
+            // Only partially-mask a primitive string; a non-string (array/object) sensitive
+            // value is fully redacted, matching safeSerializeError — masking String(array)
+            // would leak the first/last secret in the joined form.
+            next[key] = (typeof entry === "string" && entry) ? maskSensitiveValue(entry) : "[redacted]";
             return;
           }
           next[key] = sanitizeDiagnosticValue(entry, depth + 1);
@@ -9552,7 +9576,11 @@
           try {
             snapshot[key] = sanitizeDiagnosticValue(JSON.parse(raw || "null"));
           } catch (_) {
-            snapshot[key] = redactSensitiveValue(key, raw) === "[redacted]" ? maskSensitiveValue(raw) : String(raw || "").slice(0, 240);
+            // Every key reaching this branch is account-related (passed the filter above).
+            // A non-JSON raw value (e.g. a bare session token) must always be masked — the
+            // key-name redaction test is narrower than the inclusion filter and would emit
+            // such tokens verbatim.
+            snapshot[key] = maskSensitiveValue(String(raw || "").slice(0, 240));
           }
         });
       } catch (error) {
@@ -9784,6 +9812,15 @@
         if (event.target === els.devCloudModal) closeDevCloudModal();
       });
       els.authPrimaryBtn.addEventListener("click", handleAuthSubmit);
+      // Enter submits the auth form (the inputs are not in a <form>, so add it explicitly).
+      [els.accountEmailInput, els.accountPasswordInput, els.accountConfirmPasswordInput].forEach(input => {
+        if (!input) return;
+        input.addEventListener("keydown", event => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          if (!authUiState.isBusy && !els.authPrimaryBtn.disabled) handleAuthSubmit();
+        });
+      });
       els.accountEmailInput.addEventListener("input", () => {
         const normalized = normalizeEmailForAuth(els.accountEmailInput.value);
         if (normalized && normalized !== els.accountEmailInput.value.trim()) {
@@ -10719,7 +10756,17 @@
         renderAccountStatus();
       } catch (error) {
         const detail = logCloudAuthError(action, error);
-        showAccountMessage(detail.userMessage, "error");
+        // The credentials may have authenticated but the INITIAL cloud data-load failed
+        // (table not created yet, RLS, slow network). The session IS established, so don't
+        // present it as a login failure or leave the modal open — surface a non-blocking
+        // sync notice and let the user into the app (local data is preserved).
+        if (isCloudActive()) {
+          closeAccountModal();
+          renderAccountStatus();
+          showToast("已登录，云端数据稍后会自动重试同步");
+        } else {
+          showAccountMessage(detail.userMessage, "error");
+        }
       } finally {
         authUiState.isBusy = false;
         renderAuthForm();

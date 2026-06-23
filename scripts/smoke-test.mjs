@@ -361,6 +361,23 @@ function runStaticChecks() {
   assert(/interviewPassCard\)\s*interviewPassCard\.dataset\.target = "summarySection"/.test(html), "interview 通过率 stat-card must reset its scroll target to summarySection");
   // [5]/[6] QA score must not collapse a legitimate 0 to 78 via a truthy-OR fallback.
   assert(!/String\(card\.score \|\| 78\)/.test(html), "QA score display must not collapse 0 to 78 via || fallback");
+
+  // === R6 fleet deep-sweep guards (account / cloud / security) ===
+  // [0] Cloud history mappers carry the manual-routing override + audio link.
+  assert(/content_routing_manual: Boolean\(record\.contentRoutingManual\)/.test(html) && /audio_file_id: record\.audioFileId/.test(html), "toCloudHistory must persist contentRoutingManual + audioFileId");
+  assert(/contentRoutingManual: row\.content_routing_manual/.test(html) && /audioFileId: row\.audio_file_id/.test(html), "fromCloudHistory must read contentRoutingManual + audioFileId back");
+  // [1] Non-JSON account values in the diagnostics snapshot are always masked.
+  assert(/snapshot\[key\] = maskSensitiveValue\(String\(raw \|\| ""\)\.slice\(0, 240\)\)/.test(html), "getAccountStorageSnapshot must always mask a non-JSON account value (no raw token dump)");
+  // [2] A post-auth cloud-load failure must not be shown as a login error / leave modal open.
+  assert(/catch \(error\)[\s\S]{0,550}if \(isCloudActive\(\)\)[\s\S]{0,160}closeAccountModal\(\)/.test(html), "handleAuthSubmit must close the modal + treat an established session as logged-in even if the initial cloud load failed");
+  // [3] Enter submits the auth form (inputs are not in a <form>).
+  assert(/accountPasswordInput[\s\S]{0,300}keydown[\s\S]{0,200}handleAuthSubmit/.test(html), "auth inputs must submit on Enter");
+  // [4] Redaction regex covers the access-key aliases.
+  assert(/client\[-_\]\?id\|publishable\[-_\]\?key/.test(html), "redactSensitiveValue must cover clientId/publishableKey aliases");
+  // [5] Non-string sensitive diagnostic values are fully redacted.
+  assert(/typeof entry === "string" && entry\) \? maskSensitiveValue\(entry\) : "\[redacted\]"/.test(html), "sanitizeDiagnosticValue must fully redact non-string sensitive values");
+  // [6] Restored/forged demo-admin session is inert off local-debug origins.
+  assert(/authState\.user\?\.authMode === "admin" && isDevCloudConfigAllowed\(\)/.test(html), "isAdminActive must re-check isDevCloudConfigAllowed so a restored/forged admin session is inert in prod");
 }
 
 function runScriptSyntaxCheck() {

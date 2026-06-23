@@ -68,7 +68,8 @@ const exposed = [
   "buildInterviewQaCards", "splitSentences", "inferInterviewDuration", "inferCultureInfo", "detectSourceLanguage",
   "inferRecruiterFacts", "getFactValue", "hasConcreteOpportunityFacts", "hasConcreteOpportunityReport", "normalizeRecruiterReport", "mergeRecruiterCoreFacts",
   "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard",
-  "normalizeStoredModelLabel", "getRecruiterCompletenessLabel"
+  "normalizeStoredModelLabel", "getRecruiterCompletenessLabel",
+  "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -105,6 +106,7 @@ const {
   inferRecruiterFacts, getFactValue, hasConcreteOpportunityFacts, hasConcreteOpportunityReport, normalizeRecruiterReport, mergeRecruiterCoreFacts,
   inferCultureMisreadRisk, buildCultureCards, parseModelJson, normalizeQaCard,
   normalizeStoredModelLabel, getRecruiterCompletenessLabel,
+  toCloudHistory, fromCloudHistory, redactSensitiveValue, sanitizeDiagnosticValue,
   localStorage
 } = fns;
 
@@ -653,6 +655,28 @@ eq(normalizeQaCard({ score: 1 }).score, 1, "qa score of 1 stays 1, not 100");
 }
 // [5]/[6] a qa score of 0 is preserved and is consistent with the 需重练 bucket.
 eq(normalizeQaCard({ score: 0 }).score, 0, "qa score 0 is preserved (not defaulted to 78)");
+
+// ===== 2026-06-22 R6 deep-sweep (account / cloud / security) regressions =====
+// [0] Cloud history round-trip must preserve the manual content-routing override + audio link.
+{
+  const round = fromCloudHistory(toCloudHistory({ id: "h1", title: "t", contentType: "recruiterConversation", recruiterSubtype: "mixed", contentRoutingManual: true, contentRoutingReason: "用户手动指定", audioFileId: "file-1" }));
+  eq(round.contentRoutingManual, true, "cloud round-trip preserves the manual content-routing override");
+  eq(round.contentRoutingReason, "用户手动指定", "cloud round-trip preserves the routing reason");
+  eq(round.audioFileId, "file-1", "cloud round-trip preserves the uploaded-audio link");
+}
+// [4] Redaction covers the CloudBase access-key aliases, not just the bare names.
+["accessKey", "apiKey", "asrApiKey", "clientId", "client_id", "publishableKey", "anonKey", "secret", "token"].forEach(key => {
+  eq(redactSensitiveValue(key, "SECRETVALUE"), "[redacted]", `redactSensitiveValue redacts ${key}`);
+});
+eq(redactSensitiveValue("displayName", "Alice"), "Alice", "non-sensitive key passes through");
+// [5] A non-string sensitive value is fully redacted, never partially masked (no leak).
+{
+  const out = sanitizeDiagnosticValue({ credential: ["sk-AAAABBBBCCCC1111", "sk-DDDDEEEEFFFF2222"] });
+  eq(out.credential, "[redacted]", "array-valued sensitive key is fully redacted");
+  ok(!JSON.stringify(out).includes("sk-A") && !JSON.stringify(out).includes("2222"), "no plaintext secret substring leaks");
+  // a primitive string sensitive value is still partially masked (unchanged behavior)
+  ok(sanitizeDiagnosticValue({ token: "abcdefghijkl" }).token.includes("••••"), "string sensitive value still masked");
+}
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);
