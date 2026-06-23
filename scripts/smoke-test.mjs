@@ -332,6 +332,24 @@ function runStaticChecks() {
   assert(/isAnnotationLabel = speakerMatch/.test(html), "transcript speaker detection must reject year/annotation tokens (备注：/2021年：)");
   // [9] Live-recording onresult must skip per-chunk routing and debounce the heavy render.
   assert(/speechRecognition\.onresult[\s\S]{0,700}skipRouting: true[\s\S]{0,300}recordRenderTimer = setTimeout/.test(html), "live-recording onresult must skip per-chunk routing detection and debounce the full re-render");
+
+  // === R4 fleet deep-sweep guards (generation engine) ===
+  // [4] Anthropic must send the direct-browser-access header or it CORS-fails in a static app.
+  assert(html.includes("anthropic-dangerous-direct-browser-access"), "Anthropic adapter must send the direct-browser-access header so the provider works from the browser");
+  // [9-model] parseModelJson must require a plain object (reject bare primitive/array).
+  assert(/function parseModelJson[\s\S]{0,800}typeof parsed === "object" && !Array\.isArray\(parsed\)/.test(html), "parseModelJson must require a plain object and fall through to the structured fallback otherwise");
+  // [14] Adapters must surface an in-body {error} even on HTTP 200.
+  assert(countMatches(/if \(data\.error\?\.message\) throw new Error\(data\.error\.message\);/g) >= 3, "all three model adapters must surface a 200-with-error body");
+  // [10] Loading ticker must be mode-aware (model-waiting copy in API mode, not local stages).
+  assert(/function startLoadingTicker[\s\S]{0,450}state\.mode === "api"[\s\S]{0,200}等待返回/.test(html), "loading ticker must show model-waiting copy in API mode instead of local rule-engine stage labels");
+  // [8] Fractional probability/score is rescaled, not collapsed to 1%.
+  assert(/direct > 0 && direct <= 1 \? direct \* 100 : direct/.test(html), "normalizePercentValue must rescale a 0–1 fraction to a percent");
+  // [2] Recruiter facts reject placeholder/negation prose as a concrete company/role.
+  assert(/function isPlaceholderFact/.test(html), "inferRecruiterFacts must drop placeholder/negation values via isPlaceholderFact");
+  // [6] One shared opportunity gate (company AND role) for sim + renderer.
+  assert(/function hasConcreteOpportunityFacts/.test(html) && /const hasConcreteOpportunity = hasConcreteOpportunityFacts\(facts\)/.test(html), "simulateRecruiterGeneration must use the shared AND opportunity gate");
+  // [12] Recruiter string fields flatten nested objects (no [object Object]).
+  assert(/function coerceText/.test(html) && /coreConclusion: coerceText\(/.test(html), "recruiter report string fields must flatten nested objects via coerceText");
 }
 
 function runScriptSyntaxCheck() {

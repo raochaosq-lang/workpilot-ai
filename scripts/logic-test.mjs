@@ -64,7 +64,10 @@ const exposed = [
   "uniqueList", "uniqueBy",
   "getScopedLocalList", "saveScopedLocalList", "getCurrentUserId",
   "getInterviewDerivedStatusCounts", "matchesInterviewFilter", "managerState", "compareInterviewRecords", "getFutureInterview", "getOverdueInterview",
-  "getTranscriptSegmentsFromText", "inferSourceTime", "getEffectiveInput", "removeAudioUploadBlocks", "getActiveReportName", "getHistoryReportName"
+  "getTranscriptSegmentsFromText", "inferSourceTime", "getEffectiveInput", "removeAudioUploadBlocks", "getActiveReportName", "getHistoryReportName",
+  "buildInterviewQaCards", "splitSentences", "inferInterviewDuration", "inferCultureInfo", "detectSourceLanguage",
+  "inferRecruiterFacts", "getFactValue", "hasConcreteOpportunityFacts", "hasConcreteOpportunityReport", "normalizeRecruiterReport", "mergeRecruiterCoreFacts",
+  "inferCultureMisreadRisk", "buildCultureCards", "parseModelJson", "normalizeQaCard"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -97,6 +100,9 @@ const {
   getScopedLocalList, saveScopedLocalList, getCurrentUserId,
   getInterviewDerivedStatusCounts, matchesInterviewFilter, managerState, compareInterviewRecords, getFutureInterview, getOverdueInterview,
   getTranscriptSegmentsFromText, inferSourceTime, getEffectiveInput, removeAudioUploadBlocks, getActiveReportName, getHistoryReportName,
+  buildInterviewQaCards, splitSentences, inferInterviewDuration, inferCultureInfo, detectSourceLanguage,
+  inferRecruiterFacts, getFactValue, hasConcreteOpportunityFacts, hasConcreteOpportunityReport, normalizeRecruiterReport, mergeRecruiterCoreFacts,
+  inferCultureMisreadRisk, buildCultureCards, parseModelJson, normalizeQaCard,
   localStorage
 } = fns;
 
@@ -554,6 +560,74 @@ ok(getEffectiveInput("真实内容").length > 0, "real text still counts as inpu
 ["opportunityRecommendation", "careerAnalysis", "profilePositioning", "interviewStrategy", "compensationNegotiation", "followUpCoordination", "mixed"].forEach(key => {
   eq(getHistoryReportName({ contentType: "recruiterConversation", recruiterSubtype: key }), getActiveReportName("recruiterConversation", key, "interview"), `history vs panel recruiter name agree for ${key}`);
 });
+
+// ===== 2026-06-22 R4 deep-sweep (generation engine) regressions =====
+// [0] A question card's answer must not merge a LATER question's answer.
+{
+  const t = ["面试官：项目介绍一下好吗？", "候选人：我做了A，留存提升。", "面试官：最大的挑战是什么？", "候选人：挑战是成本。"].join("\n");
+  const cards = buildInterviewQaCards(getTranscriptSegmentsFromText(t), splitSentences(t));
+  ok(!cards[0].answer.includes("成本"), "Q0 card answer must not include the answer to a later question");
+}
+// [1] A candidate turn with a mid-sentence 怎么 must not spawn a role-inverted card.
+{
+  const t = ["面试官：介绍一下项目好吗？", "候选人：我做了A，那时候我在想怎么平衡体验和商业化，留存提升了。"].join("\n");
+  const cards = buildInterviewQaCards(getTranscriptSegmentsFromText(t), splitSentences(t));
+  ok(cards.every(card => !/(什么|吗)\s*[？?]?\s*$/.test(card.answer)), "no card whose answer is itself an interviewer question");
+  ok(cards.length <= 1, "a mid-sentence keyword in candidate prose does not spawn an extra card");
+}
+// [5] Interview duration must be 待识别 without real timestamps, real otherwise.
+{
+  const noTs = Array.from({ length: 10 }, (_, i) => `第${i}句没有时间戳的内容`).join("\n");
+  eq(inferInterviewDuration(getTranscriptSegmentsFromText(noTs)), "待识别", "duration is 待识别 without real timestamps");
+  ok(/分钟/.test(inferInterviewDuration(getTranscriptSegmentsFromText("[00:00:05] 你好\n[00:02:40] 再见"))), "real leading timestamps still yield a duration");
+}
+// [3] Language detection by volume (the old run-length threshold was unreachable).
+eq(detectSourceLanguage("Hi, could you align on the timeline? Maybe we can confirm the scope by Friday."), "英文", "spaced English detected as 英文");
+eq(detectSourceLanguage("我觉得 we should align on the timeline，可能 Friday 之前 confirm scope。"), "中英混合", "CN/EN mix detected as 中英混合");
+eq(detectSourceLanguage("我们明天对齐一下排期和范围。"), "中文", "pure Chinese stays 中文");
+eq(inferCultureInfo("Hi, could you align on the timeline? Maybe we can confirm the scope by Friday.").round, "跨语言语境", "english culture transcript is a cross-language context");
+// [2] Placeholder/negation prose must not become a concrete company/role.
+eq(getFactValue(inferRecruiterFacts("猎头说腾讯这边有 HC，具体岗位还没定。"), "推荐岗位"), "", "placeholder role 还没定 not captured");
+eq(getFactValue(inferRecruiterFacts("他们公司最近裁员很厉害不太稳定"), "推荐公司/团队"), "", "prose company (裁员/不稳定) not captured");
+// [6] The sim opportunity gate and the renderer gate must agree (both AND).
+{
+  const facts = inferRecruiterFacts("字节这边团队在扩招机会，问我有没有兴趣聊一下。");
+  eq(hasConcreteOpportunityFacts(facts), hasConcreteOpportunityReport(normalizeRecruiterReport({ facts }, "opportunityRecommendation")), "sim and renderer opportunity gate agree");
+}
+// [8] Fractional probability (0–1) is rescaled to a percent, not collapsed to 1%.
+eq(normalizePercentValue(0.72), 72, "fractional probability rescaled to percent");
+eq(normalizePercentValue(0.85), 85, "fractional 0.85 -> 85");
+eq(normalizePercentValue(1), 100, "bare 1 treated as full (100%), not 1%");
+eq(normalizePercentValue(72), 72, "integer percent unchanged");
+eq(normalizePercentValue(0), 0, "zero stays zero");
+eq(normalizeQaCard({ score: 0.85 }).score, 85, "fractional qa-card score rescaled");
+// [9] Non-object model JSON falls through to the structured fallback (not raw value).
+ok(typeof parseModelJson("true") === "object" && parseModelJson("true") !== true, "bare boolean JSON -> structured object fallback");
+ok(typeof parseModelJson("42") === "object", "bare number JSON -> structured object fallback");
+// [12] Nested-object recruiter string fields flatten (no [object Object]).
+{
+  const r = normalizeRecruiterReport({ coreConclusion: { text: "实际结论" }, replySuggestion: ["先回复", "再确认"] }, "opportunityRecommendation");
+  ok(!/\[object Object\]/.test(r.coreConclusion) && r.coreConclusion === "实际结论", "object coreConclusion flattened to its text");
+  ok(!/\[object Object\]/.test(r.replySuggestion) && r.replySuggestion.includes("先回复"), "array replySuggestion flattened");
+}
+// [13] Duplicate core-label facts retain both values instead of dropping all but last.
+{
+  const m = mergeRecruiterCoreFacts(normalizeRecruiterFacts([{ label: "推荐岗位", value: "PM-增长" }, { label: "推荐岗位", value: "PM-平台" }]));
+  const joined = m.map(f => f.value).join("|");
+  ok(joined.includes("PM-增长") && joined.includes("PM-平台"), "both duplicate-label fact values retained");
+}
+// [11] A lone benign modal must not assert veiled worry; a real concern signal still does.
+ok(!inferCultureMisreadRisk("That would be great, thanks for the help!").includes("委婉"), "benign 'would' does not assert veiled worry");
+ok(inferCultureMisreadRisk("I have a concern, not sure this would work").includes("委婉"), "modal + concern signal still flags veiled worry");
+// [7] A culture card must not blend an adjacent different speaker's words.
+{
+  const segs = [
+    { index: 0, speaker: "对方", text: "Could you confirm the timeline?", time: "00:00:00-00:00:18" },
+    { index: 1, speaker: "我", text: "我再确认资源", time: "00:00:18-00:00:36" }
+  ];
+  const cards = buildCultureCards(segs, []);
+  ok(cards[0] && !cards[0].answer.includes("我再确认资源"), "culture card does not merge the next (different) speaker's turn");
+}
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

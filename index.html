@@ -11843,7 +11843,10 @@
     function normalizePercentValue(value) {
       if (value === null || value === undefined || value === "") return null;
       const direct = Number(value);
-      if (Number.isFinite(direct)) return clampPercent(direct);
+      // A finite value in (0,1] is a probability fraction (a passRate/probabilityScore
+      // of 0.72 means 72%, not 1%) — rescale it before clamping. Integers >1 are already
+      // percentages.
+      if (Number.isFinite(direct)) return clampPercent(direct > 0 && direct <= 1 ? direct * 100 : direct);
       const text = String(value || "").trim();
       const percentMatch = text.match(/(\d{1,3}(?:\.\d+)?)\s*%/);
       if (percentMatch) return clampPercent(Number(percentMatch[1]));
@@ -11873,8 +11876,9 @@
         question: card.question || card.q || "核心问题待识别",
         answer: card.answer || card.a || card.candidateAnswer || "原文中没有识别到完整回答。",
         critique: card.critique || card.feedback || card.aiReview || "建议补充具体证据、结果和下一步动作。",
-        score: Number.isFinite(Number(card.score)) ? Math.max(0, Math.min(100, Math.round(Number(card.score)))) : 78,
+        score: Number.isFinite(Number(card.score)) ? clampPercent(Number(card.score) > 0 && Number(card.score) <= 1 ? Number(card.score) * 100 : Number(card.score)) : 78,
         risk: card.risk || card.riskPoint || "",
+        speaker: card.speaker || "",
         sourceTime: card.sourceTime || card.timestamp || card.time || "",
         // Identity of the exact transcript segment this card was built from, so the
         // 来源 button resolves to the right turn even when two turns share a timestamp.
@@ -11933,21 +11937,36 @@
       };
     }
 
+    // Flatten a model field that may be a string, number, array, or nested object into
+    // display text, so a {text:"..."} / ["a","b"] payload never renders "[object Object]".
+    function coerceText(value) {
+      if (value == null) return "";
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+      if (Array.isArray(value)) return value.map(coerceText).filter(Boolean).join("、");
+      if (typeof value === "object") {
+        for (const key of ["text", "detail", "value", "content", "conclusion", "summary", "reply", "contact"]) {
+          if (value[key] != null && typeof value[key] !== "object") return String(value[key]);
+        }
+        return "";
+      }
+      return "";
+    }
+
     function normalizeRecruiterReport(report = {}, subtype = state.recruiterSubtype) {
       const raw = report || {};
       const normalizedSubtype = getValidRecruiterSubtype(raw.subtype || subtype);
       const facts = mergeRecruiterCoreFacts(normalizeRecruiterFacts(raw.facts || raw.factInfo || []));
       return {
-        counterpart: String(raw.counterpart || raw.contactType || raw.contact || "未识别"),
-        purpose: String(raw.purpose || getRecruiterSubtypeLabel(normalizedSubtype)),
-        coreConclusion: String(raw.coreConclusion || raw.conclusion || raw.summary || ""),
-        usefulJudgement: String(raw.usefulJudgement || raw.judgement || raw.usefulAssessment || ""),
+        counterpart: coerceText(raw.counterpart || raw.contactType || raw.contact) || "未识别",
+        purpose: coerceText(raw.purpose) || getRecruiterSubtypeLabel(normalizedSubtype),
+        coreConclusion: coerceText(raw.coreConclusion || raw.conclusion || raw.summary),
+        usefulJudgement: coerceText(raw.usefulJudgement || raw.judgement || raw.usefulAssessment),
         facts,
         analysis: normalizeStringList(raw.analysis || raw.analysisPoints || raw.views || []),
         questions: normalizeStringList(raw.questions || raw.pendingQuestions || raw.toConfirm || []),
         risks: normalizeStringList(raw.risks || raw.uncertainties || []),
         nextActions: normalizeRecruiterActions(raw.nextActions || raw.actions || raw.todos || []),
-        replySuggestion: String(raw.replySuggestion || raw.reply || raw.copyableReply || ""),
+        replySuggestion: coerceText(raw.replySuggestion || raw.reply || raw.copyableReply),
         opportunity: normalizeKeyValueMap(raw.opportunity || raw.opportunityRecommendation || {}),
         career: normalizeKeyValueMap(raw.career || raw.careerAnalysis || {}),
         profile: normalizeKeyValueMap(raw.profile || raw.profilePositioning || {}),
@@ -11959,12 +11978,24 @@
 
     function mergeRecruiterCoreFacts(facts = []) {
       const coreLabels = ["推荐公司/团队", "推荐岗位", "薪资/职级", "base/工作方式", "流程/时间点"];
-      const map = new Map(facts.map(item => [item.label, item]));
-      coreLabels.forEach(label => {
-        if (!map.has(label)) map.set(label, { label, value: "未提及" });
+      // Merge (don't overwrite) duplicate-label facts so two values reported under the
+      // same label (e.g. two candidate roles) are both retained instead of dropping all
+      // but the last.
+      const byLabel = new Map();
+      (Array.isArray(facts) ? facts : []).forEach(item => {
+        if (!item || !item.label) return;
+        const existing = byLabel.get(item.label);
+        if (!existing) { byLabel.set(item.label, { ...item }); return; }
+        const a = String(existing.value || "").trim();
+        const b = String(item.value || "").trim();
+        if (b && b !== a && a && a !== "未提及") existing.value = `${a}；${b}`;
+        else if (b && (!a || a === "未提及")) existing.value = b;
       });
-      const ordered = coreLabels.map(label => map.get(label));
-      const extra = facts.filter(item => !coreLabels.includes(item.label));
+      coreLabels.forEach(label => {
+        if (!byLabel.has(label)) byLabel.set(label, { label, value: "未提及" });
+      });
+      const ordered = coreLabels.map(label => byLabel.get(label));
+      const extra = [...byLabel.keys()].filter(label => !coreLabels.includes(label)).map(label => byLabel.get(label));
       return [...ordered, ...extra];
     }
 
@@ -14634,6 +14665,13 @@
       els.conclusionList.innerHTML = cards.join("");
     }
 
+    // Single source of truth for "the report names a concrete opportunity" (company AND
+    // role present), shared by the renderer and simulateRecruiterGeneration so the core
+    // conclusion can't claim a concrete opportunity that the renderer then denies.
+    function hasConcreteOpportunityFacts(facts) {
+      return Boolean(getFactValue(facts, "推荐公司/团队") && getFactValue(facts, "推荐岗位"));
+    }
+
     function hasConcreteOpportunityReport(report) {
       const company = report.opportunity?.company || getFactValue(report.facts, "推荐公司/团队");
       const role = report.opportunity?.role || getFactValue(report.facts, "推荐岗位");
@@ -15555,8 +15593,14 @@
 
     function startLoadingTicker() {
       let index = 0;
-      const stages = getActiveLoadingStages();
-      state.loadingText = state.mode === "api" && modelConfig.apiKey ? `正在使用 ${getModelName()} 分析内容...` : stages[0];
+      // In API mode the local rule-engine stage labels ("正在拆分事实...") are dishonest —
+      // no on-device pipeline is running, we're awaiting the network. Cycle model-waiting
+      // copy instead; reserve the pipeline stages for the rules/simulate path.
+      const isApiMode = state.mode === "api" && modelConfig.apiKey;
+      const stages = isApiMode
+        ? [`正在调用 ${getModelName()}，等待返回...`, "模型响应较慢时请稍候，原文已保留...", `${getModelName()} 正在生成结构化结果...`]
+        : getActiveLoadingStages();
+      state.loadingText = stages[0];
       renderLoading();
       return setInterval(() => {
         index = (index + 1) % stages.length;
@@ -15581,7 +15625,7 @@
       const subtype = getValidRecruiterSubtype(state.recruiterSubtype || detectRecruiterSubtype(text));
       const facts = inferRecruiterFacts(text);
       const counterpart = inferRecruiterCounterpart(text);
-      const hasConcreteOpportunity = Boolean(getFactValue(facts, "推荐公司/团队") || getFactValue(facts, "推荐岗位"));
+      const hasConcreteOpportunity = hasConcreteOpportunityFacts(facts);
       const report = {
         counterpart,
         purpose: getRecruiterSubtypeLabel(subtype),
@@ -15664,15 +15708,30 @@
       ]);
       const level = extractFirstMatch(value, [/(?:职级|级别|level)[：:\s]*([^\n，,。；;]{2,24})/i, /(P[5-9]|M[1-9]|L[3-9]|高级|资深|专家|总监)/i]);
       const process = extractFirstMatch(value, [/(?:流程|进度|安排)[：:\s]*([^\n。；;]{2,60})/, /((?:下周|本周|明天|后天|今天).{0,24}(?:聊|面|电话|视频|沟通|约))/]);
+      const cleanedCompany = sanitizeCompanyName(String(company || "")
+        .replace(/^(?:猎头|HR|朋友|同事|老板|领导|对方|我|他|她)*(?:说|讲|提到|介绍|推荐|有|帮我看|这边)+/i, "")
+        .replace(/^(?:了一个|这个|那个|一个|某个|哪家|哪个)/, ""));
       const factsByLabel = [
-        ["推荐公司/团队", sanitizeCompanyName(String(company || "").replace(/^(?:猎头|HR|朋友|同事|老板|领导|对方|我|他|她)*(?:说|讲|提到|介绍|推荐|有|帮我看|这边)+/i, ""))],
-        ["推荐岗位", role],
+        ["推荐公司/团队", isPlaceholderFact(cleanedCompany) ? "" : cleanedCompany],
+        ["推荐岗位", isPlaceholderFact(role) ? "" : role],
         ["薪资/职级", [salary, level].filter(Boolean).join(" / ")],
         ["base/工作方式", location],
         ["流程/时间点", process]
       ];
       factsByLabel.forEach(([label, item]) => facts.push({ label, value: item || "未提及" }));
       return facts;
+    }
+
+    // A company/role value that is actually a placeholder, negation, or descriptive prose
+    // (not a real name) must be treated as "未提及" so the report doesn't fabricate a
+    // concrete opportunity card from "岗位还没定" / "了一个产品经理" / "最近裁员很厉害".
+    function isPlaceholderFact(value) {
+      const v = String(value || "").trim();
+      if (!v) return true;
+      if (/(还|尚|暂)?\s*(没|未|不)\s*(定|说|清楚|明确|确定|知道)|待定|不知道|没定|未定|保密|不太|不稳/.test(v)) return true;
+      if (/(裁员|扩招|福利|氛围|兴趣|机会|加班|稳定)/.test(v)) return true;
+      if (/^(了一个|这个|那个|一个|某个|哪家|哪个)/.test(v)) return true;
+      return false;
     }
 
     function extractFirstMatch(text, patterns = []) {
@@ -15943,20 +16002,28 @@
       };
     }
 
+    // Detect language by COUNTING CJK vs ASCII-letter volume — the old run-length
+    // threshold (/[a-zA-Z]{24,}/) was unreachable for spaced English, so cross-cultural
+    // transcripts were always mislabeled 中文.
+    function detectSourceLanguage(text) {
+      const value = String(text || "");
+      const cjk = (value.match(/[\u4e00-\u9fa5]/g) || []).length;
+      const latin = (value.match(/[a-zA-Z]/g) || []).length;
+      if (latin >= 8 && cjk >= 4) return "中英混合";
+      if (latin >= 8 && cjk === 0) return "英文";
+      return "中文";
+    }
+
     function inferCultureInfo(text, segments = []) {
       const value = String(text || "");
       const channelMatch = value.match(/(Slack|Teams|Zoom|Google Meet|邮件|Email|微信|飞书|钉钉|电话|视频|线下|现场)/i);
-      const language = /[a-zA-Z]{24,}/.test(value) && /[\u4e00-\u9fa5]/.test(value)
-        ? "中英混合"
-        : /[a-zA-Z]{24,}/.test(value)
-          ? "英文"
-          : "中文";
+      const language = detectSourceLanguage(value);
       const counterpart = value.match(/(客户|海外团队|总部|供应商|合作方|manager|lead|client|stakeholder|recruiter|HR)/i)?.[0] || "待识别";
       const goal = value.match(/(对齐|确认|同步|推进|延期|launch|timeline|scope|budget|priority|资源|上线|交付)/i)?.[0] || "协作对齐";
       return normalizeInterviewInfo({
         company: counterpart,
         role: `${goal}沟通`,
-        round: language === "中英混合" ? "跨语言语境" : "同语种沟通",
+        round: language === "中文" ? "同语种沟通" : "跨语言语境",
         time: state.generatedAt ? formatTime(state.generatedAt) : "本次复盘",
         duration: inferInterviewDuration(segments),
         format: channelMatch?.[0] || "待识别",
@@ -15984,14 +16051,22 @@
       const signalPattern = /(could|would|maybe|concern|align|timeline|priority|scope|risk|issue|确认|可能|担心|对齐|延期|优先|资源|风险|问题|不确定|需要)/i;
       normalizedSegments.forEach((segment, index) => {
         if (!signalPattern.test(segment.text) && index > 5) return;
-        const next = normalizedSegments.slice(index + 1, index + 3).map(item => item.text).join(" ");
-        const original = summarizeLine(`${segment.text}${next ? ` ${next}` : ""}`, 220);
+        // Only append continuation turns from the SAME speaker, so a card never blends
+        // the counterpart's and the user's words into one mis-attributed 片段.
+        const continuation = [];
+        for (let j = index + 1; j < normalizedSegments.length && continuation.length < 2; j += 1) {
+          if (normalizedSegments[j].speaker !== segment.speaker) break;
+          continuation.push(normalizedSegments[j].text);
+        }
+        const original = summarizeLine(`${segment.text}${continuation.length ? ` ${continuation.join(" ")}` : ""}`, 220);
+        const isOwnTurn = isOwnCultureSpeaker(segment.speaker);
         cards.push(normalizeQaCard({
           question: inferCultureNode(segment.text, index),
           answer: original,
-          critique: buildCultureCritique(original),
+          critique: buildCultureCritique(original, isOwnTurn),
           score: scoreCultureClarity(original),
-          risk: inferCultureMisreadRisk(original),
+          risk: inferCultureMisreadRisk(original, isOwnTurn),
+          speaker: segment.speaker,
           sourceTime: segment.time,
           sourceIndex: segment.index
         }));
@@ -16031,23 +16106,44 @@
       return Math.max(58, Math.min(94, score));
     }
 
-    function buildCultureCritique(text) {
+    // The user's own side of a culture conversation. Coaching that tells the user to
+    // soften THEIR phrasing must only apply to their own turns, not the counterpart's.
+    function isOwnCultureSpeaker(speaker) {
+      const value = String(speaker || "");
+      if (/^(我|我方|自己|me|self)$/i.test(value)) return true;
+      if (/(对方|客户|甲方|总部|供应商|合作方|client|manager|lead|leader|stakeholder|recruiter|hr)/i.test(value)) return false;
+      return true;
+    }
+
+    function buildCultureCritique(text, isOwnTurn = true) {
       const value = String(text || "");
       const parts = [];
       if (/(确认|对齐|next step|action|下一步)/i.test(value)) parts.push("有推进意识，能把沟通落到下一步。");
       if (/(could|would|maybe|concern|align)/i.test(value)) parts.push("英文语境里有委婉信号，建议不要只按字面理解。");
-      if (/(直接|必须|马上|肯定|不可能|asap)/i.test(value)) parts.push("表达可能偏硬，跨文化场景里容易被理解为施压。");
-      if (!/(owner|deadline|负责人|截止|next step|action)/i.test(value)) parts.push("还缺少明确 owner、时间点或对齐确认，后续容易反复。");
-      if (!parts.length) parts.push("这段表达基本可用，但可以更明确地拆出对方诉求、你的边界和下一步动作。");
+      if (isOwnTurn) {
+        if (/(直接|必须|马上|肯定|不可能|asap)/i.test(value)) parts.push("你的表达可能偏硬，跨文化场景里容易被理解为施压。");
+        if (!/(owner|deadline|负责人|截止|next step|action)/i.test(value)) parts.push("还缺少明确 owner、时间点或对齐确认，后续容易反复。");
+      } else if (/(直接|必须|马上|肯定|不可能|asap)/i.test(value)) {
+        parts.push("对方语气偏强，注意确认这是硬性要求还是仍有协商空间。");
+      }
+      if (!parts.length) parts.push(isOwnTurn
+        ? "这段表达基本可用，但可以更明确地拆出对方诉求、你的边界和下一步动作。"
+        : "这段表达基本清晰，建议先确认对方真实诉求与边界，再决定如何回应。");
       return parts.slice(0, 2).join("");
     }
 
-    function inferCultureMisreadRisk(text) {
+    function inferCultureMisreadRisk(text, isOwnTurn = true) {
       const value = String(text || "");
-      if (/(could|would|maybe|concern|not sure|wondering)/i.test(value)) return "对方可能在委婉表达担忧，不只是随口询问。";
+      // A lone benign modal ("would"/"could") is not evidence of veiled worry — require a
+      // co-occurring concern signal (or a question) before asserting hidden intent.
+      if (/(could|would|maybe)/i.test(value) && /(concern|not sure|wondering|worr|issue|problem|but |however|delay|risk|担心|不确定|问题|风险|但|然而|\?|？)/i.test(value)) {
+        return "对方可能在委婉表达诉求或顾虑，建议主动确认，不要只按字面理解。";
+      }
+      if (/(not sure|wondering)/i.test(value)) return "对方可能在委婉表达诉求或顾虑，建议主动确认。";
       if (/(随便|都行|看情况|应该可以|差不多)/.test(value)) return "中文式弹性表达可能被理解为承诺不清。";
       if (/(必须|马上|不可能|肯定|asap|urgent)/i.test(value)) return "语气偏硬，容易被跨文化团队理解为缺少协商空间。";
-      if (!/(next step|action|owner|deadline|下一步|负责人|截止)/i.test(value)) return "缺少闭环动作，沟通后可能各自理解不同。";
+      // The missing-closure risk is about the USER's own turn — don't assert it for the counterpart.
+      if (isOwnTurn && !/(next step|action|owner|deadline|下一步|负责人|截止)/i.test(value)) return "缺少闭环动作，沟通后可能各自理解不同。";
       return "";
     }
 
@@ -16191,13 +16287,18 @@
         time: state.generatedAt ? formatTime(state.generatedAt) : "本次复盘",
         duration,
         format: formatMatch?.[0] || "待识别",
-        language: /[a-zA-Z]{18,}/.test(value) ? "中英混合" : "中文",
+        language: detectSourceLanguage(value),
         interviewerRole: inferInterviewerRole(value)
       });
     }
 
     function inferInterviewDuration(segments) {
       if (!segments.length) return state.audioFileName ? "音频时长待读取" : "待识别";
+      // Only trust a duration derived from REAL leading timestamps. The positional
+      // 18s-per-line fallback in inferSourceTime would otherwise fabricate a duration
+      // ("6分钟") for a plain-text transcript that has no timestamps at all.
+      const hasExplicitTime = segments.some(segment => /^\s*\[?\d{1,2}:\d{2}/.test(String(segment.original || segment.text || "")));
+      if (!hasExplicitTime) return "待识别";
       const last = segments[segments.length - 1]?.time || "";
       const [, end = ""] = last.split("-");
       if (!end) return "待识别";
@@ -16223,16 +16324,34 @@
         text,
         time: inferSourceTime(text, index)
       }));
+      const isQuestionText = value => {
+        const t = String(value || "").trim();
+        return /[?？]\s*$/.test(t) || /(吗|呢|什么|怎么|如何|多少|哪|为什么)\s*$/.test(t);
+      };
       normalizedSegments.forEach((segment, index) => {
-        if (!questionPattern.test(segment.text)) return;
-        const answerSegments = normalizedSegments.slice(index + 1, index + 4).filter(item => item.speaker !== segment.speaker);
-        const answer = answerSegments.map(item => cleanInterviewAnswer(item.text)).join(" ");
+        // A turn is a question only when its interrogative marker is end-anchored, or it's
+        // a short keyword turn — a mid-sentence 怎么/什么 in long candidate prose must not
+        // spawn a (role-inverted) card.
+        const isQuestionTurn = isQuestionText(segment.text) || (questionPattern.test(segment.text) && segment.text.trim().length <= 30);
+        if (!isQuestionTurn) return;
+        // Collect only the CONSECUTIVE following turns from other speakers, stopping at the
+        // next same-speaker (questioner) turn, so one question's card can't merge a later
+        // question's answer.
+        const answerSegments = [];
+        for (let j = index + 1; j < normalizedSegments.length && answerSegments.length < 3; j += 1) {
+          if (normalizedSegments[j].speaker === segment.speaker) break;
+          answerSegments.push(normalizedSegments[j]);
+        }
+        const answer = answerSegments.map(item => cleanInterviewAnswer(item.text)).join(" ").trim();
+        // No real answer, or the resolved "answer" is itself a question (speaker roles
+        // inverted): skip rather than fabricate a card.
+        if (!answer || isQuestionText(answer)) return;
         cards.push(normalizeQaCard({
           question: cleanInterviewQuestion(segment.text),
-          answer: answer || summarizeLine(normalizedSegments[index + 1]?.text || "原文中没有识别到完整回答。", 180),
-          critique: buildQaCritique(answer || segment.text),
-          score: scoreInterviewAnswer(answer || segment.text),
-          risk: inferQaRisk(answer || segment.text),
+          answer,
+          critique: buildQaCritique(answer),
+          score: scoreInterviewAnswer(answer),
+          risk: inferQaRisk(answer),
           sourceTime: segment.time,
           sourceIndex: segment.index
         }));
@@ -16656,6 +16775,9 @@
         })
       }, config.timeout);
       const data = await safeJson(response);
+      // Some proxies/gateways return HTTP 200 with an {error:{message}} body and no
+      // choices — surface the real cause instead of a misleading "empty model response".
+      if (data.error?.message) throw new Error(data.error.message);
       if (!response.ok) throw new Error(data.error?.message || response.statusText);
       const content = data.choices?.[0]?.message?.content || "";
       if (!content) throw new Error("empty model response");
@@ -16668,6 +16790,10 @@
         headers: {
           "x-api-key": config.apiKey,
           "anthropic-version": "2023-06-01",
+          // Required for direct browser calls — without it Anthropic CORS-rejects every
+          // request from a static page and generate() silently falls back to rules.
+          // The key stays device-local (sent only to api.anthropic.com).
+          "anthropic-dangerous-direct-browser-access": "true",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -16679,6 +16805,7 @@
         })
       }, config.timeout);
       const data = await safeJson(response);
+      if (data.error?.message) throw new Error(data.error.message);
       if (!response.ok) throw new Error(data.error?.message || response.statusText);
       const content = data.content?.map(item => item.text || "").join("") || "";
       if (!content) throw new Error("empty model response");
@@ -16702,6 +16829,7 @@
         })
       }, config.timeout);
       const data = await safeJson(response);
+      if (data.error?.message) throw new Error(data.error.message);
       if (!response.ok) throw new Error(data.error?.message || response.statusText);
       const content = data.candidates?.[0]?.content?.parts?.map(item => item.text || "").join("") || "";
       if (!content) throw new Error("empty model response");
@@ -16737,7 +16865,13 @@
       let text = String(content || "").trim();
       text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
       try {
-        return JSON.parse(text);
+        // Require a plain object: a model that returns a bare primitive/array (true, 42,
+        // "待识别", or a top-level qaCards array) would otherwise spread into an empty
+        // result yet still read as a "real model" output. Fall through to the structured
+        // fallback (and honest labeling) instead.
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+        throw new Error("non-object model json");
       } catch (error) {
         const scenario = getScenario();
         const start = text.indexOf("{");
