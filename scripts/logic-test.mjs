@@ -74,7 +74,9 @@ const exposed = [
   "escapeMarkdownText", "buildMinutesText", "buildRecruiterMinutesText",
   "isLikelyTranscribableAudio",
   "hasQuantifiedEvidence", "isAiRelevantText", "inferThemes", "inferInterviewerRole",
-  "inferInterviewerConcerns", "buildQaCritique", "inferNextSteps"
+  "inferInterviewerConcerns", "buildQaCritique", "inferNextSteps",
+  "saveInterviewRecords", "buildInterviewRecordContext", "isPlaceholderFact",
+  "normalizeQaCards", "formatKeyValueMarkdown"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -117,6 +119,8 @@ const {
   isLikelyTranscribableAudio,
   hasQuantifiedEvidence, isAiRelevantText, inferThemes, inferInterviewerRole,
   inferInterviewerConcerns, buildQaCritique, inferNextSteps,
+  saveInterviewRecords, buildInterviewRecordContext, isPlaceholderFact,
+  normalizeQaCards, formatKeyValueMarkdown,
   localStorage
 } = fns;
 
@@ -811,6 +815,58 @@ ok(inferThemes("我们聊了性能优化和数据库架构").includes("技术深
 // [J3] Interviewer type by signal density, not a single trailing HR mention.
 eq(inferInterviewerRole("聊了性能优化、虚拟滚动、React 并发，结尾说 HR 会联系你聊薪资。"), "技术面试官", "tech-dominant interview is not mislabeled as HR");
 eq(inferInterviewerRole("HR面：主要聊了入职流程、薪酬和背调安排。"), "HR / 招聘", "true HR conversation still labels as HR");
+
+// ===== 2026-07-04 R13 deep-sweep (regression re-sweep) =====
+// [0] 去复盘 record template must always route as interview (JD keywords must not hijack).
+{
+  const jdRecord = { company: "字节跳动", role: "AI 产品经理", jd: "负责协同办公方向的 AI 能力落地，推荐相关岗位经验", rounds: [{ status: "pending" }, { status: "pending" }, { status: "pending" }, { status: "pending" }] };
+  eq(detectContentRouting(buildInterviewRecordContext(jdRecord, 0)).contentType, "interview", "record template with JD routes as interview");
+}
+// [4] Incidental HR-scheduling mention must not flip recap notes to recruiter.
+eq(detectContentRouting("今天二面结束，整体感觉不错。面试官追问了增长项目的数据口径，我用留存漏斗解释了。最后HR说下周约终面时间。需要复盘：对指标定义的回答不够快。").contentType, "interview", "recap notes with incidental HR mention stay interview");
+// [2] A second interviewer's end-anchored question must not be absorbed into the answer.
+{
+  const t = ["面试官A：先介绍一下你自己吧？", "面试官B：另外为什么想来我们公司？", "候选人：我做了5年增长产品，主导过一个项目，留存提升了12%。"].join("\n");
+  const cards = buildInterviewQaCards(getTranscriptSegmentsFromText(t), splitSentences(t));
+  ok(cards.every(card => !card.answer.includes("为什么想来我们公司")), "interviewer B's question is not graded as the candidate's answer");
+}
+// [3] Real salary/process values containing prose-topic words survive fact extraction.
+eq(getFactValue(inferRecruiterFacts("猎头推荐机会。薪资：稳定在60-80万年包。"), "薪资/职级"), "稳定在60-80万年包", "real salary containing 稳定 is not zeroed");
+ok(isPlaceholderFact("裁员", { proseTopics: true }) === true && isPlaceholderFact("稳定在60-80万年包") === false, "prose-topic filter only applies to name extraction");
+// [5] Multi-paragraph transcripts stay one contiguous block for removeAudioUploadBlocks.
+eq(removeAudioUploadBlocks("[转写稿｜a.mp3]\n段一\n段二\n\n我的笔记"), "我的笔记", "contiguous transcript block fully removed, notes kept");
+// [14] saveInterviewRecords returns its persist outcome (rollback path depends on it).
+eq(saveInterviewRecords(), true, "saveInterviewRecords returns true on a healthy store");
+// [12] Markdown key labels are escaped like values.
+ok(!/(^|\n)- !\[/.test(formatKeyValueMarkdown({ "![t](https://evil/p)": "v" })), "markdown key labels are escaped");
+// [13]/[24] Nested-object model fields never render [object Object]; array-valued props flatten.
+eq(normalizeQaCards([{ question: { text: "自我介绍" }, answer: "a" }])[0].question, "自我介绍", "object question coerces to its text");
+ok(!JSON.stringify(normalizeResult({ interviewerConcerns: [{ detail: "x" }], qaCards: [{ question: { text: "q" }, answer: { text: "a" } }] })).includes("[object Object]"), "nested-object fields never [object Object]");
+{
+  const r = normalizeRecruiterReport({ facts: [{ label: "薪资/职级", value: { text: ["60万", "16薪"] } }] }, "opportunityRecommendation");
+  eq(r.facts.find(f => f.label === "薪资/职级").value, "60万、16薪", "object-with-array fact value flattens");
+}
+// [16] null/empty score is absent (default 78), explicit 0 preserved.
+eq(normalizeQaCard({ score: null }).score, 78, "null score is absent, not 0");
+eq(normalizeQaCard({ score: "" }).score, 78, "empty-string score is absent, not 0");
+eq(normalizeQaCard({ score: 0 }).score, 0, "a real 0 is still preserved");
+// [17] Two incidental tech tokens don't flip a Chinese transcript to 中英混合.
+eq(detectSourceLanguage("面试官：说说你在性能优化上的实践。候选人：我们用 React 做了虚拟滚动，接口用 Node 网关做了聚合，首屏时间从四秒降到一点六秒，整体留存提升明显。"), "中文", "incidental tech tokens stay 中文");
+// [18] Single-element top-level array falls to the structured fallback, not the inner card.
+ok(!("question" in parseModelJson('[{"question":"q","answer":"a"}]')), "top-level array does not adopt inner object");
+// [23] Malformed brace-slice model output falls to the structured fallback without throwing.
+ok((() => { try { return typeof parseModelJson("噪音 {bad json,} 结尾") === "object"; } catch { return false; } })(), "malformed brace-slice falls back without throwing");
+// [19] 我/他-style single-char self-labels are recognized as speakers.
+{
+  const segs = getTranscriptSegmentsFromText("张伟：请自我介绍\n我：我是产品经理\n张伟：说说项目\n我：做过复盘工具");
+  eq(segs[1].speaker, "我", "single-char 我 label recognized");
+  eq(segs[3].speaker, "我", "same speaker stays consistent");
+  ok(!segs[1].text.startsWith("我："), "label stripped from text");
+}
+// [21] Tampered modelUsed cannot inject markdown lines into exports.
+ok(!/^!\[\]\(/m.test(buildMinutesText({ summary: "s", contentType: "interview" }, "interview", "真实大模型：x\n\n![](https://evil/p.png)")), "modelUsed label cannot inject markdown lines");
+// [22] Printable typographic punctuation survives filename sanitizing; bidi still stripped.
+ok(/字节—飞书/.test(buildExportFileName("字节—飞书", "md")), "em dash survives filename sanitizing");
 
 // ===== 2026-07-04 R12 deep-sweep (product excellence) regressions =====
 // [20] Rules-generated exports must not attribute critiques/summary to AI; model output keeps it.

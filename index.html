@@ -8300,6 +8300,7 @@
     let selectedAudioUrl = "";
     let audioPreviewError = false;
     let audioPreviewUnplayable = false;
+    let lastPersistedAudioDuration = "";
     const MAX_ASR_BYTES = 25 * 1024 * 1024;
     const TRANSCRIBABLE_AUDIO_EXTENSIONS = ["webm", "ogg", "oga", "opus", "m4a", "mp3", "wav", "mp4", "amr", "flac", "aac"];
 
@@ -9155,7 +9156,8 @@
         if (!interviewId || roundIndex == null) return false;
         const index = interviewRecords.findIndex(record => record.id === interviewId);
         if (index < 0) return false;
-        const record = normalizeInterviewRecord(interviewRecords[index]);
+        const previous = interviewRecords[index];
+        const record = normalizeInterviewRecord(previous);
         const safeIndex = Math.max(0, Math.min(3, Number(roundIndex) || 0));
         record.rounds[safeIndex] = normalizeInterviewRound({
           ...record.rounds[safeIndex],
@@ -9165,7 +9167,11 @@
         }, safeIndex);
         record.updatedAt = nowIso();
         interviewRecords[index] = normalizeInterviewRecord(record);
-        saveInterviewRecords();
+        // 持久化失败必须回滚内存并报告失败，否则上层会用成功 toast 掩盖失败并留下悬挂链接。
+        if (!saveInterviewRecords()) {
+          interviewRecords[index] = previous;
+          return false;
+        }
         return true;
       }
     };
@@ -11415,6 +11421,15 @@
           reason: "等待输入后识别内容类型。"
         };
       }
+      // 应用自产的面试记录模板（去复盘注入）是明确的面试上下文；不能让模板头部里的
+      // "岗位/JD" 关键词把工作区劫持成猎头沟通。
+      if (/【面试公司】|【第[一二三四五六七八九十\d]+轮面试/.test(value)) {
+        return {
+          contentType: "interview",
+          recruiterSubtype: DEFAULT_RECRUITER_SUBTYPE,
+          reason: "识别到面试记录上下文，按面试复盘处理。"
+        };
+      }
       const interviewScore = scoreRoutingRules(value, [
         [/(面试官|候选人|interviewer|candidate)[：:]/gi, 4],
         [/(一面|二面|三面|四面|终面|HR面|技术面|业务面|第[一二三四五六七八九十\d]+轮)/gi, 3],
@@ -11447,8 +11462,9 @@
       // 简历/回答策略…) is intentionally excluded so it cannot short-circuit a genuine
       // transcript; those terms are weighed by scoreRoutingRules instead.
       const hasStrongRecruiterSignal = /(猎头|headhunter|recruiter|招聘顾问|内推人|帮你看机会|HR.{0,16}(推荐|约|看机会))/i.test(value);
+      // 强猎头信号也要过密度检查：单句"HR说下周约终面"不能压过整篇面试复盘笔记。
       const contentType = !hasInterviewTranscript
-        && (hasStrongRecruiterSignal || (recruiterScore >= 5 && recruiterScore >= interviewScore))
+        && ((hasStrongRecruiterSignal && recruiterScore * 2 >= interviewScore) || (recruiterScore >= 5 && recruiterScore >= interviewScore))
         ? "recruiterConversation"
         : "interview";
       if (contentType === "interview") {
@@ -11750,7 +11766,8 @@
           const currentId = getCurrentUserId();
           if (legacy && (legacy.userId === currentId || (!legacy.userId && isLocalIdentifier(currentId)))) {
             saved = legacy;
-            storageService.remove(STATE_KEY);
+            // 先写入新槽位、写入成功才删旧槽——否则启动后崩溃/关页会让旧草稿只存在于内存里。
+            if (storageService.setJson(getDraftStateKey(), legacy)) storageService.remove(STATE_KEY);
           }
         }
         saved = saved || {};
@@ -12179,7 +12196,8 @@
     // a rules-based label, not "真实大模型：<whatever is open now>" (which would also drop
     // the export disclaimer).
     function normalizeStoredModelLabel(value = "") {
-      const text = String(value || "").trim();
+      // 折叠换行/制表符：被篡改的 modelUsed 不能在导出 Markdown 里另起一行注入内容。
+      const text = String(value || "").replace(/[\r\n\t]+/g, " ").trim();
       if (!text) return isDeveloperMode() ? "本地模拟分析" : "规则快速分析";
       if (!isDeveloperMode() && (text === "本地模拟" || text === "声流内置分析")) return "规则快速分析";
       return text;
@@ -12260,14 +12278,14 @@
 
     function normalizeInterviewInfo(info = {}) {
       return {
-        company: info.company || info.companyName || "待识别",
-        role: info.role || info.position || info.jobTitle || "待识别",
-        round: info.round || info.stage || "待识别",
-        time: info.time || info.date || "待识别",
-        duration: info.duration || "待识别",
-        format: info.format || info.method || "待识别",
-        language: info.language || "中文",
-        interviewerRole: info.interviewerRole || info.interviewer || "待识别"
+        company: coerceText(info.company ?? info.companyName) || "待识别",
+        role: coerceText(info.role ?? info.position ?? info.jobTitle) || "待识别",
+        round: coerceText(info.round ?? info.stage) || "待识别",
+        time: coerceText(info.time ?? info.date) || "待识别",
+        duration: coerceText(info.duration) || "待识别",
+        format: coerceText(info.format ?? info.method) || "待识别",
+        language: coerceText(info.language) || "中文",
+        interviewerRole: coerceText(info.interviewerRole ?? info.interviewer) || "待识别"
       };
     }
 
@@ -12276,13 +12294,13 @@
       const firstRisk = legacy.risks?.[0]?.title || "";
       const probability = summary.probability || summary.passProbability || summary.aiJudgement || "待结合后续反馈判断";
       return {
-        coreDiscussion: summary.coreDiscussion || summary.discussion || firstConclusion || legacy.summary || "围绕核心诉求、表达质量和下一步行动展开。",
-        atmosphere: summary.atmosphere || summary.interviewAtmosphere || "偏开放讨论",
-        probability,
+        coreDiscussion: coerceText(summary.coreDiscussion ?? summary.discussion) || firstConclusion || legacy.summary || "围绕核心诉求、表达质量和下一步行动展开。",
+        atmosphere: coerceText(summary.atmosphere ?? summary.interviewAtmosphere) || "偏开放讨论",
+        probability: coerceText(probability) || "待结合后续反馈判断",
         passRate: normalizePercentValue(summary.passRate ?? summary.passRatePercent ?? summary.probabilityScore ?? probability),
-        strength: summary.strength || summary.biggestStrength || "有可延展的表达素材",
-        risk: summary.risk || summary.biggestRisk || firstRisk || "表达结构和关键证据需要继续打磨",
-        coachTakeaway: summary.coachTakeaway || summary.takeaway || summary.summary || legacy.summary || firstConclusion || "这次内容需要重点复盘对方关注点，并把下一步表达压缩得更清晰、更有证据。"
+        strength: coerceText(summary.strength ?? summary.biggestStrength) || "有可延展的表达素材",
+        risk: coerceText(summary.risk ?? summary.biggestRisk) || firstRisk || "表达结构和关键证据需要继续打磨",
+        coachTakeaway: coerceText(summary.coachTakeaway ?? summary.takeaway ?? summary.summary) || legacy.summary || firstConclusion || "这次内容需要重点复盘对方关注点，并把下一步表达压缩得更清晰、更有证据。"
       };
     }
 
@@ -12320,15 +12338,18 @@
     }
 
     function normalizeQaCard(card = {}) {
+      // null/空串不是"0 分"——缺失评分回退默认值；显式的数字 0 仍如实显示（R5 修复）。
+      const rawScore = card.score;
+      const hasScore = rawScore !== null && rawScore !== undefined && String(rawScore).trim() !== "" && Number.isFinite(Number(rawScore));
       return {
         id: card.id || createId(),
-        question: card.question || card.q || "核心问题待识别",
-        answer: card.answer || card.a || card.candidateAnswer || "原文中没有识别到完整回答。",
-        critique: card.critique || card.feedback || card.aiReview || "建议补充具体证据、结果和下一步动作。",
-        score: Number.isFinite(Number(card.score)) ? clampPercent(Number(card.score) > 0 && Number(card.score) < 1 ? Number(card.score) * 100 : Number(card.score)) : 78,
-        risk: card.risk || card.riskPoint || "",
-        speaker: card.speaker || "",
-        sourceTime: card.sourceTime || card.timestamp || card.time || "",
+        question: coerceText(card.question ?? card.q) || "核心问题待识别",
+        answer: coerceText(card.answer ?? card.a ?? card.candidateAnswer) || "原文中没有识别到完整回答。",
+        critique: coerceText(card.critique ?? card.feedback ?? card.aiReview) || "建议补充具体证据、结果和下一步动作。",
+        score: hasScore ? clampPercent(Number(rawScore) > 0 && Number(rawScore) < 1 ? Number(rawScore) * 100 : Number(rawScore)) : 78,
+        risk: coerceText(card.risk ?? card.riskPoint) || "",
+        speaker: coerceText(card.speaker) || "",
+        sourceTime: coerceText(card.sourceTime ?? card.timestamp ?? card.time) || "",
         // Identity of the exact transcript segment this card was built from, so the
         // 来源 button resolves to the right turn even when two turns share a timestamp.
         sourceIndex: Number.isInteger(card.sourceIndex) ? card.sourceIndex : null
@@ -12343,17 +12364,17 @@
     function normalizeFocusItem(item = {}) {
       const text = typeof item === "string" ? item : "";
       return {
-        name: item.name || item.title || text,
-        evidence: item.evidence || item.detail || item.reason || text || "从追问和讨论密度中识别。",
-        signal: item.signal || item.level || "关注"
+        name: coerceText(item.name ?? item.title) || text,
+        evidence: coerceText(item.evidence ?? item.detail ?? item.reason) || text || "从追问和讨论密度中识别。",
+        signal: coerceText(item.signal ?? item.level) || "关注"
       };
     }
 
     function normalizeConcernItems(items = []) {
       if (!Array.isArray(items)) return [];
       return items.filter(Boolean).map(item => ({
-        title: item.title || item.name || String(item || "潜在顾虑"),
-        detail: item.detail || item.description || item.reason || "需要用更具体证据回应。"
+        title: coerceText(item.title ?? item.name ?? item) || "潜在顾虑",
+        detail: coerceText(item.detail ?? item.description ?? item.reason) || "需要用更具体证据回应。"
       })).filter(item => item.title);
     }
 
@@ -12365,9 +12386,9 @@
     function normalizeImprovement(item = {}) {
       const raw = typeof item === "string" ? { issue: item } : item;
       return {
-        issue: raw.issue || raw.title || raw.name || "回答需要更聚焦",
-        symptom: raw.symptom || raw.description || raw.desc || "表达里有可优化空间。",
-        suggestion: raw.suggestion || raw.action || raw.advice || "先讲结论，再用一个具体案例支撑。",
+        issue: coerceText(raw.issue ?? raw.title ?? raw.name) || "回答需要更聚焦",
+        symptom: coerceText(raw.symptom ?? raw.description ?? raw.desc) || "表达里有可优化空间。",
+        suggestion: coerceText(raw.suggestion ?? raw.action ?? raw.advice) || "先讲结论，再用一个具体案例支撑。",
         priority: ["高", "中", "低"].includes(raw.priority || raw.level) ? (raw.priority || raw.level) : "中"
       };
     }
@@ -12380,9 +12401,9 @@
     function normalizeNextStep(item = {}) {
       const raw = typeof item === "string" ? { title: item } : item;
       return {
-        title: raw.title || raw.name || "准备关键追问",
-        detail: raw.detail || raw.description || raw.note || "围绕目标补充一个更完整的证据或表达版本。",
-        type: raw.type || raw.category || "下一步准备"
+        title: coerceText(raw.title ?? raw.name) || "准备关键追问",
+        detail: coerceText(raw.detail ?? raw.description ?? raw.note) || "围绕目标补充一个更完整的证据或表达版本。",
+        type: coerceText(raw.type ?? raw.category) || "下一步准备"
       };
     }
 
@@ -12394,7 +12415,10 @@
       if (Array.isArray(value)) return value.map(coerceText).filter(Boolean).join("、");
       if (typeof value === "object") {
         for (const key of ["text", "detail", "value", "content", "conclusion", "summary", "reply", "contact"]) {
-          if (value[key] != null && typeof value[key] !== "object") return String(value[key]);
+          if (value[key] != null) {
+            const nested = coerceText(value[key]);
+            if (nested) return nested;
+          }
         }
         return "";
       }
@@ -14071,13 +14095,17 @@
           inferCompanyForRecord(record).then(company => {
             const index = interviewRecords.findIndex(item => item.id === record.id);
             if (index >= 0 && company && !interviewRecords[index].company) {
+              const previous = interviewRecords[index];
               interviewRecords[index] = normalizeInterviewRecord({
                 ...interviewRecords[index],
                 company,
                 updatedAt: nowIso()
               });
-              saveInterviewRecords();
-              showToast(`已识别面试公司：${company}`);
+              if (saveInterviewRecords()) {
+                showToast(`已识别面试公司：${company}`);
+              } else {
+                interviewRecords[index] = previous;
+              }
             }
           }).catch(error => {
             console.warn(error);
@@ -14322,7 +14350,7 @@
       state.currentTranscriptId = "";
       state.currentSummaryId = "";
       activateInputModeSource("text");
-      setActiveSource(buildInterviewRecordContext(record, roundIndex), { trim: true });
+      setActiveSource(buildInterviewRecordContext(record, roundIndex), { trim: true, skipRouting: true });
       clearGeneratedResultState();
       state.appPage = "review";
       saveState();
@@ -14563,7 +14591,7 @@
           // 只是内部定位锚点，绝不能当成真实时钟展示（诚实原则）。
           const hasRealTime = /^\[?\s*\d{1,2}:\d{2}/.test(line);
           const withoutTime = line.replace(/^\[?\d{1,2}:\d{2}(?::\d{2})?(?:\s*-\s*\d{1,2}:\d{2}(?::\d{2})?)?\]?\s*/, "");
-          const speakerMatch = withoutTime.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9]{1,11})[：:]\s*(.+)$/);
+          const speakerMatch = withoutTime.match(/^((?:我|你|他|她|问|答)|[\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9]{1,11})[：:]\s*(.+)$/);
           // Reject pure-numeric/year tokens ("2021年：") and annotation prefixes
           // (备注：/Q1：/结论：) so only real speaker names create a labeled speaker turn.
           const isAnnotationLabel = speakerMatch && (/^\d{2,4}年$/.test(speakerMatch[1]) || /^(注|备注|主题|背景|结论|说明|补充|总结|时间|地点|日期|Q\d+|A\d+)$/.test(speakerMatch[1]));
@@ -15572,8 +15600,14 @@
       }
       const duration = Number.isFinite(els.audioPreview.duration) ? formatDuration(els.audioPreview.duration) : "读取时长中";
       els.audioMeta.textContent = `${selectedAudioFile.name} · ${formatFileSize(selectedAudioFile.size)} · 时长 ${duration}`;
-      if (state.currentUploadedFileId && Number.isFinite(els.audioPreview.duration)) {
+      // 只在时长真正变化时持久化一次；渲染是每个按键都会触发的热路径，
+      // 无脑重存会把 uploaded_files 全表重写 + 触发云端 upsert，还会重置 createdAt。
+      if (state.currentUploadedFileId && Number.isFinite(els.audioPreview.duration)
+        && lastPersistedAudioDuration !== `${state.currentUploadedFileId}:${duration}`) {
+        lastPersistedAudioDuration = `${state.currentUploadedFileId}:${duration}`;
+        const existing = uploadedFileService.list().find(item => item.id === state.currentUploadedFileId) || {};
         uploadedFileService.save({
+          ...existing,
           id: state.currentUploadedFileId,
           fileName: selectedAudioFile.name,
           fileType: selectedAudioFile.type || "audio/*",
@@ -15581,7 +15615,7 @@
           duration,
           interviewId: state.linkedInterviewId || "",
           roundIndex: state.linkedRoundIndex,
-          createdAt: nowIso()
+          createdAt: existing.createdAt || nowIso()
         });
       }
     }
@@ -15660,7 +15694,9 @@
       try {
         const text = await requestAudioTranscription(selectedAudioFile, config, audioTranscriptionController.signal);
         state.currentTranscriptId = createId();
-        const transcriptBlock = `\n\n[转写稿｜${selectedAudioFile.name}]\n${text}`;
+        // 块内空行压成单换行，保证 removeAudioUploadBlocks 的"首空行截断"不变式成立：
+        // 换音频时整块被完整移除，用户在块后写的笔记（以空行分隔）完整保留。
+        const transcriptBlock = `\n\n[转写稿｜${selectedAudioFile.name}]\n${text.replace(/\n{2,}/g, "\n")}`;
         transcriptService.save({
           id: state.currentTranscriptId,
           interviewId: state.linkedInterviewId || "",
@@ -15723,6 +15759,11 @@
       const responseText = await response.text();
       const data = parseJsonOrEmpty(responseText);
       if (!response.ok) throw new Error(getAsrResponseErrorMessage(data, responseText, response));
+      // 网关型服务会用 HTTP 200 + {error} 报错（配额/鉴权）；必须先于"空转写"检查，
+      // 否则真实原因被误报成"转写接口返回为空"。
+      if (data.error?.message || (typeof data.error === "string" && data.error)) {
+        throw new Error(getAsrResponseErrorMessage(data, responseText, response));
+      }
       // Coerce a non-string transcript (segmented array / number / object) instead of
       // crashing on .trim(), so a real ASR result isn't reported as a generic failure.
       let text = data.text ?? data.transcript ?? data.result?.text ?? "";
@@ -15745,7 +15786,8 @@
       try {
         wavFile = await convertAudioBlobToWavFile(file);
       } catch (error) {
-        // 该服务要求本地先把 webm 解码转 wav；浏览器解不了时给出针对性的出路，而不是笼统报错。
+        // 已带中文说明的错误（如超大小上限）原样透传；只有浏览器解码失败换成针对性出路。
+        if (/[一-龥]/.test(String(error?.message || ""))) throw error;
         throw new Error("当前转写服务需要先在本地把 webm 转成 wav，但这个浏览器无法解码该文件。请改用 wav/mp3 文件，或换用支持 webm 的转写服务。");
       }
       return {
@@ -15764,6 +15806,8 @@
       return isSiliconFlow && isWebm;
     }
 
+    const ASR_WAV_SAMPLE_RATE = 16000;
+
     async function convertAudioBlobToWavFile(file) {
       const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextCtor) throw new Error("browser does not support AudioContext for webm to wav conversion");
@@ -15771,7 +15815,22 @@
       try {
         const arrayBuffer = await file.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-        const wavBlob = encodeAudioBufferToWav(audioBuffer);
+        // 下混单声道 + 重采样 16kHz：语音转写不需要 48kHz 立体声，
+        // 否则一段 12MB 的 webm 长录音会膨胀成数百 MB 的 wav（内存/上传双爆）。
+        let outputBuffer = audioBuffer;
+        if (typeof OfflineAudioContext === "function" && (audioBuffer.numberOfChannels > 1 || audioBuffer.sampleRate > ASR_WAV_SAMPLE_RATE)) {
+          const targetLength = Math.ceil(audioBuffer.duration * ASR_WAV_SAMPLE_RATE);
+          const offline = new OfflineAudioContext(1, Math.max(1, targetLength), ASR_WAV_SAMPLE_RATE);
+          const sourceNode = offline.createBufferSource();
+          sourceNode.buffer = audioBuffer;
+          sourceNode.connect(offline.destination);
+          sourceNode.start(0);
+          outputBuffer = await offline.startRendering();
+        }
+        const wavBlob = encodeAudioBufferToWav(outputBuffer);
+        if (wavBlob.size > MAX_ASR_BYTES) {
+          throw new Error("转换后的 wav 超过转写大小上限，请截取较短片段，或改传 mp3/m4a 等压缩格式。");
+        }
         const wavName = `${(file.name || "recording").replace(/\.[^.]+$/, "")}.wav`;
         return new File([wavBlob], wavName, { type: "audio/wav" });
       } finally {
@@ -16042,7 +16101,7 @@
       try {
         let result;
         if (state.mode === "api" && modelConfig.apiKey) {
-          state.loadingText = `正在调用 ${modelConfig.model || modelConfig.customModel}...`;
+          state.loadingText = `正在调用 ${getModelName()}...`;
           renderLoading();
           result = await callConfiguredModel(state.source);
           // The model is the authority on content type/subtype (its prompt requires
@@ -16278,8 +16337,8 @@
         .replace(/^(?:猎头|HR|朋友|同事|老板|领导|对方|我|他|她)*(?:说|讲|提到|介绍|推荐|有|帮我看|这边)+/i, "")
         .replace(/^(?:了一个|这个|那个|一个|某个|哪家|哪个)/, ""));
       const factsByLabel = [
-        ["推荐公司/团队", isPlaceholderFact(cleanedCompany) ? "" : cleanedCompany],
-        ["推荐岗位", isPlaceholderFact(role) ? "" : role],
+        ["推荐公司/团队", isPlaceholderFact(cleanedCompany, { proseTopics: true }) ? "" : cleanedCompany],
+        ["推荐岗位", isPlaceholderFact(role, { proseTopics: true }) ? "" : role],
         ["薪资/职级", [salary, level].filter(Boolean).join(" / ")],
         ["base/工作方式", location],
         ["流程/时间点", process]
@@ -16291,11 +16350,13 @@
     // A company/role value that is actually a placeholder, negation, or descriptive prose
     // (not a real name) must be treated as "未提及" so the report doesn't fabricate a
     // concrete opportunity card from "岗位还没定" / "了一个产品经理" / "最近裁员很厉害".
-    function isPlaceholderFact(value) {
+    function isPlaceholderFact(value, { proseTopics = false } = {}) {
       const v = String(value || "").trim();
       if (!v) return true;
       if (/(还|尚|暂)?\s*(没|未|不)\s*(定|说|清楚|明确|确定|知道)|待定|不知道|没定|未定|保密|不太|不稳/.test(v)) return true;
-      if (/(裁员|扩招|福利|氛围|兴趣|机会|加班|稳定)/.test(v)) return true;
+      // 话题词过滤只用于公司/岗位名提取（"裁员"不是公司名）；对薪资/流程这类
+      // 自由文本值，"稳定在60-80万" 里的"稳定"是真实内容，不能整值清零。
+      if (proseTopics && /(裁员|扩招|福利|氛围|兴趣|机会|加班|稳定)/.test(v)) return true;
       if (/^(了一个|这个|那个|一个|某个|哪家|哪个)/.test(v)) return true;
       return false;
     }
@@ -16578,7 +16639,8 @@
       const value = String(text || "");
       const cjk = (value.match(/[\u4e00-\u9fa5]/g) || []).length;
       const latin = (value.match(/[a-zA-Z]/g) || []).length;
-      if (latin >= 8 && cjk >= 4) return "中英混合";
+      // 混合判定按比例：一整篇中文里点到两个技术词（React/Node）不算中英混合。
+      if (latin >= 8 && cjk >= 4 && latin >= cjk * 0.25) return "中英混合";
       if (latin >= 8 && cjk === 0) return "英文";
       return "中文";
     }
@@ -16936,8 +16998,12 @@
         // question's answer.
         const answerSegments = [];
         for (let j = index + 1; j < normalizedSegments.length && answerSegments.length < 3; j += 1) {
-          if (normalizedSegments[j].speaker === segment.speaker) break;
-          answerSegments.push(normalizedSegments[j]);
+          const next = normalizedSegments[j];
+          if (next.speaker === segment.speaker) break;
+          // 另一位面试官的追问（末尾锚定的真问题）同样终结当前答案窗口，
+          // 不能被并进候选人的回答里打分；候选人陈述里的疑问词不受影响。
+          if (isQuestionText(next.text)) break;
+          answerSegments.push(next);
         }
         const answer = answerSegments.map(item => cleanInterviewAnswer(item.text)).join(" ").trim();
         // No real answer, or the resolved "answer" is itself a question (speaker roles
@@ -17479,6 +17545,7 @@
     function parseModelJson(content) {
       let text = String(content || "").trim();
       text = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+      let parsedButNonObject = false;
       try {
         // Require a plain object: a model that returns a bare primitive/array (true, 42,
         // "待识别", or a top-level qaCards array) would otherwise spread into an empty
@@ -17486,12 +17553,15 @@
         // fallback (and honest labeling) instead.
         const parsed = JSON.parse(text);
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+        parsedButNonObject = true;
         throw new Error("non-object model json");
       } catch (error) {
         const scenario = getScenario();
         const start = text.indexOf("{");
         const end = text.lastIndexOf("}");
-        if (start >= 0 && end > start) {
+        // 括号截取只用于"JSON 混在散文里"的场景；顶层数组/原始值已成功解析但形状不对，
+        // 不能再把内部第一个对象（如单元素 qaCards 的卡片）当成报告根。
+        if (!parsedButNonObject && start >= 0 && end > start) {
           try {
             return JSON.parse(text.slice(start, end + 1));
           } catch (innerError) {
@@ -17625,17 +17695,25 @@
       showToast("已恢复默认 ASR Base URL");
     }
 
+    // 关闭弹窗即放弃未显式保存的改动：测试连接不能替用户把改坏的 Key 写进存储。
+    let modelConfigSnapshot = null;
+
     function openModelModal() {
       if (!isDeveloperMode()) {
         showToast("普通用户可直接使用，无需配置模型");
         return;
       }
+      modelConfigSnapshot = { ...modelConfig };
       fillModelForm();
       els.testMessage.textContent = "";
       openModalWithFocus(els.modelModal, els.closeModelBtn);
     }
 
     function closeModelModal() {
+      if (modelConfigSnapshot) {
+        modelConfig = { ...modelConfigSnapshot };
+        renderModelStatus();
+      }
       restoreModalFocus(els.modelModal);
     }
 
@@ -17715,7 +17793,10 @@
       const saved = saveModelConfig();
       state.mode = modelConfig.apiKey ? "api" : "local";
       state.lastApiFailed = false;
-      if (saved) closeModelModal();
+      if (saved) {
+        modelConfigSnapshot = { ...modelConfig };
+        closeModelModal();
+      }
       render();
       if (saved) showToast(isAdminActive() ? "模型和 ASR 配置已保存为本机共享配置" : "模型配置已保存");
     }
@@ -17734,6 +17815,7 @@
       storageService.remove(MODEL_KEY);
       if (isAdminActive()) storageService.remove(SHARED_MODEL_KEY);
       modelConfig = createDefaultModelConfig();
+      modelConfigSnapshot = { ...modelConfig };
       state.mode = "local";
       fillModelForm();
       render();
@@ -17754,7 +17836,13 @@
           testAsrConnection()
         ]);
         els.testMessage.innerHTML = renderTestStatusRows(results);
-        if (results.some(item => item.persist)) saveModelConfig();
+        // 只有所有已配置目标全部测试通过才自动持久化；任何一项失败都不能
+        // 把表单里的坏配置写进存储（覆盖原来能用的 Key）。
+        const allConfiguredPassed = results.every(item => item.persist || item.status === "未配置");
+        if (allConfiguredPassed && results.some(item => item.persist)) {
+          saveModelConfig();
+          modelConfigSnapshot = { ...modelConfig };
+        }
         renderModelStatus();
       } finally {
         els.testModelBtn.disabled = false;
@@ -18189,8 +18277,9 @@
         editedAt: state.editedAt,
         result: state.result
       });
+      let linkedBack = true;
       if (isInterviewReport && item.interviewId) {
-        interviewService.linkSummary({
+        linkedBack = interviewService.linkSummary({
           interviewId: item.interviewId,
           roundIndex: item.roundIndex,
           summaryId: item.summaryReportId,
@@ -18205,14 +18294,17 @@
         && getValidRecruiterSubtype(history.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) === item.recruiterSubtype;
       const previousHistory = getHistory();
       const list = previousHistory.filter(history => !isDuplicateOf(history));
+      if (!saveHistory([item, ...list])) return false;
       // The new item gets a fresh id, so the same-source records we just dropped locally
       // must ALSO leave the cloud — otherwise the next refreshAllCloudData resurrects the
       // pre-edit copy as a phantom duplicate (mirrors the 50-cap eviction guard).
+      // 顺序关键：本地持久化成功之后才排队云删除，配额失败时旧记录在云端保留。
       previousHistory.filter(isDuplicateOf).forEach(stale => {
         if (stale.id && stale.id !== item.id) queueCloudDelete("history_records", stale.id);
       });
-      if (!saveHistory([item, ...list])) return false;
-      if (!silent) showToast(isInterviewReport && item.interviewId ? "已保存到历史，并关联回面试记录" : "已写入历史记录");
+      if (!silent) showToast(isInterviewReport && item.interviewId
+        ? (linkedBack ? "已保存到历史，并关联回面试记录" : "已写入历史记录，但回链面试记录失败，请稍后重试")
+        : "已写入历史记录");
       saveState();
       renderSaveHistoryButton();
       return true;
@@ -18303,9 +18395,13 @@
         changed = true;
       }
       if (!changed) return false;
+      const previous = interviewRecords[recordIndex];
       record.rounds[roundIndex] = nextRound;
       interviewRecords[recordIndex] = normalizeInterviewRecord(record);
-      saveInterviewRecords();
+      if (!saveInterviewRecords()) {
+        interviewRecords[recordIndex] = previous;
+        return false;
+      }
       return true;
     }
 
@@ -18543,7 +18639,7 @@
       const dossierText = scenario.dossier.map(([label, key]) => `${label}：${escapeMarkdownText(info[key]) || "待识别"}`).join("\n");
       const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
-      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${attributeLabel(scenario.summaryTitle, isModelGeneratedLabel(modelUsed))}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key, modelUsed)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.name)}｜${escapeMarkdownText(item.signal)}｜${escapeMarkdownText(item.evidence)}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.title)}：${escapeMarkdownText(item.detail)}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.issue)}\n现象：${escapeMarkdownText(item.symptom)}\n建议：${escapeMarkdownText(item.suggestion)}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+      return `# ${scenario.reportName}\n\n## 分析模式\n${escapeMarkdownText(modeText)}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${attributeLabel(scenario.summaryTitle, isModelGeneratedLabel(modelUsed))}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key, modelUsed)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.name)}｜${escapeMarkdownText(item.signal)}｜${escapeMarkdownText(item.evidence)}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.title)}：${escapeMarkdownText(item.detail)}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.issue)}\n现象：${escapeMarkdownText(item.symptom)}\n建议：${escapeMarkdownText(item.suggestion)}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
     }
 
     function buildRecruiterMinutesText(result = state.result, modelUsed = state.modelUsed, recruiterSubtype = state.recruiterSubtype) {
@@ -18556,12 +18652,12 @@
       const opportunityText = hasConcreteOpportunityReport(report)
         ? formatKeyValueMarkdown(report.opportunity)
         : "本次未明确公司和岗位，不生成空的推荐职位卡。";
-      return `# ${getActiveReportName("recruiterConversation", subtype)}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\nrecruiterConversation / ${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n## 沟通概览\n沟通对象：${escapeMarkdownText(report.counterpart) || "未识别"}\n沟通目的：${escapeMarkdownText(report.purpose) || getRecruiterSubtypeLabel(subtype)}\n核心结论：${escapeMarkdownText(report.coreConclusion) || "暂无"}\n对我有用的判断：${escapeMarkdownText(report.usefulJudgement) || "暂无"}\n\n## 事实信息\n${facts}\n\n## 分析观点\n${report.analysis.length ? report.analysis.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 专项分析\n${opportunityText}\n${subtype === "careerAnalysis" || subtype === "mixed" ? `\n\n### 职业方向分析\n${formatKeyValueMarkdown(report.career)}` : ""}${subtype === "profilePositioning" || subtype === "mixed" ? `\n\n### 简历与候选人定位\n${formatKeyValueMarkdown(report.profile)}` : ""}${subtype === "interviewStrategy" || subtype === "mixed" ? `\n\n### 面试策略建议\n${formatKeyValueMarkdown(report.interviewStrategy)}` : ""}${subtype === "compensationNegotiation" || subtype === "mixed" ? `\n\n### 薪资谈判准备\n${formatKeyValueMarkdown(report.compensation)}` : ""}${subtype === "followUpCoordination" || subtype === "mixed" ? `\n\n### 流程跟进行动\n${formatKeyValueMarkdown(report.followUp)}` : ""}\n\n## 待确认问题\n${report.questions.length ? report.questions.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 风险和不确定性\n${report.risks.length ? report.risks.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 下一步行动\n${buildTodoListText(r, "interview")}\n\n## 可复制回复\n${escapeMarkdownText(report.replySuggestion) || "暂无"}`;
+      return `# ${getActiveReportName("recruiterConversation", subtype)}\n\n## 分析模式\n${escapeMarkdownText(modeText)}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\nrecruiterConversation / ${subtype}（${getRecruiterSubtypeLabel(subtype)}）\n\n## 沟通概览\n沟通对象：${escapeMarkdownText(report.counterpart) || "未识别"}\n沟通目的：${escapeMarkdownText(report.purpose) || getRecruiterSubtypeLabel(subtype)}\n核心结论：${escapeMarkdownText(report.coreConclusion) || "暂无"}\n对我有用的判断：${escapeMarkdownText(report.usefulJudgement) || "暂无"}\n\n## 事实信息\n${facts}\n\n## 分析观点\n${report.analysis.length ? report.analysis.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 专项分析\n${opportunityText}\n${subtype === "careerAnalysis" || subtype === "mixed" ? `\n\n### 职业方向分析\n${formatKeyValueMarkdown(report.career)}` : ""}${subtype === "profilePositioning" || subtype === "mixed" ? `\n\n### 简历与候选人定位\n${formatKeyValueMarkdown(report.profile)}` : ""}${subtype === "interviewStrategy" || subtype === "mixed" ? `\n\n### 面试策略建议\n${formatKeyValueMarkdown(report.interviewStrategy)}` : ""}${subtype === "compensationNegotiation" || subtype === "mixed" ? `\n\n### 薪资谈判准备\n${formatKeyValueMarkdown(report.compensation)}` : ""}${subtype === "followUpCoordination" || subtype === "mixed" ? `\n\n### 流程跟进行动\n${formatKeyValueMarkdown(report.followUp)}` : ""}\n\n## 待确认问题\n${report.questions.length ? report.questions.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 风险和不确定性\n${report.risks.length ? report.risks.map((item, i) => `${i + 1}. ${escapeMarkdownText(item)}`).join("\n") : "暂无"}\n\n## 下一步行动\n${buildTodoListText(r, "interview")}\n\n## 可复制回复\n${escapeMarkdownText(report.replySuggestion) || "暂无"}`;
     }
 
     function formatKeyValueMarkdown(values = {}) {
       const entries = Object.entries(values || {}).filter(([, value]) => String(value || "").trim());
-      return entries.length ? entries.map(([key, value]) => `- ${formatRecruiterFieldLabel(key)}：${escapeMarkdownText(value)}`).join("\n") : "暂无";
+      return entries.length ? entries.map(([key, value]) => `- ${escapeMarkdownText(formatRecruiterFieldLabel(key))}：${escapeMarkdownText(value)}`).join("\n") : "暂无";
     }
 
     function buildTodoListText(result = state.result, scenarioKey = state.scenario) {
@@ -18633,7 +18729,14 @@
 
     function buildExportFileName(name, ext) {
       const safeName = String(name || "senlo-export")
-        .split("").filter(ch => { const code = ch.charCodeAt(0); return code > 31 && code !== 127 && !(code >= 0x200b && code <= 0x206f) && code !== 0xfeff; }).join("")
+        .split("").filter(ch => {
+          const code = ch.charCodeAt(0);
+          // 只剔除真正的不可见/方向控制字符；破折号、弯引号等可见排版符号保留。
+          return code > 31 && code !== 127 && code !== 0xfeff && code !== 0x061c
+            && !(code >= 0x200b && code <= 0x200f)
+            && !(code >= 0x2028 && code <= 0x202e)
+            && !(code >= 0x2060 && code <= 0x206f);
+        }).join("")
         .replace(/[\\/:*?"<>|]+/g, "-")
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-")

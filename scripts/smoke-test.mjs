@@ -123,7 +123,8 @@ function runStaticChecks() {
   assert(html.includes("interviewFormMessage") && html.includes("aria-invalid"), "Interview form validation lacks persistent inline feedback");
   assert(/function saveInterviewFromForm[\s\S]*validateInterviewRequiredFields\(record, \{ focus: true \}\)/.test(html), "Interview form save path does not enforce required-field validation");
   assert(/function saveInterviewFromForm[\s\S]*finally[\s\S]*els\.saveInterviewBtn\.disabled = false/.test(html), "Interview save button may stay disabled after validation or errors");
-  assert(/function refreshAllCloudData[\s\S]*catch \(error\)[\s\S]*setSyncStatus\("error"/.test(html), "Cloud refresh failure is not recoverable");
+  assert(/async function refreshAllCloudData[\s\S]{0,2600}?catch \(error\)[\s\S]{0,300}?setSyncStatus\("error", `云端数据加载失败/.test(html), "Cloud refresh failure is not recoverable");
+  assert(html.includes("云端数据加载失败：${humanizeCloudError(error)}"), "refreshAllCloudData failure copy must stay intact");
   assert(/function importLocalDataToCloud[\s\S]*catch \(error\)[\s\S]*本地数据未删除/.test(html), "Local import failure does not reassure data preservation");
   assert(/async signOut\(\)[\s\S]*const wasAdmin = isAdminActive\(\)[\s\S]*if \(!wasAdmin\)/.test(html), "Admin sign-out may wipe shared model secrets");
   assert(html.includes("escapeHtml") && html.includes("escapeAttr"), "HTML escaping helpers are missing");
@@ -282,7 +283,7 @@ function runStaticChecks() {
 
   // === R2 fleet deep-sweep guards (data-loss in the save path) ===
   assert(/function fillInterviewForm[\s\S]*?interviewIntentionInput[\s\S]*?data-custom='1'/.test(html), "intention <select> must preserve a non-preset imported value via an injected option (else it is silently wiped on edit-save)");
-  assert(/function saveInterviewRecords\(\)\s*\{[\s\S]*?return ok;/.test(html), "saveInterviewRecords must return its ok flag so callers can detect a failed persist");
+  assert(/function saveInterviewRecords\(\)\s*\{[\s\S]{0,400}?return ok;\s*\}/.test(html), "saveInterviewRecords must return its ok flag so callers can detect a failed persist");
   assert(/function saveInterviewFromForm[\s\S]*?if \(!saveInterviewRecords\(\)\)[\s\S]*?interviewRecords = previousRecords;[\s\S]*?return;/.test(html), "saveInterviewFromForm must roll back + bail (no success toast / modal close) when the save fails");
 
   // === R2 fleet deep-sweep guards, part 2 ===
@@ -327,7 +328,7 @@ function runStaticChecks() {
   assert(/async function generate\(\)[\s\S]{0,400}if \(isRecording\)[\s\S]{0,200}confirmStopRecordingForSwitch[\s\S]{0,200}if \(isAudioTranscribing\)[\s\S]{0,200}confirmAbortAudioTranscriptionForSwitch[\s\S]{0,200}persistVisibleSource/.test(html), "generate() must confirm-stop any in-flight recording/transcription before generating");
   // [6] Source-evidence must resolve by carried segment index, not just first time match.
   assert(/function findSourceEvidence\(sourceTime, sourceIndex[\s\S]{0,500}segment\.index === sourceIndex && segment\.time === sourceTime/.test(html), "findSourceEvidence must prefer the card's carried sourceIndex over the first time match");
-  assert(/function normalizeQaCard[\s\S]{0,900}sourceIndex:/.test(html), "QA cards must carry a sourceIndex for source-evidence disambiguation");
+  assert(/function normalizeQaCard[\s\S]{0,1400}sourceIndex:/.test(html), "QA cards must carry a sourceIndex for source-evidence disambiguation");
   // [7] Speaker detection must reject year/annotation tokens as speaker names.
   assert(/isAnnotationLabel = speakerMatch/.test(html), "transcript speaker detection must reject year/annotation tokens (备注：/2021年：)");
   // [9] Live-recording onresult must skip per-chunk routing and debounce the heavy render.
@@ -417,7 +418,7 @@ function runStaticChecks() {
   assert(/ok = document\.execCommand\("copy"\)/.test(html), "copyText must check the execCommand return before claiming success");
   assert(/ok = document\.execCommand\("copy"\);?\s*\}\s*finally\s*\{\s*temp\.remove\(\)/.test(html), "copyText fallback must remove the temp textarea in a finally block");
   // [5] Export filename strips control/bidi via codepoint filter.
-  assert(/code > 31 && code !== 127 && !\(code >= 0x200b && code <= 0x206f\)/.test(html), "buildExportFileName must strip control/bidi characters");
+  assert(/code > 31 && code !== 127 && code !== 0xfeff && code !== 0x061c\s*&& !\(code >= 0x200b && code <= 0x200f\)\s*&& !\(code >= 0x2028 && code <= 0x202e\)\s*&& !\(code >= 0x2060 && code <= 0x206f\)/.test(html), "buildExportFileName must strip control/bidi characters (but keep printable typographic punctuation)");
   // [6] The JSON export no longer advertises a non-existent restore version.
   assert(!/app: "Senlo",\s*version: 1/.test(html), "exportAllUserData must not imply a restore format (version:1) with no import path");
 
@@ -607,6 +608,37 @@ function runAssetChecks() {
   });
 }
 
+function runRegressionSweepChecks() {
+  // R13 [0]: 去复盘 injects the template with skipRouting AND the detector treats template markers as interview.
+  assert(/setActiveSource\(buildInterviewRecordContext\(record, roundIndex\), \{ trim: true, skipRouting: true \}\)/.test(html), "去复盘 template injection must skip re-routing");
+  assert(/【面试公司】\|【第\[一二三四五六七八九十/.test(html), "detectContentRouting must treat app template markers as interview context");
+  // R13 [1]: 测试连接 must not persist on partial success; modal close restores the snapshot.
+  assert(!/if \(results\.some\(item => item\.persist\)\) saveModelConfig\(\);/.test(html), "partial test success must not persist the whole form");
+  assert(/const allConfiguredPassed = results\.every\(item => item\.persist \|\| item\.status === "未配置"\);/.test(html), "test-connection persist requires every configured target to pass");
+  assert(/modelConfigSnapshot/.test(html), "model modal must snapshot/restore config on close-without-save");
+  // R13 [6]: legacy draft migration is copy-then-delete.
+  assert(/if \(storageService\.setJson\(getDraftStateKey\(\), legacy\)\) storageService\.remove\(STATE_KEY\);/.test(html), "legacy draft migration must persist to the new slot before deleting the old one");
+  // R13 [7]: linkSummary rolls back and reports persist failure.
+  assert(/linkSummary\(\{ interviewId, roundIndex, summaryId, transcriptId, uploadedFileId \}\) \{[\s\S]{0,1200}?if \(!saveInterviewRecords\(\)\) \{\s*interviewRecords\[index\] = previous;\s*return false;/.test(html), "linkSummary must roll back on persist failure");
+  // R13 [8]: real transcription surfaces 200-with-error bodies.
+  {
+    const slice = html.slice(html.indexOf("async function requestAudioTranscription"), html.indexOf("async function prepareAsrUploadFile"));
+    assert(/data\.error\?\.message/.test(slice) && slice.indexOf("data.error?.message") < slice.indexOf("empty transcription response"), "requestAudioTranscription must check the error body before the empty check");
+  }
+  // R13 [9]: audio meta renders persist only on change and never reset createdAt.
+  assert(/lastPersistedAudioDuration/.test(html), "renderAudioMeta must persist only on duration change");
+  assert(/createdAt: existing\.createdAt \|\| nowIso\(\)/.test(html), "renderAudioMeta must preserve createdAt");
+  // R13 [10]: wav conversion downmixes/resamples and enforces the size cap.
+  assert(/OfflineAudioContext/.test(html) && /wavBlob\.size > MAX_ASR_BYTES/.test(html), "wav conversion must downmix/resample and enforce MAX_ASR_BYTES");
+  // R13 [11]: dedup cloud-delete queues only after the local persist succeeds.
+  {
+    const slice = html.slice(html.indexOf("function saveCurrentToHistory"));
+    assert(slice.indexOf("if (!saveHistory([item, ...list])) return false;") < slice.indexOf('queueCloudDelete("history_records"'), "dedup cloud delete must queue after the local persist gate");
+  }
+  // R13 [20]: loading ticker uses the canonical model name.
+  assert(html.includes("正在调用 ${getModelName()}") && !html.includes("modelConfig.model || modelConfig.customModel"), "loading label must use getModelName()");
+}
+
 function runProductPolishChecks() {
   // R12 [0]: 填入示例 must confirm before overwriting real input / results.
   assert(/fillSampleTranscriptBtn\.addEventListener\("click"[\s\S]{0,700}(hasRealInput\(\) \|\| hasResult\(\))[\s\S]{0,400}showConfirmDialog[\s\S]{0,700}setActiveSource\(sampleText/.test(html), "填入示例 must confirm before overwriting unsaved work");
@@ -682,6 +714,7 @@ runBootIdentityChecks();
 runAudioPreviewChecks();
 runPageShellChecks();
 runProductPolishChecks();
+runRegressionSweepChecks();
 runScriptSyntaxCheck();
 runContentRoutingFixtureChecks();
 runMockDataChecks();
