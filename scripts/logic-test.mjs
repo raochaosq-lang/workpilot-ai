@@ -72,7 +72,9 @@ const exposed = [
   "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue",
   "clampModelNumber", "resolveCustomModel", "isAsrProbeReachable", "getAsrResponseErrorMessage",
   "escapeMarkdownText", "buildMinutesText", "buildRecruiterMinutesText",
-  "isLikelyTranscribableAudio"
+  "isLikelyTranscribableAudio",
+  "hasQuantifiedEvidence", "isAiRelevantText", "inferThemes", "inferInterviewerRole",
+  "inferInterviewerConcerns", "buildQaCritique", "inferNextSteps"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -113,6 +115,8 @@ const {
   clampModelNumber, resolveCustomModel, isAsrProbeReachable, getAsrResponseErrorMessage,
   escapeMarkdownText, buildMinutesText, buildRecruiterMinutesText,
   isLikelyTranscribableAudio,
+  hasQuantifiedEvidence, isAiRelevantText, inferThemes, inferInterviewerRole,
+  inferInterviewerConcerns, buildQaCritique, inferNextSteps,
   localStorage
 } = fns;
 
@@ -769,6 +773,44 @@ ok(!JSON.stringify(normalizeHistoryRecord({ sourceByMode: { text: { n: 1 } }, in
   const m = mergeRecruiterCoreFacts(normalizeRecruiterFacts([{ label: "推荐岗位" }, { label: "推荐岗位", value: "PM-增长" }]));
   eq(m.find(f => f.label === "推荐岗位").value, "PM-增长", "待确认 placeholder is dropped, not concatenated");
 }
+
+// ===== 2026-07-04 journey walk (rules-engine honesty) regressions =====
+// [J4] Concrete numbers count as verifiable evidence even without keyword hits.
+ok(hasQuantifiedEvidence("首屏时间从 4.2 秒降到 1.6 秒"), "numeric before/after counts as quantified evidence");
+ok(hasQuantifiedEvidence("留存提升了 12%"), "percentage counts as quantified evidence");
+ok(!hasQuantifiedEvidence("我觉得整体还不错，大家都挺满意"), "vague prose is not quantified evidence");
+ok(!buildQaCritique("我们首屏时间从 4.2 秒降到 1.6 秒，做了代码分割和虚拟滚动。").includes("缺少可验证结果"), "critique must not claim missing evidence when concrete metrics are present");
+// [J5] AI-specific canned concerns/steps only appear for AI-relevant transcripts.
+{
+  const tech = "面试官：说说虚拟滚动的坑。候选人：我们自研支持不定高行，滚动锚定用预测渲染窗口解决，首屏从 4.2 秒降到 1.6 秒。";
+  ok(!JSON.stringify(inferInterviewerConcerns(tech, [])).includes("AI 技术纵深"), "non-AI interview must not get the canned AI-depth concern");
+  ok(!JSON.stringify(inferNextSteps(tech, [], [])).includes("AI-native"), "non-AI interview must not get the canned AI vocab next-step");
+  ok(JSON.stringify(inferNextSteps("聊了大模型 Agent 的落地", [], [])).includes("AI-native"), "AI interview keeps the AI vocab next-step");
+}
+// [J5] A candidate-admitted knowledge gap becomes a grounded concern.
+{
+  const cards = [{ question: "说说你对 React 并发特性的理解", answer: "呃，这块我用得不多，具体调度原理说不太清楚。" }];
+  ok(JSON.stringify(inferInterviewerConcerns("面试聊了性能优化", cards)).includes("知识盲区"), "admitted gap in an answer surfaces as a grounded concern");
+}
+// [J5c] A candidate's reverse question must not become a scored QA card.
+{
+  const t = ["面试官：你有什么想问我的吗？", "候选人：想了解团队目前最大的技术挑战是什么？", "面试官：我们正在做微前端改造。"].join("\n");
+  const cards = buildInterviewQaCards(getTranscriptSegmentsFromText(t), splitSentences(t));
+  ok(!cards.some(card => /技术挑战/.test(card.question)), "candidate reverse question does not spawn a card grading the interviewer");
+}
+// [J5b] 说说/谈谈-style prompts are recognized as questions end-to-end.
+{
+  const t = ["面试官：说说你对 React 并发特性的理解。", "候选人：呃，这块我用得不多，具体调度原理说不太清楚。"].join("\n");
+  const cards = buildInterviewQaCards(getTranscriptSegmentsFromText(t), splitSentences(t));
+  ok(cards.length === 1 && /并发特性/.test(cards[0].question), "说说-style prompt spawns a QA card");
+  ok(JSON.stringify(inferInterviewerConcerns(t, cards)).includes("知识盲区"), "admitted gap flows into concerns end-to-end");
+}
+// [J5] Signal-less transcripts fall back to one generic theme, not fabricated specifics.
+deep(inferThemes("嗯嗯，好的，再见"), ["岗位匹配度"], "no-signal fallback theme is the single generic one");
+ok(inferThemes("我们聊了性能优化和数据库架构").includes("技术深度"), "technical transcripts map to the 技术深度 theme");
+// [J3] Interviewer type by signal density, not a single trailing HR mention.
+eq(inferInterviewerRole("聊了性能优化、虚拟滚动、React 并发，结尾说 HR 会联系你聊薪资。"), "技术面试官", "tech-dominant interview is not mislabeled as HR");
+eq(inferInterviewerRole("HR面：主要聊了入职流程、薪酬和背调安排。"), "HR / 招聘", "true HR conversation still labels as HR");
 
 // ===== 2026-07-04 R11 deep-sweep (deployment/first-load) regressions =====
 // [7] Browser-unplayable but server-transcribable formats must stay transcribable.

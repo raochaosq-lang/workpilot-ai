@@ -1550,6 +1550,10 @@
       background: #fff;
     }
 
+    .speaker-turn.no-time {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .speaker-turn {
       position: relative;
       display: grid;
@@ -5443,6 +5447,157 @@
       .empty-preview-card span {
         color: var(--text-secondary);
       }
+
+      /* R11.5 journey sweep: 亮色硬编码表面在暗色下的补齐（背景/边框/文字成组换算，
+         语义色一律换成 alpha 暗色调，保持与上方既有 idiom 一致）。 */
+      .account-menu,
+      .more-menu,
+      .confirm-dialog,
+      .account-card,
+      .conclusion-item,
+      .quick-filter-chip,
+      .account-pill,
+      .mini-btn.danger,
+      .record-meter,
+      .capture-card,
+      .textarea,
+      .file-picker-action {
+        background: rgba(17, 24, 39, 0.94);
+        border-color: var(--border);
+      }
+
+      .quick-filter-chip,
+      .account-pill,
+      .mini-btn.danger,
+      .risk-suggestion,
+      .sync-state,
+      .source-evidence,
+      .account-setup,
+      .icon-btn {
+        color: var(--text-secondary);
+      }
+
+      .quick-filter-chip.active {
+        border-color: rgba(96, 165, 250, 0.55);
+        color: #93c5fd;
+        background: rgba(37, 99, 235, 0.2);
+      }
+
+      .next-action-banner,
+      .review-context-bar,
+      .local-import-prompt {
+        border-color: rgba(96, 165, 250, 0.28);
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(17, 24, 39, 0.92));
+        color: var(--text);
+      }
+
+      .upload-tools,
+      .status-pill.neutral,
+      .account-mode-label,
+      .risk-suggestion,
+      .status-ignored,
+      .auth-message.show,
+      .task-card.done-row,
+      .segmented {
+        background: var(--card-soft);
+        border-color: var(--border);
+      }
+
+      .status-pill.neutral,
+      .account-mode-label,
+      .status-ignored,
+      .manager-form-close {
+        color: var(--text-secondary);
+      }
+
+      .account-mode-label.cloud,
+      .account-pill.cloud,
+      .auth-message.success {
+        color: #6ee7b7;
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(52, 211, 153, 0.35);
+      }
+
+      .account-pill.error,
+      .import-status.error,
+      .record-status.failed,
+      .round-dot.failed,
+      .auth-message.error,
+      .diagnostic-fail {
+        color: #fca5a5;
+        background: rgba(239, 68, 68, 0.14);
+        border-color: rgba(248, 113, 113, 0.35);
+      }
+
+      .record-status.unscheduled,
+      .diagnostic-warn {
+        color: #fcd34d;
+        background: rgba(245, 158, 11, 0.14);
+      }
+
+      .icon-btn {
+        border-color: var(--border);
+        background: rgba(17, 24, 39, 0.88);
+      }
+
+      .file-picker-action {
+        border-color: rgba(96, 165, 250, 0.35);
+        color: #93c5fd;
+      }
+
+      .coach-card.primary {
+        border-color: rgba(96, 165, 250, 0.32);
+        background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(17, 24, 39, 0.92));
+      }
+
+      .coach-card.danger {
+        border-color: rgba(248, 113, 113, 0.32);
+        background: linear-gradient(180deg, rgba(239, 68, 68, 0.12), rgba(17, 24, 39, 0.92));
+      }
+
+      .coach-card.pass-rate-card {
+        border-color: rgba(45, 212, 191, 0.32);
+        background: linear-gradient(180deg, rgba(20, 184, 166, 0.14), rgba(17, 24, 39, 0.92));
+      }
+
+      .source-evidence,
+      .account-setup,
+      .developer-config,
+      .sync-state {
+        background: var(--card-soft);
+        border-color: var(--border);
+      }
+
+      .quick-filter-chip span {
+        background: rgba(148, 163, 184, 0.18);
+        color: var(--text-secondary);
+      }
+
+      .record-status.in-progress,
+      .record-status.upcoming,
+      .round-dot.scheduled {
+        color: #93c5fd;
+        background: rgba(37, 99, 235, 0.16);
+        border-color: rgba(96, 165, 250, 0.32);
+      }
+
+      .record-status.passed,
+      .round-dot.passed {
+        color: #6ee7b7;
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(52, 211, 153, 0.32);
+      }
+
+      .record-status.needs-update {
+        color: #fcd34d;
+        background: rgba(245, 158, 11, 0.14);
+      }
+
+      .round-dot.has-summary {
+        color: #c7d2fe;
+        background: rgba(99, 102, 241, 0.16);
+        border-color: rgba(129, 140, 248, 0.32);
+      }
     }
 
     @media (max-width: 1120px) {
@@ -5698,6 +5853,10 @@
 	        justify-content: stretch;
 	        display: grid;
 	        grid-template-columns: repeat(2, minmax(0, 1fr));
+	        /* 桌面端的 flex-basis 390px 在列向父容器里会变成"高度 390px"，
+	           把 grid 行距撑开成大片空白；移动端必须回到内容高度。 */
+	        flex: 0 0 auto;
+	        align-content: start;
 	      }
 
 	      .queue-empty-state {
@@ -14324,11 +14483,12 @@
           <small>${item.count}段</small>
         </span>
       `).join("");
+      const anyRealTime = segments.some(segment => segment.hasRealTime);
       const speakerTurns = segments.map(segment => {
         const tone = speakerMap.get(segment.speaker).tone;
         return `
-          <article class="speaker-turn" style="${speakerToneVars(tone)}">
-            <div class="speaker-turn-time">${escapeHtml(segment.time)}</div>
+          <article class="speaker-turn ${anyRealTime ? "" : "no-time"}" style="${speakerToneVars(tone)}">
+            ${anyRealTime ? `<div class="speaker-turn-time">${segment.hasRealTime ? escapeHtml(segment.time) : ""}</div>` : ""}
             <div class="speaker-turn-body">
               <strong class="speaker-turn-name">${escapeHtml(segment.speaker)}</strong>
               <p class="speaker-turn-text">${escapeHtml(summarizeLine(segment.text, 110))}</p>
@@ -14368,6 +14528,9 @@
       if (lines.length <= 2 && raw.length > 120) lines = splitSentences(raw);
       return lines
         .map((line, index) => {
+          // 只有行首真的带时间戳才算"真实时间"；否则 inferSourceTime 的 18s/行
+          // 只是内部定位锚点，绝不能当成真实时钟展示（诚实原则）。
+          const hasRealTime = /^\[?\s*\d{1,2}:\d{2}/.test(line);
           const withoutTime = line.replace(/^\[?\d{1,2}:\d{2}(?::\d{2})?(?:\s*-\s*\d{1,2}:\d{2}(?::\d{2})?)?\]?\s*/, "");
           const speakerMatch = withoutTime.match(/^([\u4e00-\u9fa5A-Za-z][\u4e00-\u9fa5A-Za-z0-9]{1,11})[：:]\s*(.+)$/);
           // Reject pure-numeric/year tokens ("2021年：") and annotation prefixes
@@ -14381,7 +14544,8 @@
             speaker,
             text,
             original: line,
-            time: inferSourceTime(line, index)
+            time: inferSourceTime(line, index),
+            hasRealTime
           };
         })
         .filter(segment => segment.text && segment.text.trim());
@@ -14433,10 +14597,21 @@
       }, 120);
     }
 
+    // 合成锚点时间（无真实时间戳的转写按 18s/行推算）只用于内部定位，
+    // 对用户展示"第 N 段"而不是伪造的时钟。
+    function describeSourceAnchor(sourceTime) {
+      if (!sourceTime) return "";
+      const segments = getTranscriptSegments();
+      const matched = segments.find(segment => segment.time === sourceTime);
+      if (matched && !matched.hasRealTime) return `第 ${matched.index + 1} 段`;
+      return sourceTime;
+    }
+
     function sourceButtonHtml(sourceTime) {
       const missing = !getTranscriptSegments().length;
       const label = sourceTime || "未定位";
-      return `<button class="source-link ${missing ? "missing" : ""}" data-source-time="${escapeAttr(label)}" data-source-missing="${missing ? "true" : "false"}" type="button" aria-disabled="${missing ? "true" : "false"}" title="${missing ? "原文片段未加载" : "查看原文依据"}">来源 ${escapeHtml(label)}</button>`;
+      const shownLabel = describeSourceAnchor(sourceTime) || "未定位";
+      return `<button class="source-link ${missing ? "missing" : ""}" data-source-time="${escapeAttr(label)}" data-source-missing="${missing ? "true" : "false"}" type="button" aria-disabled="${missing ? "true" : "false"}" title="${missing ? "原文片段未加载" : "查看原文依据"}">来源 ${escapeHtml(shownLabel)}</button>`;
     }
 
     function bindSourceButton(root, sourceTime, reason = "", sourceIndex = null) {
@@ -14458,9 +14633,9 @@
       const evidence = findSourceEvidence(sourceTime, sourceIndex);
       state.activeSourceTime = sourceTime;
       state.activeSourceText = evidence?.text || "";
-      els.sourceDrawerMeta.textContent = `来源 ${sourceTime || "未定位"}`;
+      els.sourceDrawerMeta.textContent = `来源 ${describeSourceAnchor(sourceTime) || "未定位"}`;
       els.sourceDrawerSpeaker.textContent = evidence ? evidence.speaker : "原文片段暂不可用";
-      els.sourceDrawerText.textContent = evidence ? evidence.text : "原文片段暂不可用，仅保留时间范围。";
+      els.sourceDrawerText.textContent = evidence ? evidence.text : "原文片段暂不可用，仅保留定位信息。";
       els.sourceDrawerReason.textContent = reason
         ? `这条复盘引用了与“${summarizeLine(reason, 36)}”相关的片段。`
         : (isRecruiterContent() ? "这段原文与当前事实信息、分析观点或下一步行动相关。" : (scenario.key === "culture" ? "这段原文与当前沟通节点、语气判断或表达建议相关。" : "这段原文与当前面试问题、回答点评或改进建议相关。"));
@@ -16631,6 +16806,9 @@
 
     function inferInterviewInfo(text, segments = []) {
       const value = String(text || "");
+      // 已关联的面试记录是用户确认过的事实，优先于文本启发式；启发式只做兜底。
+      const linked = typeof getLinkedInterviewRecord === "function" ? getLinkedInterviewRecord() : null;
+      const linkedRoundLabel = linked && state.linkedRoundIndex != null ? getRoundLabel(Number(state.linkedRoundIndex) || 0) : "";
       const companies = ["大疆", "金山", "美的", "水滴", "腾讯", "阿里", "字节", "百度", "小米", "华为", "快手", "B站", "网易", "滴滴"];
       const companyHits = companies.filter(name => value.includes(name));
       const roleMatch = value.match(/(AI[-\s]?native\s*)?((?:AI|人工智能|智能|商业化|策略|增长|用户|平台|协同办公|Agent)?产品经理|产品负责人|项目经理|运营|设计师|前端|后端|算法|数据分析师)/i);
@@ -16638,9 +16816,9 @@
       const formatMatch = value.match(/(视频|电话|线下|现场|腾讯会议|飞书会议|Zoom|Teams)/i);
       const duration = inferInterviewDuration(segments);
       return normalizeInterviewInfo({
-        company: companyHits.length ? companyHits.join(" / ") : "待识别",
-        role: roleMatch?.[0] || "产品经理 / AI 产品方向",
-        round: roundMatch?.[0] || "待识别",
+        company: String(linked?.company || "").trim() || (companyHits.length ? companyHits.join(" / ") : "待识别"),
+        role: String(linked?.role || "").trim() || roleMatch?.[0] || "待识别",
+        round: linkedRoundLabel || roundMatch?.[0] || "待识别",
         time: state.generatedAt ? formatTime(state.generatedAt) : "本次复盘",
         duration,
         format: formatMatch?.[0] || "待识别",
@@ -16666,15 +16844,37 @@
     }
 
     function inferInterviewerRole(text) {
-      if (/HR|人力|招聘|薪资|offer/i.test(text)) return "HR / 招聘";
-      if (/技术|架构|算法|工程|研发|代码|系统/i.test(text)) return "技术面试官";
-      if (/产品|商业化|用户|需求|增长|策略|协同/i.test(text)) return "产品负责人 / 业务面试官";
-      return "待识别";
+      // 按信号密度判定，而不是"提到一次就定性"——技术面结尾一句"HR 会联系你聊薪资"
+      // 不应该把整场面试标成 HR 面。
+      const value = String(text || "");
+      const count = pattern => (value.match(pattern) || []).length;
+      const hrHits = count(/HR面|人力|招聘流程|入职|薪酬|背调/gi);
+      const techHits = count(/技术|架构|算法|工程|研发|代码|系统|性能|优化|框架|数据库|并发|源码|测试|部署/gi);
+      const bizHits = count(/产品|商业化|用户|需求|增长|策略|协同|运营/gi);
+      const max = Math.max(hrHits, techHits, bizHits);
+      if (!max) return "待识别";
+      if (max === techHits) return "技术面试官";
+      if (max === bizHits) return "产品负责人 / 业务面试官";
+      return "HR / 招聘";
+    }
+
+    // 判断整场内容是否真的与 AI 相关；AI 专属的顾虑/建议/加分项只在相关时出现，
+    // 避免给非 AI 岗位的面试无中生有"AI 技术纵深不够"这类模板结论。
+    function isAiRelevantText(text) {
+      return /(AI|人工智能|大模型|LLM|Agent|Prompt|RAG|MCP|机器学习|深度学习)/i.test(String(text || ""));
+    }
+
+    // "有没有可验证的结果"不能只认关键词：具体数字/百分比/量级变化同样是硬证据。
+    function hasQuantifiedEvidence(value) {
+      const v = String(value || "");
+      if (/(数据|指标|结果|上线|落地|复盘|转化|留存|收入|成本)/.test(v)) return true;
+      if (/\d+(\.\d+)?\s*(%|％|秒|毫秒|ms|分钟|小时|天|周|个月|万|亿|倍|次|人|个点)/i.test(v)) return true;
+      return /从\s*[\d.]+[^\d]{0,8}[\d.]+/.test(v);
     }
 
     function buildInterviewQaCards(segments, sentences) {
       const cards = [];
-      const questionPattern = /(为什么|怎么|如何|你觉得|你认为|介绍一下|讲一下|聊聊|有没有|是否|吗|什么|哪个|多少|？|\?)/;
+      const questionPattern = /(为什么|怎么|如何|你觉得|你认为|介绍一下|介绍下|讲一下|讲讲|说说|谈谈|聊聊|有没有|是否|吗|什么|哪个|多少|？|\?)/;
       const normalizedSegments = segments.length ? segments : sentences.map((text, index) => ({
         index,
         speaker: index % 2 === 0 ? "面试官" : "候选人",
@@ -16685,12 +16885,15 @@
         const t = String(value || "").trim();
         return /[?？]\s*$/.test(t) || /(吗|呢|什么|怎么|如何|多少|哪|为什么)\s*$/.test(t);
       };
+      const aiContext = isAiRelevantText(normalizedSegments.map(item => item.text).join(" "));
       normalizedSegments.forEach((segment, index) => {
         // A turn is a question only when its interrogative marker is end-anchored, or it's
         // a short keyword turn — a mid-sentence 怎么/什么 in long candidate prose must not
         // spawn a (role-inverted) card.
         const isQuestionTurn = isQuestionText(segment.text) || (questionPattern.test(segment.text) && segment.text.trim().length <= 30);
         if (!isQuestionTurn) return;
+        // 候选人向面试官的反问不是考题——给它建卡会把面试官的回答当候选人回答来打分。
+        if (/^(候选人|应聘者|求职者|我)$/.test(segment.speaker)) return;
         // Collect only the CONSECUTIVE following turns from other speakers, stopping at the
         // next same-speaker (questioner) turn, so one question's card can't merge a later
         // question's answer.
@@ -16706,9 +16909,9 @@
         cards.push(normalizeQaCard({
           question: cleanInterviewQuestion(segment.text),
           answer,
-          critique: buildQaCritique(answer),
-          score: scoreInterviewAnswer(answer),
-          risk: inferQaRisk(answer),
+          critique: buildQaCritique(answer, aiContext),
+          score: scoreInterviewAnswer(answer, aiContext),
+          risk: inferQaRisk(answer, aiContext),
           sourceTime: segment.time,
           sourceIndex: segment.index
         }));
@@ -16721,9 +16924,9 @@
           cards.push(normalizeQaCard({
             question: `围绕“${theme}”的追问`,
             answer: summarizeLine(answer || "原文中没有识别到完整回答。", 220),
-            critique: buildQaCritique(answer),
-            score: scoreInterviewAnswer(answer),
-            risk: inferQaRisk(answer),
+            critique: buildQaCritique(answer, aiContext),
+            score: scoreInterviewAnswer(answer, aiContext),
+            risk: inferQaRisk(answer, aiContext),
             sourceTime: inferSourceTime("", index)
           }));
         });
@@ -16744,48 +16947,52 @@
         .trim();
     }
 
-    function scoreInterviewAnswer(answer) {
+    function scoreInterviewAnswer(answer, aiContext = false) {
       const value = String(answer || "");
       let score = 74;
       if (/(我做过|负责|主导|推动|落地|上线|复盘|数据|增长|转化|留存|收入|成本)/.test(value)) score += 8;
       if (/(因为|所以|首先|其次|结果|最终|举个例子|比如)/.test(value)) score += 5;
-      if (/(AI|Claude|Codex|Agent|MCP|Prompt|大模型|function calling|context window|RAG)/i.test(value)) score += 5;
+      if (hasQuantifiedEvidence(value)) score += 4;
+      if (aiContext && /(AI|Claude|Codex|Agent|MCP|Prompt|大模型|function calling|context window|RAG)/i.test(value)) score += 5;
       if (value.length > 260) score -= 7;
       if (value.length < 40) score -= 8;
       if (/(可能|差不多|有点|应该|反正|就是|然后|那个)/.test(value)) score -= 3;
       return Math.max(58, Math.min(94, score));
     }
 
-    function buildQaCritique(answer) {
+    function buildQaCritique(answer, aiContext = false) {
       const value = String(answer || "");
       const parts = [];
-      if (/(AI|Claude|Codex|Agent|MCP|Prompt|大模型)/i.test(value)) parts.push("有真实 AI 使用和迁移意愿，动机比纯概念表达更可信。");
-      if (/(数据|转化|留存|收入|成本|指标|结果)/.test(value)) parts.push("有结果意识，可以继续把指标讲得更短更硬。");
+      if (aiContext && /(AI|Claude|Codex|Agent|MCP|Prompt|大模型)/i.test(value)) parts.push("有真实 AI 使用和迁移意愿，动机比纯概念表达更可信。");
+      if (hasQuantifiedEvidence(value)) parts.push("有结果意识和具体数字，可以继续把指标讲得更短更硬。");
       if (value.length > 260) parts.push("回答素材够多，但信息密度偏散，下一轮要先给结论再展开案例。");
-      if (!/(结果|指标|数据|上线|落地|复盘)/.test(value)) parts.push("缺少可验证结果，建议补一个具体项目、动作和结果。");
+      if (!hasQuantifiedEvidence(value)) parts.push("缺少可验证结果，建议补一个具体项目、动作和结果。");
       if (!parts.length) parts.push("回答方向基本成立，但需要更清晰地展示你的判断框架和岗位匹配度。");
       return parts.slice(0, 2).join("");
     }
 
-    function inferQaRisk(answer) {
+    function inferQaRisk(answer, aiContext = false) {
       const value = String(answer || "");
       if (value.length > 260) return "回答偏长，容易让面试官抓不到主线。";
-      if (!/(数据|指标|结果|上线|落地|收入|成本|转化|留存)/.test(value)) return "证据偏弱，可能被继续追问项目真实性和业务结果。";
-      if (!/(AI|大模型|Agent|Prompt|RAG|MCP|Claude|Codex)/i.test(value)) return "AI 方向表达不足，容易显得只是传统产品经验迁移。";
+      if (!hasQuantifiedEvidence(value)) return "证据偏弱，可能被继续追问项目真实性和业务结果。";
+      if (aiContext && !/(AI|大模型|Agent|Prompt|RAG|MCP|Claude|Codex)/i.test(value)) return "AI 方向表达不足，容易显得只是传统产品经验迁移。";
       return "";
     }
 
     function inferThemes(text) {
       const candidates = [
         ["AI 产品理解", /(AI|大模型|Agent|Prompt|Claude|Codex|MCP|智能)/i],
+        ["技术深度", /(架构|算法|原理|源码|性能|优化|并发|内存|数据库|框架|底层|网络)/],
+        ["工程实践", /(测试|部署|监控|排查|稳定性|灰度|代码质量|评审|上线流程)/],
         ["商业化能力", /(商业化|收入|付费|转化|增长|ROI|成本)/],
         ["产品 sense", /(产品|需求|用户|体验|场景|痛点)/],
         ["跨团队推动", /(推动|协同|研发|设计|运营|沟通|资源)/],
         ["数据能力", /(数据|指标|留存|转化|埋点|分析)/],
-        ["职业动机", /(为什么|想做|转型|方向|职业|规划)/]
+        ["职业动机", /(为什么选|为什么想|想做|转型|职业规划|长期规划)/]
       ];
       const hits = candidates.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
-      return hits.length ? hits : ["职业动机", "过往项目", "岗位匹配度", "下一轮准备"];
+      // 没有任何可辨识信号时只保留一个通用且必然成立的主题，不虚构"职业动机"等具体议题。
+      return hits.length ? hits : ["岗位匹配度"];
     }
 
     function inferInterviewerFocus(text, qaCards) {
@@ -16802,20 +17009,27 @@
       if (found) return summarizeLine(found.question, 42);
       const fallback = {
         "AI 产品理解": "围绕 AI 使用深度、AI-native 产品判断和真实实践展开。",
+        "技术深度": "关注你对实现原理、性能与取舍的掌握是否扎实。",
+        "工程实践": "关注你在测试、上线、稳定性等工程环节的真实经验。",
         "商业化能力": "关注你是否能把产品判断连接到收入、转化和成本。",
         "产品 sense": "关注你如何识别真实用户场景和优先级。",
         "跨团队推动": "关注你是否能推动研发、设计、业务达成结果。",
         "数据能力": "关注表达中是否有指标、实验和复盘闭环。",
-        "职业动机": "关注你为什么进入这个方向，以及长期规划是否稳定。"
+        "职业动机": "关注你为什么进入这个方向，以及长期规划是否稳定。",
+        "岗位匹配度": "关注你的经历与岗位要求之间的重合度和迁移性。"
       };
       return fallback[theme] || "从问题密度和回答反馈中识别。";
     }
 
     function inferInterviewerConcerns(text, qaCards) {
       const concerns = [];
-      if (!/(数据|指标|结果|转化|留存|收入|成本)/.test(text)) concerns.push({ title: "数据化表达不足", detail: "回答更多停留在过程描述，缺少能证明结果的指标。" });
-      if (!/(Agent|MCP|RAG|function calling|context window|latency|成本|Prompt)/i.test(text)) concerns.push({ title: "AI 技术纵深不够", detail: "能表达 AI 产品兴趣，但还需要补足技术边界、成本和体验权衡。" });
+      if (!hasQuantifiedEvidence(text)) concerns.push({ title: "数据化表达不足", detail: "回答更多停留在过程描述，缺少能证明结果的指标。" });
+      // AI 纵深顾虑只在这场面试确实围绕 AI 时才成立，否则就是无中生有的模板话术。
+      if (isAiRelevantText(text) && !/(Agent|MCP|RAG|function calling|context window|latency|Prompt)/i.test(text)) concerns.push({ title: "AI 技术纵深不够", detail: "能表达 AI 产品兴趣，但还需要补足技术边界、成本和体验权衡。" });
       if (qaCards.some(card => String(card.answer || "").length > 260)) concerns.push({ title: "回答容易发散", detail: "部分回答素材很多，但主线不够前置，可能影响面试官捕捉重点。" });
+      // 回答里自认"不熟/说不清/没用过"是面试官必然记下的信号，优先于任何模板顾虑。
+      const admitted = qaCards.find(card => /(不太清楚|说不清|不熟|没用过|用得不多|不了解|没接触)/.test(String(card.answer || "")));
+      if (admitted) concerns.push({ title: "有明确的知识盲区暴露", detail: `在“${summarizeLine(admitted.question, 24)}”上自认掌握不足，下一轮大概率被复查，需要针对性补课。` });
       if (!/(上线|落地|主导|负责|推动)/.test(text)) concerns.push({ title: "真实落地案例不够硬", detail: "建议下一轮准备一个能讲清目标、动作、阻力、结果的完整案例。" });
       return normalizeConcernItems(concerns.slice(0, 4));
     }
@@ -16830,7 +17044,7 @@
           priority: "高"
         }));
       }
-      if (!/(数据|指标|转化|留存|收入|成本|实验)/.test(text)) {
+      if (!hasQuantifiedEvidence(text)) {
         items.push(normalizeImprovement({
           issue: "数据化表达不足",
           symptom: "更多在讲经历和感受，缺少指标、基线和结果。",
@@ -16838,7 +17052,7 @@
           priority: "高"
         }));
       }
-      if (!/(Agent|MCP|RAG|function calling|context window|latency|Prompt|模型成本)/i.test(text)) {
+      if (isAiRelevantText(text) && !/(Agent|MCP|RAG|function calling|context window|latency|Prompt|模型成本)/i.test(text)) {
         items.push(normalizeImprovement({
           issue: "AI 技术深度不足",
           symptom: "更多从产品兴趣和使用体验回答，技术取舍讲得不够。",
@@ -16846,12 +17060,13 @@
           priority: "中"
         }));
       }
-      if (!/(为什么|职业|长期|规划|转型|动机)/.test(text)) {
+      const admittedGap = qaCards.find(card => /(不太清楚|说不清|不熟|没用过|用得不多|不了解|没接触)/.test(String(card.answer || "")));
+      if (admittedGap) {
         items.push(normalizeImprovement({
-          issue: "职业动机不够完整",
-          symptom: "岗位兴趣有了，但长期方向、能力迁移和选择标准还可以更清晰。",
-          suggestion: "用“过去积累 - 现在转向 - 未来三年”讲清 AI 产品路线。",
-          priority: "中"
+          issue: "暴露的知识盲区需要补课",
+          symptom: `在“${summarizeLine(admittedGap.question, 24)}”上自认掌握不足。`,
+          suggestion: "针对这个问题准备一个 60 秒的诚实版回答：目前掌握到哪、怎么补、已有的相邻经验。",
+          priority: "高"
         }));
       }
       if (!items.length) {
@@ -16866,23 +17081,28 @@
     }
 
     function inferNextSteps(text, focusItems, improvements) {
+      const aiRelevant = isAiRelevantText(text);
       const steps = [
         normalizeNextStep({
           type: "模拟题",
           title: "重练 3 个高频追问",
-          detail: "为什么做 AI 产品、你最拿得出手的 AI 实践、如果让你做这个岗位 90 天会怎么推进。"
+          detail: aiRelevant
+            ? "为什么做 AI 产品、你最拿得出手的 AI 实践、如果让你做这个岗位 90 天会怎么推进。"
+            : "为什么选择这个岗位、你最拿得出手的项目、如果入职 90 天你会怎么推进。"
         }),
         normalizeNextStep({
           type: "表达优化",
           title: "把核心案例压成 90 秒版本",
           detail: "每个案例只保留背景、动作、结果、反思四段，避免从头复述项目流水账。"
-        }),
-        normalizeNextStep({
+        })
+      ];
+      if (aiRelevant) {
+        steps.push(normalizeNextStep({
           type: "学习方向",
           title: "补齐 AI-native 产品技术词表",
           detail: "重点准备 Agent、MCP、Prompt Engineering、RAG、function calling、latency 和成本权衡。"
-        })
-      ];
+        }));
+      }
       improvements.slice(0, 2).forEach(item => {
         steps.push(normalizeNextStep({
           type: item.priority === "高" ? "优先准备" : "补强",
@@ -16908,12 +17128,13 @@
       const averageScore = qaCards.length ? qaCards.reduce((sum, card) => sum + Number(card.score || 0), 0) / qaCards.length : 72;
       const passRate = clampPercent(averageScore + (focusItems.length ? 5 : 0) - highImprovements * 10 - concerns.length * 3);
       const probability = passRate >= 75 ? "中高：基础匹配，取决于下一轮案例质量" : passRate >= 58 ? "中：优势存在，但下一轮需要明显补强" : "偏低：关键证据和表达结构需要优先修复";
+      const roleLabel = info.role && info.role !== "待识别" ? info.role : "目标岗位";
       return normalizeCoachSummary({
-        coreDiscussion: `重点围绕${focusNames}展开，面试官在判断你是否能从传统经验迁移到 ${info.role || "目标岗位"}。`,
+        coreDiscussion: `重点围绕${focusNames}展开，面试官在评估你与 ${roleLabel} 的匹配程度。`,
         atmosphere: concerns.length >= 3 ? "偏深挖细节，带一定压力感" : "偏开放讨论，但会追问细节",
         probability,
         passRate,
-        strength: bestCard ? `在“${summarizeLine(bestCard.question, 24)}”中有较真实的经历支撑。` : "有真实经历和转型动机。",
+        strength: bestCard ? `在“${summarizeLine(bestCard.question, 24)}”中有较真实的经历支撑。` : "有真实经历支撑。",
         risk: riskyCard?.risk || improvements[0]?.issue || "回答结构需要更聚焦。",
         coachTakeaway: `这不是一场简单信息同步，面试官更像是在确认你的 ${focusNames} 是否足够扎实。下一轮要少讲过程，多讲判断、证据和结果。`
       });
