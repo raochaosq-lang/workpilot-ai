@@ -41,7 +41,7 @@ Tag: `v0.3.0` (SemVer minor — 首载性能/启动正确性/产品诚实与打�
 ### 新增 (Added)
 
 - 冒烟守护新增分组：`runDeploymentChecks` / `runBootIdentityChecks` / `runAudioPreviewChecks` / `runPageShellChecks` / `runProductPolishChecks`（约 +50 静态断言）。
-- 逻辑断言 **308 → 332+**（每条修复配套可执行守卫）。
+- 逻辑断言 **308 → 354**（每条修复配套可执行守卫）；冒烟静态断言约 +65。
 
 ## v0.2.0 — 2026-06-24 — 九轮 Fleet 对抗式执行深扫 (R2–R10)
 
