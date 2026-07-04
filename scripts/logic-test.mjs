@@ -71,7 +71,8 @@ const exposed = [
   "normalizeStoredModelLabel", "getRecruiterCompletenessLabel",
   "toCloudHistory", "fromCloudHistory", "redactSensitiveValue", "sanitizeDiagnosticValue",
   "clampModelNumber", "resolveCustomModel", "isAsrProbeReachable", "getAsrResponseErrorMessage",
-  "escapeMarkdownText", "buildMinutesText", "buildRecruiterMinutesText"
+  "escapeMarkdownText", "buildMinutesText", "buildRecruiterMinutesText",
+  "isLikelyTranscribableAudio"
 ];
 // Sandbox internals the storage-integrity tests need to seed/read raw storage.
 const sandboxExtras = ["localStorage"];
@@ -111,6 +112,7 @@ const {
   toCloudHistory, fromCloudHistory, redactSensitiveValue, sanitizeDiagnosticValue,
   clampModelNumber, resolveCustomModel, isAsrProbeReachable, getAsrResponseErrorMessage,
   escapeMarkdownText, buildMinutesText, buildRecruiterMinutesText,
+  isLikelyTranscribableAudio,
   localStorage
 } = fns;
 
@@ -767,6 +769,15 @@ ok(!JSON.stringify(normalizeHistoryRecord({ sourceByMode: { text: { n: 1 } }, in
   const m = mergeRecruiterCoreFacts(normalizeRecruiterFacts([{ label: "推荐岗位" }, { label: "推荐岗位", value: "PM-增长" }]));
   eq(m.find(f => f.label === "推荐岗位").value, "PM-增长", "待确认 placeholder is dropped, not concatenated");
 }
+
+// ===== 2026-07-04 R11 deep-sweep (deployment/first-load) regressions =====
+// [7] Browser-unplayable but server-transcribable formats must stay transcribable.
+ok(isLikelyTranscribableAudio({ name: "interview.webm", type: "" }) === true, "webm by extension is transcribable");
+ok(isLikelyTranscribableAudio({ name: "voice.oga", type: "" }) === true, "oga by extension is transcribable");
+ok(isLikelyTranscribableAudio({ name: "clip", type: "audio/ogg" }) === true, "audio/* mime is transcribable");
+ok(isLikelyTranscribableAudio({ name: "notes.txt", type: "text/plain" }) === false, "renamed txt is not transcribable");
+ok(isLikelyTranscribableAudio({ name: "archive.zip", type: "" }) === false, "zip is not transcribable");
+ok(isLikelyTranscribableAudio(null) === false, "null file is not transcribable");
 
 if (failures.length) {
   console.error(`Senlo logic test FAILED (${passCount} passed, ${failures.length} failed):`);

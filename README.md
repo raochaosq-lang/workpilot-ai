@@ -50,7 +50,7 @@
 3. 在数据库里创建集合：`profiles`、`interviews`、`history_records`、`transcripts`、`ai_summaries`、`uploaded_files`、`user_settings`。
 4. 配置数据库安全规则，确保登录用户只能读写 `user_id` 等于自己的数据。
 5. 复制环境 ID、地域和 Web 安全客户端 key。注意这里填写的是环境 ID，不是 `https://...` URL。
-6. 当前静态 HTML 无法直接读取 `.env`，正式部署推荐通过 `assets/env.js` 注入这些值；本地 `file://`、`localhost` 或 `127.0.0.1` 调试时，先用 `admin / datou123` 登录，页面顶部才会显示“开发者模式”。公网访问默认隐藏开发者配置。
+6. 当前静态 HTML 无法直接读取 `.env`，需要云端能力的自托管部署可通过 `assets/env.js` 注入这些值（该文件已被 `.gitignore` 排除，需在部署产物里单独放置；可从 `assets/env.example.js` 复制）。GitHub Pages 直接从仓库发布，不包含 `env.js`，因此公网 Pages 版本固定运行在纯本地模式，页面加载时对 `env.js` 的 404 属正常现象。本地 `file://`、`localhost` 或 `127.0.0.1` 调试时，先用 `admin / datou123` 登录，页面顶部才会显示“开发者模式”。公网访问默认隐藏开发者配置。
 7. 注册/登录后新增面试记录，再用另一个浏览器登录同一账号验证跨浏览器同步。
 
 未配置 CloudBase 时，普通用户路径会显示“本地体验”，不会承诺登录或多设备同步。CloudBase 已配置后，普通用户路径才展示“登录 / 注册”和账号菜单，不会出现 CloudBase 环境、集合列表或安全规则配置。开发者配置只用于本地调试，不应在生产入口暴露。当前内置 `admin / datou123` 只是静态 Demo 的本机管理员入口，不能当作生产鉴权；如果要让配置真正对所有线上用户生效，需要放到有权限保护的后端或 CloudBase 管理端。
@@ -70,7 +70,7 @@ Supabase 相关 SQL 文件仍保留在 `supabase/` 目录中，仅作为旧方�
 项目入口是 `index.html`。推荐用 npm 启动本地静态服务，更接近部署后的访问方式：
 
 ```bash
-cd /Users/raochaodembpm2max/Documents/selon
+cd <项目目录>
 npm run dev
 ```
 
@@ -96,7 +96,7 @@ http://127.0.0.1:8001/?devCloud=1
 npm run check
 ```
 
-该命令会做无依赖的静态冒烟检查：HTML 脚本语法、关键 DOM 入口、管理员开发者模式门禁、响应式断点、删除确认和一组正常/边界/异常/大量面试 mock 数据。
+该命令会依次运行两套无依赖检查：`scripts/smoke-test.mjs` 静态冒烟检查（HTML 脚本语法、关键 DOM 入口、开发者模式门禁、路由 fixture、部署守护和 mock 数据）和 `scripts/logic-test.mjs` 可执行逻辑断言（在沙箱里真实执行 300+ 条针对解析、归一化、路由、导出等纯函数的断言）。
 
 ## GitHub Pages
 

@@ -4,3 +4,5 @@
 assets/env.js
 node_modules/
 dist/
+.agents/
+skills-lock.json

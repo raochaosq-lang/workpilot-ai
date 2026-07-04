@@ -414,7 +414,8 @@ function runStaticChecks() {
   assert(/coerceText\(item\.value \?\? item\.detail/.test(html), "normalizeRecruiterFacts must flatten nested fact values via coerceText");
   assert(/Object\.entries\(value\)\.map\(\(\[key, item\]\) => \[key, coerceText\(item\)\]\)/.test(html), "normalizeKeyValueMap must flatten nested values via coerceText");
   // [4] copyText branches on the execCommand result (no false success toast).
-  assert(/const ok = document\.execCommand\("copy"\)/.test(html), "copyText must check the execCommand return before claiming success");
+  assert(/ok = document\.execCommand\("copy"\)/.test(html), "copyText must check the execCommand return before claiming success");
+  assert(/ok = document\.execCommand\("copy"\);?\s*\}\s*finally\s*\{\s*temp\.remove\(\)/.test(html), "copyText fallback must remove the temp textarea in a finally block");
   // [5] Export filename strips control/bidi via codepoint filter.
   assert(/code > 31 && code !== 127 && !\(code >= 0x200b && code <= 0x206f\)/.test(html), "buildExportFileName must strip control/bidi characters");
   // [6] The JSON export no longer advertises a non-existent restore version.
@@ -467,7 +468,7 @@ function runScriptSyntaxCheck() {
 function runContentRoutingFixtureChecks() {
   const script = getInlineScripts()[0] || "";
   const sandbox = `
-    const window = { SpeechRecognition: null, webkitSpeechRecognition: null, crypto: { randomUUID: () => "fixture-id" }, location: { hostname: "127.0.0.1", protocol: "file:", search: "" }, SENLO_CONFIG: {} };
+    const window = { SpeechRecognition: null, webkitSpeechRecognition: null, crypto: { randomUUID: () => "fixture-id" }, location: { hostname: "127.0.0.1", protocol: "file:", search: "" }, SENLO_CONFIG: {}, addEventListener() {} };
     const document = { addEventListener() {}, getElementById() { return null; }, querySelectorAll() { return []; }, querySelector() { return null; }, body: { dataset: {} } };
     const localStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
     const navigator = { clipboard: { writeText: async () => {} } };
@@ -606,7 +607,43 @@ function runAssetChecks() {
   });
 }
 
+function runPageShellChecks() {
+  assert(/<meta name="description"/.test(html), "meta description is missing");
+  assert(/<link rel="icon"[^>]*senlo-favicon-64\.png/.test(html), "optimized 64px favicon link is missing");
+  assert(/<link rel="apple-touch-icon"[^>]*senlo-touch-180\.png/.test(html), "apple-touch-icon link is missing");
+  assert(!/<img[^>]*src="assets\/senlo-logo\.png"/.test(html), "header logo must use the optimized small variant, not the 234KB original");
+  assert(/<noscript>/.test(html), "noscript fallback is missing");
+  assert(/host === "\[::1\]"/.test(html), "IPv6 bracketed loopback host must be recognized as local-debug origin");
+  assert(/catch \(error\) \{[\s\S]{0,260}clearInterval\(timer\);[\s\S]{0,600}模型调用失败，正在使用规则快速分析/.test(html), "generate() catch must stop the API loading ticker before the rules fallback");
+  assert(/window\.SENLO_CONFIG_LOAD_ERROR\b/.test(html.replace(/onerror="window\.SENLO_CONFIG_LOAD_ERROR = true"/, "")), "SENLO_CONFIG_LOAD_ERROR flag must have a reader, not just the writer");
+}
+
+function runAudioPreviewChecks() {
+  assert(/audioPreview\.addEventListener\("error"[\s\S]{0,400}isLikelyTranscribableAudio/.test(html), "audio preview error handler must distinguish unplayable-vs-corrupt via isLikelyTranscribableAudio");
+  assert(/audioPreviewUnplayable/.test(html), "soft audioPreviewUnplayable flag is missing");
+}
+
+function runBootIdentityChecks() {
+  assert(/function hydratePersistedSession\(\)/.test(html), "hydratePersistedSession is missing");
+  assert(/hydratePersistedSession\(\);\s*\n\s*loadAll\(\);/.test(html), "Boot must hydrate persisted identity BEFORE loadAll reads per-user drafts");
+  assert(/bootHydratedCloudIdentity = false;\s*\n\s*loadAll\(\);\s*\n\s*render\(\);/.test(html), "restoreSession downgrade must reload local-identity data before any save");
+}
+
+function runDeploymentChecks() {
+  assert(!/cloudbase-js-sdk\/latest\//.test(html), "CloudBase SDK version must be pinned, not 'latest'");
+  assert(!/<script\s+src="https:\/\/static\.cloudbase\.net[^"]*"><\/script>/.test(html), "CloudBase SDK must not be a parser-blocking top-level script");
+  assert(/function ensureCloudbaseSdk\(\)/.test(html), "ensureCloudbaseSdk lazy loader is missing");
+  assert(/async function getCloudBaseClient\(\)\s*{\s*await ensureCloudbaseSdk\(\);/m.test(html), "getCloudBaseClient must await ensureCloudbaseSdk");
+  const clientCallSites = [...html.matchAll(/getCloudBaseClient\(\)/g)]
+    .filter(match => !/(?:await |function )$/.test(html.slice(Math.max(0, match.index - 15), match.index)));
+  assert(clientCallSites.length === 0, "getCloudBaseClient call sites must all await (async client init)");
+}
+
 runStaticChecks();
+runDeploymentChecks();
+runBootIdentityChecks();
+runAudioPreviewChecks();
+runPageShellChecks();
 runScriptSyntaxCheck();
 runContentRoutingFixtureChecks();
 runMockDataChecks();

@@ -4,7 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>声流 Senlo｜个人面试管理与AI复盘</title>
-  <link rel="icon" type="image/png" href="assets/senlo-logo.png">
+  <meta name="description" content="本地优先的个人面试工作台：管理面试进度与联系人，粘贴转写稿生成面试复盘和猎头沟通整理，数据默认只保存在你的浏览器。">
+  <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="声流 Senlo｜个人面试管理与AI复盘">
+  <meta property="og:description" content="本地优先的个人面试工作台：管理面试进度，粘贴转写稿生成复盘报告，数据默认只保存在你的浏览器。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://raochaosq-lang.github.io/workpilot-ai/assets/senlo-logo.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/senlo-favicon-64.png">
+  <link rel="apple-touch-icon" href="assets/senlo-touch-180.png">
   <style>
     :root {
       --bg: #f5f7fb;
@@ -6748,11 +6757,16 @@
   <script src="assets/env.js" onerror="window.SENLO_CONFIG_LOAD_ERROR = true"></script>
 </head>
 <body>
+  <noscript>
+    <div style="max-width:560px;margin:80px auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;font-family:system-ui,sans-serif;color:#111827;text-align:center;">
+      声流 Senlo 需要启用 JavaScript 才能使用。请在浏览器设置中允许本站运行脚本后刷新页面。
+    </div>
+  </noscript>
   <div class="app">
     <header class="app-header">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
-          <img class="brand-logo-img" src="assets/senlo-logo.png" alt="">
+          <img class="brand-logo-img" src="assets/senlo-logo-96.png" alt="">
         </div>
         <div>
           <div class="brand-title"><span class="brand-name">声流 Senlo</span><span class="brand-title-divider">｜</span><span id="brandTitleExtra" class="brand-title-extra">个人面试记录与进度管理</span></div>
@@ -7628,7 +7642,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script src="https://static.cloudbase.net/cloudbase-js-sdk/latest/cloudbase.full.js"></script>
   <script>
     const STATE_KEY = "senlo_state_v2";
     const MODEL_KEY = "senlo_model_config";
@@ -8119,7 +8132,17 @@
     let selectedAudioFile = null;
     let selectedAudioUrl = "";
     let audioPreviewError = false;
+    let audioPreviewUnplayable = false;
     const MAX_ASR_BYTES = 25 * 1024 * 1024;
+    const TRANSCRIBABLE_AUDIO_EXTENSIONS = ["webm", "ogg", "oga", "opus", "m4a", "mp3", "wav", "mp4", "amr", "flac", "aac"];
+
+    function isLikelyTranscribableAudio(file) {
+      const type = String(file?.type || "").toLowerCase();
+      if (type.startsWith("audio/") || type.startsWith("video/")) return true;
+      const name = String(file?.name || "").toLowerCase();
+      const ext = name.includes(".") ? name.split(".").pop() : "";
+      return TRANSCRIBABLE_AUDIO_EXTENSIONS.includes(ext);
+    }
     let recordStartedAt = 0;
     let recordTimer = null;
     let recordRenderTimer = null;
@@ -8206,7 +8229,7 @@
 
     function isLocalDebugOrigin() {
       const host = window.location.hostname;
-      return window.location.protocol === "file:" || host === "localhost" || host === "127.0.0.1" || host === "::1";
+      return window.location.protocol === "file:" || host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
     }
 
     function isDevCloudConfigAllowed() {
@@ -8361,7 +8384,31 @@
     let cloudbaseClient = null;
     let cloudbaseClientKey = "";
 
-    function getCloudBaseClient() {
+    // 固定版本号防止 latest 静默变更；该 CDN 不返回 CORS 头，无法附加 SRI。
+    const CLOUDBASE_SDK_URL = "https://static.cloudbase.net/cloudbase-js-sdk/2.31.0/cloudbase.full.js";
+    let cloudbaseSdkPromise = null;
+
+    function ensureCloudbaseSdk() {
+      if (window.cloudbase) return Promise.resolve();
+      if (!cloudbaseSdkPromise) {
+        cloudbaseSdkPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = CLOUDBASE_SDK_URL;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => {
+            cloudbaseSdkPromise = null;
+            script.remove();
+            reject(new Error("CloudBase Web SDK 加载失败，请检查 static.cloudbase.net 是否可访问，稍后重试。"));
+          };
+          document.head.appendChild(script);
+        });
+      }
+      return cloudbaseSdkPromise;
+    }
+
+    async function getCloudBaseClient() {
+      await ensureCloudbaseSdk();
       const config = authState.cloudbaseConfig || getRuntimeCloudBaseConfig();
       if (!window.cloudbase) throw new Error("CloudBase Web SDK 未加载，请检查 static.cloudbase.net 是否可访问。");
       if (!config.envId || !config.accessKey) throw new Error("请先配置 CloudBase 环境 ID 和 Web 安全客户端 key。");
@@ -8426,7 +8473,7 @@
     }
 
     async function signInWithEmail(email, password) {
-      const { auth } = getCloudBaseClient();
+      const { auth } = await getCloudBaseClient();
       const errors = [];
       const attempts = [
         ["signInWithPassword", [{ email, password }]],
@@ -8450,7 +8497,7 @@
     }
 
     async function signUpWithEmail(email, password) {
-      const { auth } = getCloudBaseClient();
+      const { auth } = await getCloudBaseClient();
       const errors = [];
       const attempts = [
         ["signUp", [{ email, password }]],
@@ -8535,7 +8582,7 @@
     }
 
     async function cloudbaseGetCurrentLoginUser(fallbackEmail = "", seedUser = null) {
-      const { auth } = getCloudBaseClient();
+      const { auth } = await getCloudBaseClient();
       const candidates = [];
       const addCandidate = value => {
         if (value && typeof value === "object") candidates.push(value);
@@ -8743,6 +8790,13 @@
           logCloudAuthError("restoreSession", error);
           this.clearSession();
           currentUser = getLocalUser();
+          if (bootHydratedCloudIdentity) {
+            // 启动预读已按云端身份加载过数据；降级回本地身份后重新加载，
+            // 避免云槽位的草稿/记录被写进本地槽位（或反之）。
+            bootHydratedCloudIdentity = false;
+            loadAll();
+            render();
+          }
           setSyncStatus("local", "当前为本地模式，登录后开启云端同步");
           return currentUser;
         }
@@ -8811,7 +8865,7 @@
         const wasAdmin = isAdminActive();
         try {
           if (authState.session && !wasAdmin) {
-            const { auth } = getCloudBaseClient();
+            const { auth } = await getCloudBaseClient();
             if (typeof auth.signOut === "function") await auth.signOut();
           }
         } catch (error) {
@@ -8888,13 +8942,13 @@
     async function cloudbaseUpsert(table, rows = []) {
       const payload = rows.filter(Boolean);
       if (!payload.length) return [];
-      const { db } = getCloudBaseClient();
+      const { db } = await getCloudBaseClient();
       await Promise.all(payload.map(row => db.collection(table).doc(row.id).set(cleanCloudValue(row))));
       return payload;
     }
 
     async function cloudbaseSelect(table, query = "") {
-      const { db } = getCloudBaseClient();
+      const { db } = await getCloudBaseClient();
       let ref = db.collection(table).where({ user_id: getCurrentUserId() });
       const params = new URLSearchParams(String(query || ""));
       const order = params.get("order");
@@ -8910,7 +8964,7 @@
     }
 
     async function cloudbaseDelete(table, id) {
-      const { db } = getCloudBaseClient();
+      const { db } = await getCloudBaseClient();
       return db.collection(table).doc(id).remove();
     }
 
@@ -9750,7 +9804,40 @@
       return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(normalizeEmailForAuth(value));
     }
 
+    // 全局兜底：未捕获错误给用户一个可恢复的提示，而不是无声死页；5 秒内不重复打扰。
+    let lastGlobalErrorAt = 0;
+    function reportGlobalError(message) {
+      const now = Date.now();
+      if (now - lastGlobalErrorAt < 5000) return;
+      lastGlobalErrorAt = now;
+      try { showToast(message); } catch (_) { /* toast 未就绪时错误已在 console */ }
+    }
+    window.addEventListener("error", event => {
+      console.error("uncaught", event.error || event.message);
+      reportGlobalError("页面出现了一个错误，刚才的操作可能没有完成，请重试；反复出现请刷新页面。");
+    });
+    window.addEventListener("unhandledrejection", event => {
+      console.error("unhandledrejection", event.reason);
+      reportGlobalError("有一个后台操作失败了，请重试；反复出现请刷新页面。");
+    });
+
+    // 启动失败兜底：不依赖任何应用状态的最小可见错误条，本地数据不受影响。
+    function renderBootFailure() {
+      const banner = document.createElement("div");
+      banner.setAttribute("role", "alert");
+      banner.style.cssText = "position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;font-size:14px;max-width:92vw;box-shadow:0 10px 26px rgba(15,23,42,.12);";
+      banner.textContent = "页面初始化失败，本地数据不会丢失。请刷新重试；反复出现可清理浏览器缓存后再打开。";
+      const reloadBtn = document.createElement("button");
+      reloadBtn.type = "button";
+      reloadBtn.textContent = "刷新页面";
+      reloadBtn.style.cssText = "margin-left:12px;padding:4px 10px;border:1px solid #fca5a5;border-radius:8px;background:#fff;color:#991b1b;cursor:pointer;";
+      reloadBtn.addEventListener("click", () => window.location.reload());
+      banner.appendChild(reloadBtn);
+      document.body.appendChild(banner);
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
+      try {
       [
         "accountModeLabel", "openAccountBtn", "accountMenu", "accountMenuEmail", "accountMenuSync", "accountMenuUserId", "menuSyncNowBtn", "menuImportLocalDataBtn", "menuAccountInfoBtn", "menuSignOutBtn", "openDevCloudBtn",
         "accountModal", "accountModalTitle", "accountModalNote", "closeAccountBtn", "accountSignedInPanel", "accountSignedOutPanel", "accountAuthMessage", "authFormTitle", "authFormDesc", "accountEmailInput", "accountPasswordInput", "accountConfirmPasswordInput", "authPrimaryBtn", "continueLocalBtn", "authSwitchText", "toggleAuthModeBtn", "goLoginAfterVerifyBtn", "openDevConfigFromAuthBtn", "signOutBtn", "syncNowBtn", "importLocalDataBtn", "localImportPrompt", "confirmImportLocalBtn", "skipImportLocalBtn",
@@ -9779,12 +9866,52 @@
       ].forEach(id => els[id] = document.getElementById(id));
 
       migrateLegacyAuthStorage();
+      hydratePersistedSession();
       loadAll();
       bindEvents();
       renderProviderOptions();
       render();
-      bootstrapAuth();
+      bootstrapAuth().catch(error => {
+        console.error("bootstrapAuth", error);
+        setSyncStatus("error", "云端启动失败，本地数据不受影响，可稍后重试");
+        renderAccountStatus();
+      });
+      } catch (error) {
+        console.error("boot failed", error);
+        renderBootFailure();
+      }
     });
+
+    // 启动时同步预读持久化身份，让 loadAll() 从正确的用户槽位读草稿和记录；
+    // 真实校验仍由 bootstrapAuth → restoreSession 异步完成，校验失败会降级并重载本地数据。
+    let bootHydratedCloudIdentity = false;
+    function hydratePersistedSession() {
+      try {
+        if (isDevCloudConfigAllowed()) {
+          const adminSession = storageService.getJson(DEMO_ADMIN_SESSION_KEY, null);
+          if (adminSession?.active) {
+            authState.adminSession = adminSession;
+            authState.user = createDemoAdminUser();
+            authState.mode = "admin";
+            currentUser = authState.user;
+            return;
+          }
+        }
+        authState.cloudbaseConfig = getRuntimeCloudBaseConfig();
+        if (!hasCloudConfig()) return;
+        const saved = authService.getSession();
+        const savedUser = normalizeCloudBaseUser(saved?.user || null, saved?.user?.email || "");
+        if (saved && isRealLoggedInUser(savedUser, saved)) {
+          authState.session = saved;
+          authState.user = savedUser;
+          authState.mode = "cloud";
+          currentUser = savedUser;
+          bootHydratedCloudIdentity = true;
+        }
+      } catch (error) {
+        console.warn("hydratePersistedSession", error);
+      }
+    }
 
     function bindEvents() {
       els.appNav.addEventListener("click", async event => {
@@ -9951,8 +10078,14 @@
       // "读取时长中" and 转写音频 stays enabled on an undecodable file.
       els.audioPreview.addEventListener("error", () => {
         if (!selectedAudioFile) return;
-        audioPreviewError = true;
-        if (els.audioMeta) els.audioMeta.textContent = `无法读取「${selectedAudioFile.name}」，可能格式不受支持或文件已损坏，请更换文件`;
+        // 浏览器"能否播放"≠服务端"能否转写"：Safari 播不了 webm/ogg，但 ASR 接口照样能转。
+        if (isLikelyTranscribableAudio(selectedAudioFile)) {
+          audioPreviewUnplayable = true;
+          if (els.audioMeta) els.audioMeta.textContent = `当前浏览器无法预览「${selectedAudioFile.name}」，但仍可尝试转写`;
+        } else {
+          audioPreviewError = true;
+          if (els.audioMeta) els.audioMeta.textContent = `无法读取「${selectedAudioFile.name}」，可能格式不受支持或文件已损坏，请更换文件`;
+        }
         renderInputMode();
       });
       els.transcribeAudioBtn.addEventListener("click", transcribeSelectedAudio);
@@ -10168,6 +10301,16 @@
       return [els.sourceModal, els.historyModal, els.modelModal, els.devCloudModal, els.interviewTextImportModal, els.interviewFormModal, els.accountModal].find(isModalShown) || null;
     }
 
+    // 焦点还原兜底：若还有打开的弹层，焦点必须留在弹层内（而不是落到背后的页面按钮）。
+    function getFallbackFocusTarget() {
+      const openModal = getTopOpenModal();
+      if (openModal) {
+        const focusable = Array.from(openModal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')).find(el => el.offsetParent !== null);
+        if (focusable) return focusable;
+      }
+      return state.appPage === "manager" ? els.addInterviewBtn : els.generateBtn;
+    }
+
     function showConfirmDialog({
       kicker = "请确认",
       title = "确认操作",
@@ -10207,7 +10350,7 @@
         // inside a now-closed modal is neither); otherwise anchor to a stable control
         // so focus never silently lands on <body>.
         const usable = restoreTarget && restoreTarget.isConnected && restoreTarget.offsetParent !== null;
-        const target = usable ? restoreTarget : (state.appPage === "manager" ? els.addInterviewBtn : els.generateBtn);
+        const target = usable ? restoreTarget : getFallbackFocusTarget();
         target?.focus?.({ preventScroll: true });
       }, 20);
     }
@@ -10338,7 +10481,7 @@
       modal.classList.remove("show");
       setTimeout(() => {
         const usable = restoreTarget && restoreTarget.isConnected && restoreTarget.offsetParent !== null;
-        const target = usable ? restoreTarget : (state.appPage === "manager" ? els.addInterviewBtn : els.generateBtn);
+        const target = usable ? restoreTarget : getFallbackFocusTarget();
         target?.focus?.({ preventScroll: true });
       }, 20);
     }
@@ -10562,11 +10705,12 @@
       const config = authState.cloudbaseConfig || getRuntimeCloudBaseConfig();
       let clientStatus = "未初始化";
       if (hasCloudConfig()) {
-        try {
-          getCloudBaseClient();
+        if (!window.cloudbase) {
+          clientStatus = "SDK 未加载（将在云端操作时按需加载）";
+        } else if (cloudbaseClient) {
           clientStatus = "初始化成功";
-        } catch (error) {
-          clientStatus = `初始化失败：${normalizeCloudError(error).userMessage}`;
+        } else {
+          clientStatus = "SDK 已加载，待初始化";
         }
       }
       const normalizedUser = authState.user ? sanitizeDiagnosticValue(authState.user) : null;
@@ -10608,6 +10752,9 @@
       showDevCloudMessage("正在执行云端诊断...", "");
       try {
         const config = getRuntimeCloudBaseConfig();
+        if (window.SENLO_CONFIG_LOAD_ERROR) {
+          add("info", "assets/env.js 未加载", "公网部署不包含该文件，属正常；本地调试可从 assets/env.example.js 复制一份 env.js 再填配置。");
+        }
         if (window.location.protocol === "file:") {
           add("warn", "当前页面不是 http://localhost:8001", "file:// 会使用 null origin，云端请求可能被浏览器拦截。");
         }
@@ -10615,7 +10762,7 @@
         let authMethods = [];
         if (["all", "init", "auth", "emailAuth", "db"].includes(scope)) {
           try {
-            client = getCloudBaseClient();
+            client = await getCloudBaseClient();
             add("ok", "CloudBase 初始化成功", `环境 ${config.envId}，地域 ${config.region || "ap-shanghai"}`);
           } catch (error) {
             const detail = logCloudAuthError("diagnostic:init", error);
@@ -10709,7 +10856,7 @@
       showDevCloudMessage("正在测试账号 SDK、认证和数据库连接...", "");
       try {
         const config = getRuntimeCloudBaseConfig();
-        const { auth, db } = getCloudBaseClient();
+        const { auth, db } = await getCloudBaseClient();
         let authMessage = "Auth SDK 初始化成功";
         let hasLoginState = false;
         const authMethods = getCloudBaseAuthMethodNames(auth);
@@ -14394,9 +14541,11 @@
         els.recordStatus.classList.remove("recording");
       }
       if (selectedAudioFile) {
-        if (!isAudioTranscribing && !audioPreviewError) renderAudioMeta();
+        if (!isAudioTranscribing && !audioPreviewError && !audioPreviewUnplayable) renderAudioMeta();
         if (audioPreviewError) {
           els.audioMeta.textContent = `无法读取「${selectedAudioFile.name}」，可能格式不受支持或文件已损坏，请更换文件`;
+        } else if (audioPreviewUnplayable) {
+          els.audioMeta.textContent = `当前浏览器无法预览「${selectedAudioFile.name}」，但仍可尝试转写`;
         } else if (!asrReady && !isDeveloperMode()) {
           els.audioMeta.textContent = `${selectedAudioFile.name} · 转写服务暂未接入，请先粘贴已有转写文本`;
         }
@@ -15171,6 +15320,7 @@
       const file = event.target.files?.[0];
       if (!file) return;
       audioPreviewError = false;
+      audioPreviewUnplayable = false;
       const isOversize = file.size > MAX_ASR_BYTES;
       selectedAudioFile = file;
       if (selectedAudioUrl) URL.revokeObjectURL(selectedAudioUrl);
@@ -15384,7 +15534,13 @@
           conversionReason: ""
         };
       }
-      const wavFile = await convertAudioBlobToWavFile(file);
+      let wavFile;
+      try {
+        wavFile = await convertAudioBlobToWavFile(file);
+      } catch (error) {
+        // 该服务要求本地先把 webm 解码转 wav；浏览器解不了时给出针对性的出路，而不是笼统报错。
+        throw new Error("当前转写服务需要先在本地把 webm 转成 wav，但这个浏览器无法解码该文件。请改用 wav/mp3 文件，或换用支持 webm 的转写服务。");
+      }
       return {
         file: wavFile,
         convertedToWav: true,
@@ -15716,6 +15872,9 @@
           ? "真实大模型已生成，已自动写入历史记录"
           : (isDeveloperMode() ? "已生成本地模拟分析结果，并自动写入历史记录" : "已生成规则快速分析结果，并自动写入历史记录"));
       } catch (error) {
+        // 先停掉 API 模式的加载跑马灯，否则它会在回退期间把
+        // "模型调用失败，正在使用规则快速分析..." 覆盖回 "正在调用 <模型>..."。
+        clearInterval(timer);
         console.warn(error);
         state.lastApiFailed = true;
         state.error = humanizeModelError(error);
@@ -18205,11 +18364,15 @@
           const temp = document.createElement("textarea");
           temp.value = text;
           document.body.appendChild(temp);
-          temp.select();
           // execCommand returns false (without throwing) when the copy is blocked — don't
-          // claim "已复制" for a clipboard that's actually empty.
-          const ok = document.execCommand("copy");
-          temp.remove();
+          // claim "已复制" for a clipboard that's actually empty；throw 时也必须移除临时节点。
+          let ok = false;
+          try {
+            temp.select();
+            ok = document.execCommand("copy");
+          } finally {
+            temp.remove();
+          }
           if (!ok) {
             showToast("复制失败，请手动选择文本复制");
             return;
