@@ -812,6 +812,17 @@ ok(inferThemes("我们聊了性能优化和数据库架构").includes("技术深
 eq(inferInterviewerRole("聊了性能优化、虚拟滚动、React 并发，结尾说 HR 会联系你聊薪资。"), "技术面试官", "tech-dominant interview is not mislabeled as HR");
 eq(inferInterviewerRole("HR面：主要聊了入职流程、薪酬和背调安排。"), "HR / 招聘", "true HR conversation still labels as HR");
 
+// ===== 2026-07-04 R12 deep-sweep (product excellence) regressions =====
+// [20] Rules-generated exports must not attribute critiques/summary to AI; model output keeps it.
+{
+  const qa = { question: "q", answer: "a", critique: "c", score: 70 };
+  const rulesMd = buildMinutesText({ contentType: "interview", qaCards: [qa] }, "interview", "规则快速分析");
+  ok(!rulesMd.includes("AI 点评") && !rulesMd.includes("AI 超浓缩总结"), "rules-generated export drops the AI attribution");
+  ok(rulesMd.includes("点评："), "rules-generated export keeps the plain 点评 label");
+  const modelMd = buildMinutesText({ contentType: "interview", qaCards: [qa] }, "interview", "DeepSeek V3");
+  ok(modelMd.includes("AI 点评") && modelMd.includes("AI 超浓缩总结"), "model-generated export keeps AI attribution");
+}
+
 // ===== 2026-07-04 R11 deep-sweep (deployment/first-load) regressions =====
 // [7] Browser-unplayable but server-transcribable formats must stay transcribable.
 ok(isLikelyTranscribableAudio({ name: "interview.webm", type: "" }) === true, "webm by extension is transcribable");

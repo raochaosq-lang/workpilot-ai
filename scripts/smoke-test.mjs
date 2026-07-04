@@ -607,6 +607,43 @@ function runAssetChecks() {
   });
 }
 
+function runProductPolishChecks() {
+  // R12 [0]: 填入示例 must confirm before overwriting real input / results.
+  assert(/fillSampleTranscriptBtn\.addEventListener\("click"[\s\S]{0,700}(hasRealInput\(\) \|\| hasResult\(\))[\s\S]{0,400}showConfirmDialog[\s\S]{0,700}setActiveSource\(sampleText/.test(html), "填入示例 must confirm before overwriting unsaved work");
+  // R12 [1]: history 打开 must run the workspace-replacement guards.
+  assert(/data-action='open'\]"\)\.addEventListener\("click", async[\s\S]{0,900}isWorkspacePersistedInHistory[\s\S]{0,600}showConfirmDialog/.test(html), "history 打开 must guard unsaved workspace replacement");
+  assert(/function isWorkspacePersistedInHistory\(\)/.test(html), "isWorkspacePersistedInHistory helper is missing");
+  // R12 [2]: Web Speech is server-based — never claim device-local transcription.
+  assert(!html.includes("浏览器本地转写"), "recording copy must not claim device-local transcription");
+  // R12 [3]/[4]/[10]: persistence failures must not be masked by success toasts.
+  assert(/function saveHistory\(list\) \{\s*const ok = historyService\.saveAll\(list\);[\s\S]{0,200}return ok;/.test(html), "saveHistory must return the persist outcome");
+  assert(/if \(!saveHistory\(\[item, \.\.\.list\]\)\) return false;/.test(html), "saveCurrentToHistory must gate success on the actual persist");
+  assert(/return savedLocal && savedShared;/.test(html), "saveModelConfig must return the persist outcome");
+  assert(/const savedToHistory = saveCurrentToHistory\(\{ silent: true \}\);/.test(html), "generate must branch its toast on the auto-save outcome");
+  // R12 [5]: regenerate emphasis must out-specify .output-toolbar .btn.
+  assert(/\.output-toolbar \.btn\.toolbar-primary/.test(html), "toolbar-primary emphasis must beat .output-toolbar .btn specificity");
+  // R12 [6]-[9]: dark-mode parity for status pills, danger buttons, selected file picker, mobile docks.
+  const darkBlock = html.slice(html.indexOf("@media (prefers-color-scheme: dark)"));
+  ["\\.status-pill\\.warn", "\\.status-pill\\.error", "\\.btn\\.danger\\s*\\{[^}]*color:", "\\.file-picker\\.is-selected", "\\.manager-form-actions", "\\.input-controls"].forEach(pattern => {
+    assert(new RegExp(pattern).test(darkBlock), `dark block must adapt ${pattern}`);
+  });
+  // R12 [12]/[13]: sample reports marked in history; empty export short-circuits.
+  assert(/isSampleSource \? "示例 · "/.test(html), "sample-derived history records must carry the 示例 marker");
+  assert(/暂无可导出的数据/.test(html), "empty-workspace export must short-circuit with guidance");
+  // R12 [16]/[17]: contextual save button; dead 粘贴到下方 button removed.
+  assert(/saveHistoryBtn\.classList\.toggle\("hidden", isWorkspacePersistedInHistory\(\)\)/.test(html), "保存到历史 must hide when nothing new to save");
+  assert(!/id="focusTextBtn"/.test(html), "dead 粘贴到下方 button must stay removed");
+  // R12 [18]: single-report MD exports are not interrupted; full JSON snapshot still confirms.
+  assert(!/exportCurrentReportMarkdown[\s\S]{0,400}confirmReportExport/.test(html.slice(html.indexOf("async function exportCurrentReportMarkdown"))), "current MD export must not re-confirm");
+  assert(/async function exportAllUserData[\s\S]{0,600}confirmReportExport\(/.test(html), "full JSON export keeps its confirm");
+  // R12 [20]: rules output must not be attributed to AI.
+  assert(/function attributeLabel\(/.test(html), "attributeLabel helper is missing");
+  // R12 [14]/[22]/[23]: copy consistency and the de-duplicated routing panel.
+  assert(!html.includes("待提交"), "empty-state verb must match a real action (待记录)");
+  assert(!/默认Base URL|AI识别失败|置模型API Key|查Base URL/.test(html), "CJK-Latin spacing regressions");
+  assert(!/id="contentTypeSummary"/.test(html), "routing panel must not echo type/subtype twice");
+}
+
 function runPageShellChecks() {
   assert(/<meta name="description"/.test(html), "meta description is missing");
   assert(/<link rel="icon"[^>]*senlo-favicon-64\.png/.test(html), "optimized 64px favicon link is missing");
@@ -644,6 +681,7 @@ runDeploymentChecks();
 runBootIdentityChecks();
 runAudioPreviewChecks();
 runPageShellChecks();
+runProductPolishChecks();
 runScriptSyntaxCheck();
 runContentRoutingFixtureChecks();
 runMockDataChecks();

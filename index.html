@@ -1393,30 +1393,9 @@
       background: linear-gradient(180deg, #f8fbff, #f1f7ff);
     }
 
-    .routing-summary {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-
-    .routing-summary span,
     .routing-controls label > span {
       color: #64748b;
       font-size: 11px;
-      font-weight: 900;
-    }
-
-    .routing-summary strong {
-      color: #1d4ed8;
-      font-size: 14px;
-      line-height: 1.35;
-    }
-
-    .routing-summary small {
-      color: #0f766e;
-      font-size: 12px;
       font-weight: 900;
     }
 
@@ -2276,14 +2255,17 @@
       box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
     }
 
-    .toolbar-primary {
+    /* .output-toolbar .btn (0,2,0) 会压过单类选择器，这里用 0,3,0 保证强调态生效。 */
+    .toolbar-primary,
+    .output-toolbar .btn.toolbar-primary {
       color: #fff;
       background: linear-gradient(135deg, var(--primary), #4f46e5);
       border-color: transparent;
       box-shadow: 0 10px 22px rgba(37, 99, 235, 0.20);
     }
 
-    .toolbar-primary:hover:not(:disabled) {
+    .toolbar-primary:hover:not(:disabled),
+    .output-toolbar .btn.toolbar-primary:hover:not(:disabled) {
       color: #fff;
       background: linear-gradient(135deg, #1d4ed8, #4338ca);
     }
@@ -5322,14 +5304,6 @@
         border-color: rgba(251, 191, 36, 0.28);
       }
 
-      .routing-summary strong {
-        color: #93c5fd;
-      }
-
-      .routing-summary small {
-        color: #5eead4;
-      }
-
       .content-routing-panel.is-manual,
       .recruiter-section-card.warning {
         border-color: rgba(251, 146, 60, 0.45);
@@ -5597,6 +5571,33 @@
         color: #c7d2fe;
         background: rgba(99, 102, 241, 0.16);
         border-color: rgba(129, 140, 248, 0.32);
+      }
+
+      .status-pill {
+        color: #6ee7b7;
+        border-color: rgba(52, 211, 153, 0.35);
+      }
+
+      .status-pill.warn {
+        color: #fcd34d;
+        border-color: rgba(251, 191, 36, 0.35);
+      }
+
+      .status-pill.error {
+        color: #fca5a5;
+        border-color: rgba(248, 113, 113, 0.35);
+      }
+
+      .btn.danger {
+        color: #fca5a5;
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(248, 113, 113, 0.32);
+      }
+
+      .file-picker.is-selected {
+        background: rgba(37, 99, 235, 0.16);
+        border-color: rgba(96, 165, 250, 0.45);
+        color: #93c5fd;
       }
     }
 
@@ -6107,8 +6108,7 @@
       }
 
       #recordBtn,
-      #transcribeAudioBtn,
-      #focusTextBtn {
+      #transcribeAudioBtn {
         width: 100%;
       }
 
@@ -6911,6 +6911,20 @@
       #modelModal .model-actions {
         background: linear-gradient(180deg, rgba(17, 24, 39, 0), #111827 18%);
       }
+
+      .manager-form-actions {
+        background: linear-gradient(180deg, rgba(17, 24, 39, 0), #111827 22%);
+      }
+
+      .input-controls {
+        background: rgba(17, 24, 39, 0.92);
+        border-color: rgba(59, 74, 97, 0.9);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .mobile-page-tabs {
+        border-color: var(--border);
+      }
     }
   </style>
   <script src="assets/env.js" onerror="window.SENLO_CONFIG_LOAD_ERROR = true"></script>
@@ -7184,7 +7198,7 @@
             <div id="recordCard" class="capture-card">
               <div class="capture-copy">
                 <strong id="recordTitle">现场录音，实时转写</strong>
-                <span id="speechSupportText">浏览器本地转写，结束后生成面试复盘。</span>
+                <span id="speechSupportText">浏览器实时转写（需联网，经浏览器语音服务处理），结束后生成面试复盘。</span>
               </div>
               <div class="record-control">
                 <div class="record-meter">
@@ -7200,7 +7214,6 @@
                 <span id="textDesc">适合从录音笔、Plaud、钉钉、飞书妙记等工具复制文本后继续复盘。</span>
               </div>
               <div class="capture-card-actions">
-                <button id="focusTextBtn" class="btn" type="button">粘贴到下方</button>
                 <button id="fillSampleTranscriptBtn" class="btn ghost" type="button">填入示例</button>
               </div>
             </div>
@@ -7230,11 +7243,6 @@
             </div>
           </div>
           <div id="contentRoutingPanel" class="content-routing-panel" aria-live="polite">
-            <div class="routing-summary">
-              <span>当前识别</span>
-              <strong id="contentTypeSummary">面试复盘</strong>
-              <small id="contentSubtypeSummary"></small>
-            </div>
             <div class="routing-controls">
               <label for="contentTypeSelect">
                 <span>内容类型</span>
@@ -7338,7 +7346,7 @@
             <div class="empty-copy">
               <div id="emptyHeroKicker" class="empty-kicker">待输入</div>
               <h3 id="emptyHeroTitle"></h3>
-              <p id="emptyHeroDesc">请先上传录音、现场录音或粘贴面试转写，AI 会生成一份可扫描的面试复盘报告。</p>
+              <p id="emptyHeroDesc">请先上传录音、现场录音或粘贴面试转写，一键生成可扫描的面试复盘报告。</p>
             </div>
             <div class="empty-preview">
               <div class="empty-preview-card"><strong id="emptyPreviewOneTitle">面试档案</strong><span id="emptyPreviewOneDesc">公司、岗位、轮次、时长和面试方式。</span></div>
@@ -7704,11 +7712,11 @@
               <span class="config-badge">ASR</span>
             </div>
             <div class="field asr-provider-field">
-              <label for="asrProviderInput">ASR供应商</label>
+              <label for="asrProviderInput">ASR 供应商</label>
               <input id="asrProviderInput" class="input" placeholder="SiliconFlow">
             </div>
             <div class="field asr-model-field">
-              <label for="asrModelInput">ASR模型</label>
+              <label for="asrModelInput">ASR 模型</label>
               <input id="asrModelInput" class="input" placeholder="FunAudioLLM/SenseVoiceSmall">
             </div>
             <div class="field wide-field">
@@ -7748,7 +7756,7 @@
       <div class="drawer-head">
         <div>
           <h3 class="drawer-title" id="historyModalTitle">历史记录</h3>
-          <p class="panel-note">本地保存最近的复盘结果，便于继续编辑或快速恢复。</p>
+          <p class="panel-note">保存最近 50 条复盘结果，便于继续编辑或快速恢复。</p>
         </div>
         <button id="closeHistoryBtn" class="btn ghost" type="button">关闭</button>
       </div>
@@ -8109,7 +8117,7 @@
         outputNote: "看清面试问题、回答质量、面试官关注点和下一轮准备。",
         uploadTitle: "上传面试录音",
         recordTitle: "现场录音，实时转写",
-        recordDesc: "浏览器本地转写，结束后生成面试复盘。",
+        recordDesc: "浏览器实时转写（需联网，经浏览器语音服务处理），结束后生成面试复盘。",
         textTitle: "粘贴已有面试转写稿",
         textDesc: "适合从录音笔、Plaud、钉钉、飞书妙记等工具复制文本后继续复盘。",
         textHint: "<strong>粘贴面试转写稿</strong>示例：00:00 面试官：你为什么想做 AI 产品？<br>00:35 候选人：我在工作中持续使用 Claude Code 和 Codex...",
@@ -8122,8 +8130,8 @@
         historyCopyToast: "已复制历史面试复盘",
         loadingStages: ["正在识别面试问题...", "正在分析你的回答质量...", "正在提取面试官关注点...", "正在生成下一轮准备建议..."],
         loadingStepLabels: ["识别问题", "分析回答", "提取关注点", "生成建议"],
-        emptyDesc: "上传录音、现场录音或粘贴面试转写，AI 会生成一份可扫描的面试复盘报告。",
-        readyDesc: "点击重新生成开始复盘，完成后这里会展示面试档案、Q&A 卡片和下一轮建议。",
+        emptyDesc: "上传录音、现场录音或粘贴面试转写，一键生成可扫描的面试复盘报告。",
+        readyDesc: "内容已准备好，生成后这里会展示面试档案、Q&A 卡片和下一轮建议。",
         emptyPreview: [
           ["面试档案", "公司、岗位、轮次、时长和面试方式。"],
           ["通过率评估", "给出 0-100% 的面试通过率和判断依据。"],
@@ -8132,7 +8140,7 @@
         ],
         overviewKicker: "AI 面试复盘报告",
         overviewFallbackTitle: "这场面试到底聊了什么",
-        overviewFallbackDesc: "AI 已将转写稿拆成面试档案、问答卡片、关注点和下一轮准备建议。",
+        overviewFallbackDesc: "已将转写稿拆成面试档案、问答卡片、关注点和下一轮准备建议。",
         stats: { qa: "问答卡", passRate: "通过率", improvement: "待提升" },
         dossier: [["公司", "company"], ["岗位", "role"], ["轮次", "round"], ["时间", "time"], ["时长", "duration"], ["方式", "format"], ["语言", "language"], ["面试官", "interviewerRole"]],
         summaryTitle: "AI 超浓缩总结",
@@ -8164,7 +8172,7 @@
         outputNote: "看清对方真实诉求、语气风险、文化差异和下一步表达策略。",
         uploadTitle: "上传沟通录音",
         recordTitle: "现场沟通，实时转写",
-        recordDesc: "浏览器本地转写，结束后生成跨文化沟通复盘。",
+        recordDesc: "浏览器实时转写（需联网，经浏览器语音服务处理），结束后生成跨文化沟通复盘。",
         textTitle: "粘贴沟通记录",
         textDesc: "适合粘贴 Slack、Teams、飞书、微信、邮件或跨国会议转写。",
         textHint: "<strong>粘贴跨文化沟通记录</strong>示例：00:00 Alex: Could we align on the launch timeline?<br>00:35 我：这个时间可能有点紧，需要再确认资源。",
@@ -8177,8 +8185,8 @@
         historyCopyToast: "已复制历史沟通复盘",
         loadingStages: ["正在识别沟通目标...", "正在分析语气和语境...", "正在提取误读风险...", "正在生成表达建议..."],
         loadingStepLabels: ["识别目标", "分析语境", "提取风险", "生成建议"],
-        emptyDesc: "上传录音、现场录音或粘贴沟通记录，AI 会生成一份可扫描的跨文化沟通复盘。",
-        readyDesc: "点击重新生成开始复盘，完成后这里会展示沟通档案、关键片段、误读风险和表达建议。",
+        emptyDesc: "上传录音、现场录音或粘贴沟通记录，一键生成可扫描的跨文化沟通复盘。",
+        readyDesc: "内容已准备好，生成后这里会展示沟通档案、关键片段、误读风险和表达建议。",
         emptyPreview: [
           ["沟通档案", "对象、目标、渠道、语言和文化语境。"],
           ["语境判断", "真实诉求、语气温度、边界和风险。"],
@@ -10004,9 +10012,9 @@
         "modelStatus", "openModelBtn", "appNav", "managerNavBtn", "reviewNavBtn", "interviewManagerPage", "reviewWorkspacePage", "interviewImportInput", "addInterviewBtn", "importInterviewFileBtn", "importInterviewTextBtn", "importStatus", "interviewNextActionBanner", "exportDataBtn", "managerTotalCount", "managerActiveCount", "managerUnscheduledCount", "managerNextCount", "nextInterviewSpotlight", "interviewSearchInput", "interviewStatusFilter", "managerQuickFilters", "interviewFilterSummary", "clearInterviewFilterBtn", "interviewList", "interviewTextImportModal", "closeInterviewTextImportBtn", "interviewImportTextInput", "interviewImportTextMessage", "clearInterviewImportTextBtn", "submitInterviewImportTextBtn", "interviewFormModal", "closeInterviewFormBtn", "interviewForm", "interviewFormTitle", "interviewFormNote", "interviewFormMessage", "interviewCompanyInput", "interviewRoleInput", "interviewBaseLocationInput", "interviewIntentionInput", "interviewContactWechatInput", "interviewOverallProgressInput", "interviewJdInput", "roundFields", "resetInterviewFormBtn", "saveInterviewBtn", "brandTitleExtra", "brandSubtitle", "inputPanelTitle", "inputPanelNote", "outputPanelTitle", "outputPanelNote",
         "capturePanel", "recordTab", "uploadTab", "textTab", "recordCard", "uploadCard", "textCard", "uploadTitle", "recordTitle", "textTitle", "textDesc", "reviewContextBar", "reviewContextTitle", "reviewContextMeta", "reviewContextEditBtn", "reviewContextClearBtn",
         "mobilePageTabs", "mobileInputBadge", "mobileResultBadge",
-        "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "focusTextBtn", "fillSampleTranscriptBtn",
+        "speechSupportText", "recordStatus", "recordDuration", "recordBtn", "audioFileInput", "audioFilePicker", "audioPreview", "audioMeta", "transcribeAudioBtn", "fillSampleTranscriptBtn",
         "sourceWrap", "textEmptyHint", "speakerPreview", "sourceText", "inputMeta", "charCount", "sourceQualityHint",
-        "contentRoutingPanel", "contentTypeSummary", "contentSubtypeSummary", "contentTypeSelect", "recruiterSubtypeField", "recruiterSubtypeSelect", "redetectContentBtn", "contentRoutingReason",
+        "contentRoutingPanel", "contentTypeSelect", "recruiterSubtypeField", "recruiterSubtypeSelect", "redetectContentBtn", "contentRoutingReason",
         "clearSourceBtn", "outputType", "localModeBtn", "apiModeBtn", "generateBtn",
         "clearAllBtn", "emptyHeroKicker", "emptyHeroTitle", "emptyHeroDesc", "emptyHeroStatus", "emptyPreviewOneTitle", "emptyPreviewOneDesc", "emptyPreviewTwoTitle", "emptyPreviewTwoDesc", "emptyPreviewThreeTitle", "emptyPreviewThreeDesc", "emptyPreviewFourTitle", "emptyPreviewFourDesc",
         "trustNote", "resultMeta", "loadingPanel", "loadingText", "errorPanel", "errorText", "retryBtn", "fallbackBtn",
@@ -10248,15 +10256,25 @@
         renderInputMode();
       });
       els.transcribeAudioBtn.addEventListener("click", transcribeSelectedAudio);
-      els.focusTextBtn.addEventListener("click", async () => {
-        if (!(await setInputMode("text"))) return;
-        els.sourceText.focus();
-        showToast("可以直接粘贴转写稿或聊天记录");
-      });
       if (els.fillSampleTranscriptBtn) {
         els.fillSampleTranscriptBtn.addEventListener("click", async () => {
           if (!(await setInputMode("text"))) return;
-          setActiveSource(getSampleTranscriptText(), { trim: true });
+          const sampleText = getSampleTranscriptText().trim();
+          // 已有真实输入或结果时，示例不能一键静默覆盖（与 清空输入 的守护一致）；
+          // 输入为空或本来就是这份示例时保持一键直达。
+          const alreadySample = getEffectiveInput().trim() === sampleText;
+          if (!alreadySample && (hasRealInput() || hasResult())) {
+            const ok = await showConfirmDialog({
+              kicker: "填入示例",
+              title: "用示例替换当前内容？",
+              message: "填入示例会替换当前输入的转写文本，并让当前生成结果失效。\n\n已保存到历史的复盘不受影响。",
+              confirmText: "替换为示例",
+              cancelText: "保留我的内容",
+              tone: "danger"
+            });
+            if (!ok) return;
+          }
+          setActiveSource(sampleText, { trim: true });
           state.error = "";
           state.lastApiFailed = false;
           clearGeneratedResultState();
@@ -11632,7 +11650,7 @@
       els.qaStatLabel.textContent = scenario.stats.qa;
       els.passRateStatLabel.textContent = scenario.stats.passRate;
       els.riskStatLabel.textContent = scenario.stats.improvement;
-      els.summarySectionTitle.innerHTML = `${escapeHtml(scenario.summaryTitle)} <span class="count-badge">核心</span>`;
+      els.summarySectionTitle.innerHTML = `${escapeHtml(attributeLabel(scenario.summaryTitle, resultIsModelGenerated()))} <span class="count-badge">核心</span>`;
       els.summarySectionTag.textContent = scenario.summaryTag;
       els.coreDiscussionLabel.textContent = scenario.coreLabel;
       els.atmosphereLabel.textContent = scenario.atmosphereLabel;
@@ -11665,8 +11683,6 @@
       els.contentTypeSelect.value = contentType;
       els.recruiterSubtypeSelect.value = getValidRecruiterSubtype(state.recruiterSubtype);
       els.recruiterSubtypeField.classList.toggle("hidden", !isRecruiter);
-      els.contentTypeSummary.textContent = getContentTypeLabel(contentType);
-      els.contentSubtypeSummary.textContent = isRecruiter ? ` / ${getRecruiterSubtypeLabel()}` : "";
       els.contentRoutingReason.textContent = state.contentRoutingManual
         ? state.contentRoutingReason
         : (state.contentRoutingReason || detectContentRouting().reason);
@@ -11833,9 +11849,10 @@
       const savedLocal = storageService.setJson(MODEL_KEY, modelConfig);
       const savedShared = !isAdminActive() || storageService.setJson(SHARED_MODEL_KEY, modelConfig);
       if (!savedLocal || !savedShared) {
-        showToast("模型配置保存失败");
+        showToast("模型配置保存失败，存储空间可能已满，请清理后重试");
       }
       settingsService.save(modelConfig);
+      return savedLocal && savedShared;
     }
 
     function migrateAsrConfig(saved = {}) {
@@ -12067,16 +12084,14 @@
       return !ok;
     }
 
-    async function confirmReportExport(scope = "current") {
-      const isAll = scope === "all";
-      const message = isAll
-        ? "导出数据会下载当前账号可见的面试记录、复盘历史、转写文本、上传文件元数据和用户信息。请确认当前设备和下载目录安全。继续导出吗？"
-        : "导出的 Markdown 可能包含公司、岗位、面试原文、复盘结论和下一步建议。请确认不会泄露隐私或敏感信息。继续导出吗？";
+    // 仅完整 JSON 快照（含全部记录和用户信息）需要确认；单份 Markdown 导出不再打断。
+    async function confirmReportExport(scope = "all") {
+      const message = "导出数据会下载当前账号可见的面试记录、复盘历史、转写文本、上传文件元数据和用户信息。请确认当前设备和下载目录安全。继续导出吗？";
       return showConfirmDialog({
         kicker: "导出确认",
-        title: isAll ? "导出完整本地数据？" : "导出这份复盘？",
+        title: "导出完整本地数据？",
         message,
-        confirmText: isAll ? "导出 JSON" : "导出 Markdown",
+        confirmText: "导出 JSON",
         cancelText: "取消导出",
         tone: "primary"
       });
@@ -12130,11 +12145,21 @@
     // True only when the CURRENTLY-DISPLAYED result was actually produced by a real
     // model call — keyed off state.modelUsed, not live config flags. Adding a key (or
     // toggling api mode) after a rules result must not retroactively relabel it.
-    function resultIsModelGenerated() {
-      if (!hasResult()) return false;
-      const used = String(state.modelUsed || "").trim();
+    function isModelGeneratedLabel(label) {
+      const used = String(label || "").trim();
       if (!used) return false;
       return !["规则快速分析", "本地模拟分析", "本地模拟", "声流内置分析"].includes(used);
+    }
+
+    function resultIsModelGenerated() {
+      if (!hasResult()) return false;
+      return isModelGeneratedLabel(state.modelUsed);
+    }
+
+    // 归因型标签（"AI 点评"/"AI 超浓缩总结"）只有真实模型产出的内容才能挂"AI"，
+    // 规则/本地结果去掉署名，避免把模板文案归功给 AI。
+    function attributeLabel(label, isModel) {
+      return isModel ? String(label || "") : String(label || "").replace(/^AI\s*/, "");
     }
 
     function getAnalysisModeLabel() {
@@ -12163,6 +12188,15 @@
     function markEdited() {
       if (!hasResult()) return;
       state.editedAt = nowIso();
+      renderSaveHistoryButton();
+    }
+
+    // 生成即自动写入历史；只有出现"历史里没有的内容"（编辑过/自动写入失败）时才需要手动保存，
+    // 否则按钮只会制造一次纯抖动的重复保存（少即是多）。
+    function renderSaveHistoryButton() {
+      if (!els.saveHistoryBtn) return;
+      els.saveHistoryBtn.classList.toggle("hidden", isWorkspacePersistedInHistory());
+      els.saveHistoryBtn.textContent = state.editedAt ? "保存修改到历史" : "保存到历史";
     }
 
     function normalizeResult(result = {}) {
@@ -13164,7 +13198,7 @@
           showToast("AI 未识别出记录，已使用本地字段匹配");
         } catch (error) {
           console.warn(error);
-          showToast("AI识别失败，已使用本地字段匹配");
+          showToast("AI 识别失败，已使用本地字段匹配");
         }
       }
       return { records: inferInterviewRecordsFromRows(rows), usedAi: false };
@@ -13766,9 +13800,9 @@
 	      return `
 	        <div class="queue-empty-state">
 	          <div class="queue-empty-copy">
-	            <div class="queue-empty-kicker">待提交</div>
+	            <div class="queue-empty-kicker">待记录</div>
 	            <h3>队列还没有面试记录</h3>
-	            <p>提交第一条面试后，这里会按下一场时间自动排序，越快要面试越靠前。</p>
+	            <p>新增第一条面试后，这里会按下一场时间自动排序，越快要面试越靠前。</p>
 	          </div>
 	          <div class="queue-empty-steps" aria-hidden="true">${rows}</div>
 	        </div>
@@ -13927,7 +13961,7 @@
           : "记录公司、岗位、base 和联系人，下一场面试前就不用翻聊天记录。";
         els.nextInterviewSpotlight.innerHTML = renderCompactEmptyState({
           state: overdueCount ? "filter" : "empty",
-          label: overdueCount ? "待更新" : records.length ? "待排期" : "待提交",
+          label: overdueCount ? "待更新" : records.length ? "待排期" : "待记录",
           title: emptyTitle,
           description: emptyDesc,
           cards: records.length ? [
@@ -14259,12 +14293,9 @@
       // first when there's unsaved work — a generated/edited result, or pasted input that
       // isn't just the currently-linked record's untouched auto-template — so it isn't lost.
       if (state.linkedInterviewId !== id) {
-        const linkedRecord = interviewRecords.find(item => item.id === state.linkedInterviewId);
-        const currentTemplate = linkedRecord
-          ? buildInterviewRecordContext(linkedRecord, Number.isInteger(state.linkedRoundIndex) ? state.linkedRoundIndex : getPreferredReviewRoundIndex(linkedRecord))
-          : "";
-        const inputIsUntouchedTemplate = getEffectiveInput(state.source).trim() === getEffectiveInput(currentTemplate).trim();
-        const hasUnsavedWork = hasResult() || (hasRealInput() && !inputIsUntouchedTemplate);
+        // 已自动写入历史且未再编辑的结果不算"未保存"（可从历史找回），不再误弹危险确认。
+        const persisted = isWorkspacePersistedInHistory();
+        const hasUnsavedWork = !persisted && (hasResult() || (hasRealInput() && !isInputUntouchedLinkedTemplate()));
         if (hasUnsavedWork) {
           const ok = await showConfirmDialog({
             kicker: "切换复盘",
@@ -14862,6 +14893,7 @@
     }
 
     function renderResultMeta() {
+      renderSaveHistoryButton();
       els.resultMeta.classList.add("hidden");
       els.resultMeta.textContent = "";
       if (!shouldShowFormalResult()) {
@@ -14899,7 +14931,7 @@
 
     function renderError() {
       els.errorPanel.classList.toggle("hidden", !state.error);
-      els.errorText.textContent = state.error || (isDeveloperMode() ? "请检查API Key、Base URL、模型名称或网络连接。" : "请稍后重试，当前输入内容会保留。");
+      els.errorText.textContent = state.error || (isDeveloperMode() ? "请检查 API Key、Base URL、模型名称或网络连接。" : "请稍后重试，当前输入内容会保留。");
       if (els.openModelFromErrorBtn) {
         els.openModelFromErrorBtn.classList.toggle("hidden", !isDeveloperMode());
         els.openModelFromErrorBtn.hidden = !isDeveloperMode();
@@ -15084,7 +15116,7 @@
       els.conclusionList.className = "qa-card-list";
       els.copyConclusionsBtn.textContent = "复制 Q&A";
       if (!state.result.qaCards.length) {
-        els.conclusionList.innerHTML = `<div class="empty">生成后，这里会按“${escapeHtml(scenario.qaLabels.question)} - ${escapeHtml(scenario.qaLabels.answer)} - ${escapeHtml(scenario.qaLabels.critique)} - ${escapeHtml(scenario.qaLabels.risk)}”展示卡片流。</div>`;
+        els.conclusionList.innerHTML = `<div class="empty">生成后，这里会按“${escapeHtml(scenario.qaLabels.question)} - ${escapeHtml(scenario.qaLabels.answer)} - ${escapeHtml(attributeLabel(scenario.qaLabels.critique, state.mode === "api" && Boolean(modelConfig.apiKey)))} - ${escapeHtml(scenario.qaLabels.risk)}”展示卡片流。</div>`;
         return;
       }
       state.result.qaCards.forEach((card, index) => {
@@ -15111,7 +15143,7 @@
           </div>
           <div class="qa-review">
             <div>
-              <div class="qa-label">${escapeHtml(scenario.qaLabels.critique)}</div>
+              <div class="qa-label">${escapeHtml(attributeLabel(scenario.qaLabels.critique, resultIsModelGenerated()))}</div>
               <p>${escapeHtml(card.critique)}</p>
             </div>
             ${card.risk ? `<div class="qa-risk"><span>${escapeHtml(scenario.qaLabels.risk)}</span>${escapeHtml(card.risk)}</div>` : ""}
@@ -16042,10 +16074,13 @@
         state.restored = false;
         state.isLoading = false;
         state.loadingText = "";
-        saveCurrentToHistory({ silent: true });
-        showToast(state.mode === "api"
-          ? "真实大模型已生成，已自动写入历史记录"
-          : (isDeveloperMode() ? "已生成本地模拟分析结果，并自动写入历史记录" : "已生成规则快速分析结果，并自动写入历史记录"));
+        const savedToHistory = saveCurrentToHistory({ silent: true });
+        // 自动写入失败（如存储已满）时如实说明，不能宣称"已写入历史记录"。
+        showToast(savedToHistory
+          ? (state.mode === "api"
+            ? "真实大模型已生成，已自动写入历史记录"
+            : (isDeveloperMode() ? "已生成本地模拟分析结果，并自动写入历史记录" : "已生成规则快速分析结果，并自动写入历史记录"))
+          : "结果已生成，但写入历史失败（存储空间可能已满），请复制/导出保留");
       } catch (error) {
         // 先停掉 API 模式的加载跑马灯，否则它会在回退期间把
         // "模型调用失败，正在使用规则快速分析..." 覆盖回 "正在调用 <模型>..."。
@@ -16081,8 +16116,10 @@
           state.restored = false;
           state.isLoading = false;
           state.loadingText = "";
-          saveCurrentToHistory({ silent: true });
-          showToast("模型调用失败，已改用规则快速分析（结果仅供参考，可重试）");
+          const fallbackSaved = saveCurrentToHistory({ silent: true });
+          showToast(fallbackSaved
+            ? "模型调用失败，已改用规则快速分析（结果仅供参考，可重试）"
+            : "模型调用失败，已改用规则快速分析；写入历史失败，请复制/导出保留");
         } catch (fallbackError) {
           // 连本地规则分析都失败时，保留失败态横幅，不掩盖错误。
           console.warn(fallbackError);
@@ -17580,7 +17617,7 @@
     function restoreDefaultBaseUrl() {
       const provider = PROVIDERS[els.providerSelect.value] || PROVIDERS.OpenAI;
       els.baseUrlInput.value = provider.baseUrl || "";
-      showToast("已恢复默认Base URL");
+      showToast("已恢复默认 Base URL");
     }
 
     function restoreDefaultAsrBaseUrl() {
@@ -17675,12 +17712,12 @@
         asrModel: els.asrModelInput.value.trim() || ASR_DEFAULTS.model,
         asrApiKey: els.asrApiKeyInput.value.trim()
       };
-      saveModelConfig();
+      const saved = saveModelConfig();
       state.mode = modelConfig.apiKey ? "api" : "local";
       state.lastApiFailed = false;
-      closeModelModal();
+      if (saved) closeModelModal();
       render();
-      showToast(isAdminActive() ? "模型和 ASR 配置已保存为本机共享配置" : "模型配置已保存");
+      if (saved) showToast(isAdminActive() ? "模型和 ASR 配置已保存为本机共享配置" : "模型配置已保存");
     }
 
     async function clearModelConfig() {
@@ -17980,15 +18017,15 @@
     function humanizeModelError(error) {
       const message = String(error?.message || error || "");
       const devMode = isDeveloperMode();
-      if (/missing api key/i.test(message)) return devMode ? "请先配置模型API Key，或切换到本地模拟模式继续演示。" : "分析服务暂时不可用，原文已保留，可以稍后重试。";
+      if (/missing api key/i.test(message)) return devMode ? "请先配置模型 API Key，或切换到本地模拟模式继续演示。" : "分析服务暂时不可用，原文已保留，可以稍后重试。";
       if (/missing base url/i.test(message)) return devMode ? "Base URL为空，请在模型配置中填写接口地址。" : "分析服务暂时不可用，原文已保留，可以稍后重试。";
       if (/missing model id/i.test(message)) return devMode ? "模型ID为空，请在模型配置中选择或手动填写模型ID。" : "分析服务暂时不可用，原文已保留，可以稍后重试。";
       if (/abort|timeout|timed out/i.test(message)) return "模型返回超时，请调大timeout、缩短输入内容，或稍后重试。";
-      if (/401|403|unauthorized|forbidden|invalid api key/i.test(message)) return devMode ? "模型鉴权失败，可能是API Key不正确或没有该模型权限。" : "分析服务鉴权异常，原文已保留，请稍后重试。";
-      if (/404|not found/i.test(message)) return devMode ? "接口地址或模型ID可能不正确，请检查Base URL和模型ID。" : "分析服务暂时不可用，原文已保留，请稍后重试。";
+      if (/401|403|unauthorized|forbidden|invalid api key/i.test(message)) return devMode ? "模型鉴权失败，可能是 API Key 不正确或没有该模型权限。" : "分析服务鉴权异常，原文已保留，请稍后重试。";
+      if (/404|not found/i.test(message)) return devMode ? "接口地址或模型 ID 可能不正确，请检查 Base URL 和模型 ID。" : "分析服务暂时不可用，原文已保留，请稍后重试。";
       if (/429|rate limit|too many/i.test(message)) return devMode ? "请求被限流，请稍后重试或更换模型/API Key。" : "当前请求较多，请稍后重试。";
       if (/empty model response/i.test(message)) return devMode ? "模型返回为空，请检查模型ID、额度或服务商响应。" : "分析服务返回为空，原文已保留，请稍后重试。";
-      if (/Failed to fetch|NetworkError|CORS/i.test(message)) return devMode ? "网络请求失败，可能是Base URL不可访问、浏览器跨域限制或网络异常。" : "网络请求失败，原文已保留，请稍后重试。";
+      if (/Failed to fetch|NetworkError|CORS/i.test(message)) return devMode ? "网络请求失败，可能是 Base URL 不可访问、浏览器跨域限制或网络异常。" : "网络请求失败，原文已保留，请稍后重试。";
       return devMode
         ? "模型调用失败，可能是API Key、Base URL、模型ID或网络配置不正确。你可以重新测试连接，或切换到本地模拟模式继续演示。"
         : "生成失败，可能是网络或服务临时异常。原文已保留，可以稍后重试。";
@@ -17999,9 +18036,9 @@
     }
 
     function saveHistory(list) {
-      if (!historyService.saveAll(list)) {
-        showToast("历史记录保存失败");
-      }
+      const ok = historyService.saveAll(list);
+      if (!ok) showToast("历史记录保存失败，存储空间可能已满，请删除部分历史后重试");
+      return ok;
     }
 
     function normalizeHistoryRecord(item = {}) {
@@ -18052,6 +18089,28 @@
       return state.linkedInterviewId ? interviewRecords.find(record => record.id === state.linkedInterviewId) : null;
     }
 
+    // 生成时已自动写入历史且此后未再编辑的结果，替换工作区不会造成真实丢失——
+    // 可从 历史记录 → 打开 完整找回，不应再弹"未保存"的吓人确认。
+    function isWorkspacePersistedInHistory() {
+      if (!shouldShowFormalResult()) return false;
+      return getHistory().some(item =>
+        item.generatedSourceHash === state.generatedSourceHash &&
+        String(item.editedAt || "") === String(state.editedAt || "") &&
+        getValidOutputType(item.outputType) === state.outputType &&
+        getValidScenario(item.scenario || DEFAULT_SCENARIO) === state.scenario &&
+        getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE) === state.contentType &&
+        getValidRecruiterSubtype(item.recruiterSubtype || item.result?.recruiterSubtype || DEFAULT_RECRUITER_SUBTYPE) === state.recruiterSubtype
+      );
+    }
+
+    // 当前输入是否就是"已关联记录自动生成的未改动模板"——这类输入可以随时重建，替换无损。
+    function isInputUntouchedLinkedTemplate() {
+      const linkedRecord = getLinkedInterviewRecord();
+      if (!linkedRecord) return false;
+      const currentTemplate = buildInterviewRecordContext(linkedRecord, Number.isInteger(state.linkedRoundIndex) ? state.linkedRoundIndex : getPreferredReviewRoundIndex(linkedRecord));
+      return getEffectiveInput(state.source).trim() === getEffectiveInput(currentTemplate).trim();
+    }
+
     function getLinkedInterviewRound() {
       const record = getLinkedInterviewRecord();
       if (!record || state.linkedRoundIndex == null) return null;
@@ -18075,7 +18134,9 @@
       const titleSource = isRecruiterContent()
         ? (recruiterReport.coreConclusion || `${getRecruiterSubtypeLabel()}沟通整理`)
         : (state.result.summary || state.result.coachSummary?.coreDiscussion || state.source || "未命名记录");
-      const title = titleSource.replace(/\s+/g, " ").slice(0, 28);
+      // 示例转写生成的报告必须在历史里保持可辨识，避免虚构公司混入真实面试记录。
+      const isSampleSource = String(state.source || "").includes("【示例转写稿】");
+      const title = (isSampleSource ? "示例 · " : "") + titleSource.replace(/\s+/g, " ").slice(0, 28);
       state.currentTranscriptId = transcriptId;
       state.currentSummaryId = summaryReportId;
       const savedTranscript = transcriptService.save({
@@ -18150,9 +18211,10 @@
       previousHistory.filter(isDuplicateOf).forEach(stale => {
         if (stale.id && stale.id !== item.id) queueCloudDelete("history_records", stale.id);
       });
-      saveHistory([item, ...list]);
+      if (!saveHistory([item, ...list])) return false;
       if (!silent) showToast(isInterviewReport && item.interviewId ? "已保存到历史，并关联回面试记录" : "已写入历史记录");
       saveState();
+      renderSaveHistoryButton();
       return true;
     }
 
@@ -18319,7 +18381,27 @@
             <button class="mini-btn danger" data-action="delete" type="button">删除</button>
           </div>
         `;
-        card.querySelector("[data-action='open']").addEventListener("click", () => {
+        card.querySelector("[data-action='open']").addEventListener("click", async () => {
+          // 与 startReviewFromInterview 相同的替换守护：打开历史同样会覆盖整个工作区。
+          if (state.isLoading) {
+            showToast("正在生成结果，完成后再打开历史");
+            return;
+          }
+          if (isRecording && !(await confirmStopRecordingForSwitch("打开历史"))) return;
+          if (isAudioTranscribing && !(await confirmAbortAudioTranscriptionForSwitch("打开历史"))) return;
+          const persisted = isWorkspacePersistedInHistory();
+          const hasUnsavedWork = !persisted && (hasResult() || (hasRealInput() && !isInputUntouchedLinkedTemplate()));
+          if (hasUnsavedWork) {
+            const ok = await showConfirmDialog({
+              kicker: "打开历史",
+              title: "用这份历史替换当前工作区？",
+              message: "当前工作区里未保存到历史的转写和结果，会被这份历史记录替换。\n\n如需保留，请先“保存到历史”或复制/导出。",
+              confirmText: "打开并替换",
+              cancelText: "留在当前",
+              tone: "danger"
+            });
+            if (!ok) return;
+          }
           const itemInputMode = getValidInputMode(item.inputMode || state.inputMode || "text");
           state.scenario = getValidScenario(item.scenario || DEFAULT_SCENARIO);
           state.contentType = getValidContentType(item.contentType || item.result?.contentType || DEFAULT_CONTENT_TYPE);
@@ -18432,7 +18514,7 @@
       ].filter(Boolean).join("\n");
     }
 
-    function buildQaText(result = state.result, scenarioKey = state.scenario) {
+    function buildQaText(result = state.result, scenarioKey = state.scenario, modelUsed = state.modelUsed) {
       if (getValidContentType(result.contentType || state.contentType) === "recruiterConversation") {
         const report = normalizeRecruiterReport(result.recruiterReport || {}, result.recruiterSubtype || state.recruiterSubtype);
         const facts = report.facts.length ? report.facts.map((fact, index) => `${index + 1}. ${escapeMarkdownText(fact.label)}：${escapeMarkdownText(fact.value) || "待确认"}`).join("\n") : "暂无事实信息";
@@ -18445,7 +18527,7 @@
       return r.qaCards.map((card, index) => [
         `${index + 1}. ${scenario.qaLabels.question}：${escapeMarkdownText(card.question)}`,
         `${scenario.qaLabels.answer}：${escapeMarkdownText(card.answer)}`,
-        `${scenario.qaLabels.critique}：${escapeMarkdownText(card.critique)}`,
+        `${attributeLabel(scenario.qaLabels.critique, isModelGeneratedLabel(modelUsed))}：${escapeMarkdownText(card.critique)}`,
         `${scenario.qaLabels.score}：${card.score}`,
         card.risk ? `${scenario.qaLabels.risk}：${escapeMarkdownText(card.risk)}` : ""
       ].filter(Boolean).join("\n")).join("\n\n");
@@ -18461,7 +18543,7 @@
       const dossierText = scenario.dossier.map(([label, key]) => `${label}：${escapeMarkdownText(info[key]) || "待识别"}`).join("\n");
       const modeText = normalizeStoredModelLabel(modelUsed);
       const modeNote = modeText.startsWith("真实大模型") ? "" : "说明：本报告基于规则和示例结构生成，不等同于真实大模型判断。";
-      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${scenario.summaryTitle}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.name)}｜${escapeMarkdownText(item.signal)}｜${escapeMarkdownText(item.evidence)}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.title)}：${escapeMarkdownText(item.detail)}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.issue)}\n现象：${escapeMarkdownText(item.symptom)}\n建议：${escapeMarkdownText(item.suggestion)}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
+      return `# ${scenario.reportName}\n\n## 分析模式\n${modeText}${modeNote ? `\n${modeNote}` : ""}\n\n## 内容类型\n面试复盘\n\n## 档案\n${dossierText}\n\n## ${attributeLabel(scenario.summaryTitle, isModelGeneratedLabel(modelUsed))}\n${buildCoachSummaryText(r, scenario.key)}\n\n## ${scenario.qaTitle}\n${buildQaText(r, scenario.key, modelUsed)}\n\n## ${scenario.focusTitle}\n${r.interviewerFocus.length ? r.interviewerFocus.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.name)}｜${escapeMarkdownText(item.signal)}｜${escapeMarkdownText(item.evidence)}`).join("\n") : "暂无"}\n\n## ${scenario.concernTitle}\n${r.interviewerConcerns.length ? r.interviewerConcerns.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.title)}：${escapeMarkdownText(item.detail)}`).join("\n") : "暂无"}\n\n## ${scenario.improvementTitle}\n${r.improvements.length ? r.improvements.map((item, i) => `${i + 1}. ${escapeMarkdownText(item.issue)}\n现象：${escapeMarkdownText(item.symptom)}\n建议：${escapeMarkdownText(item.suggestion)}`).join("\n\n") : "暂无"}\n\n## ${scenario.nextStepTitle}\n${buildTodoListText(r, scenario.key)}`;
     }
 
     function buildRecruiterMinutesText(result = state.result, modelUsed = state.modelUsed, recruiterSubtype = state.recruiterSubtype) {
@@ -18499,10 +18581,7 @@
         showToast("暂无可导出的复盘报告");
         return;
       }
-      if (!(await confirmReportExport("current"))) {
-        showToast("已取消导出，复盘内容未下载");
-        return;
-      }
+      // 单份 Markdown 导出是明确意图的本地下载，不再逐次弹隐私确认（完整 JSON 快照仍保留确认）。
       const linked = getLinkedInterviewRecord();
       const recruiterReport = normalizeRecruiterReport(state.result.recruiterReport || {}, state.recruiterSubtype);
       const filenameBase = isRecruiterContent()
@@ -18514,10 +18593,6 @@
     }
 
     async function exportHistoryMarkdown(item) {
-      if (!(await confirmReportExport("history"))) {
-        showToast("已取消导出，历史复盘未下载");
-        return;
-      }
       const scenarioKey = getValidScenario(item.scenario || DEFAULT_SCENARIO);
       const filename = buildExportFileName(item.companyName || item.title || "历史复盘", "md");
       downloadTextFile(filename, buildMinutesText(item.result, scenarioKey, item.modelUsed, item.contentType, item.recruiterSubtype), "text/markdown;charset=utf-8");
@@ -18525,6 +18600,10 @@
     }
 
     async function exportAllUserData() {
+      if (!interviewRecords.length && !getHistory().length && !transcriptService.list().length && !uploadedFileService.list().length && !summaryService.list().length) {
+        showToast("暂无可导出的数据，先新增或导入第一条面试");
+        return;
+      }
       if (!(await confirmReportExport("all"))) {
         showToast("已取消导出，本地数据未下载");
         return;
